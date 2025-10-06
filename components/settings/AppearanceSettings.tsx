@@ -5,6 +5,7 @@ import { SunIcon } from '../icons/SunIcon';
 import { MoonIcon } from '../icons/MoonIcon';
 import { DesktopComputerIcon } from '../icons/DesktopComputerIcon';
 import { Settings } from '../../types';
+import ToggleSwitch from '../ToggleSwitch';
 
 type Theme = Settings['theme'];
 type FontSize = Settings['fontSize'];
@@ -19,6 +20,11 @@ const AppearanceSettings: React.FC = () => {
     const handleFontSizeChange = (size: FontSize) => {
         updateSettings({ fontSize: size });
     };
+    
+    const handleSidebarToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
+        updateSettings({ showSidebar: event.target.checked });
+    };
+
 
     const themeOptions = [
         { value: 'light', label: 'Light', icon: <SunIcon /> },
@@ -37,7 +43,7 @@ const AppearanceSettings: React.FC = () => {
             <h3 className="text-2xl font-bold mb-2">Appearance</h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6">Customize the look and feel of the application.</p>
             
-            <div className="space-y-6">
+            <div className="space-y-8">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Theme</label>
                     <div className="grid grid-cols-3 gap-4 max-w-md">
@@ -67,6 +73,14 @@ const AppearanceSettings: React.FC = () => {
                             </button>
                         ))}
                     </div>
+                </div>
+
+                <div className="p-4 border dark:border-gray-700 rounded-lg flex items-center justify-between max-w-md">
+                    <div>
+                        <label htmlFor="showSidebar" className="font-medium text-gray-700 dark:text-gray-300">Show Top Stories Sidebar</label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Display the sidebar on the homepage.</p>
+                    </div>
+                    <ToggleSwitch id="showSidebar" checked={settings.showSidebar} onChange={handleSidebarToggle} />
                 </div>
             </div>
         </div>

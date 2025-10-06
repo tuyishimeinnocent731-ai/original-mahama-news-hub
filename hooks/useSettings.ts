@@ -17,6 +17,7 @@ const defaultSettings: Settings = {
     preferredCategories: [],
     dataSharing: true,
     adPersonalization: true,
+    showSidebar: true,
 };
 
 const applySettingsToDOM = (settings: Settings) => {

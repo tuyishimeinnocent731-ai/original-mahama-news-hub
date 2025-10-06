@@ -1,6 +1,7 @@
 import React from 'react';
-import { useSettings, Settings } from '../../hooks/useSettings';
-import { User } from '../../types';
+// FIX: The 'Settings' type is not exported from 'useSettings'. It should be imported from 'types'.
+import { useSettings } from '../../hooks/useSettings';
+import { User, Settings } from '../../types';
 import ToggleSwitch from '../ToggleSwitch';
 import { LockIcon } from '../icons/LockIcon';
 
@@ -11,7 +12,7 @@ interface AccessibilitySettingsProps {
 
 const AccessibilitySettings: React.FC<AccessibilitySettingsProps> = ({ user, onUpgradeClick }) => {
     const { settings, updateSettings } = useSettings();
-    const isPremium = user?.subscription === 'standard' || user?.subscription === 'premium';
+    const isPremium = user?.subscription === 'premium' || user?.subscription === 'pro';
 
     const handleSettingChange = (key: keyof Settings, value: any) => {
         updateSettings({ [key]: value });

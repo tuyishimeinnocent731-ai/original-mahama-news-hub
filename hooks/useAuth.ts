@@ -11,6 +11,8 @@ const MOCK_USER: User = {
     savedArticles: ['1', '3'],
     bio: 'News enthusiast and tech lover.',
     userAds: [],
+    searchHistory: ['AI', 'Global Economy'],
+    twoFactorEnabled: true,
 };
 
 export const useAuth = () => {
@@ -18,36 +20,45 @@ export const useAuth = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [authLoading, setAuthLoading] = useState(true);
 
+    const updateUserState = (updatedUser: User | null) => {
+        setUser(updatedUser);
+        if (updatedUser) {
+            localStorage.setItem('auth-user', JSON.stringify(updatedUser));
+        } else {
+            localStorage.removeItem('auth-user');
+        }
+    };
+
     useEffect(() => {
-        // Simulate checking auth status on component mount
         setAuthLoading(true);
         try {
             const storedUser = localStorage.getItem('auth-user');
             if (storedUser) {
-                setUser(JSON.parse(storedUser));
+                const parsedUser = JSON.parse(storedUser);
+                // Ensure all default keys are present
+                const mergedUser = { ...MOCK_USER, ...parsedUser };
+                setUser(mergedUser);
                 setIsLoggedIn(true);
             }
         } catch (e) {
             console.error("Failed to parse user from storage", e);
             localStorage.removeItem('auth-user');
         } finally {
-            setTimeout(() => setAuthLoading(false), 500); // simulate network delay
+            setTimeout(() => setAuthLoading(false), 500);
         }
     }, []);
 
     const login = useCallback((email: string) => {
         setAuthLoading(true);
         const newUser: User = { ...MOCK_USER, email };
-        localStorage.setItem('auth-user', JSON.stringify(newUser));
-        setUser(newUser);
+        updateUserState(newUser);
         setIsLoggedIn(true);
         setTimeout(() => setAuthLoading(false), 300);
     }, []);
 
     const logout = useCallback(() => {
         setAuthLoading(true);
-        localStorage.removeItem('auth-user');
-        setUser(null);
+        updateUserState(null);
         setIsLoggedIn(false);
         setTimeout(() => setAuthLoading(false), 300);
     }, []);
@@ -56,7 +67,7 @@ export const useAuth = () => {
         setUser(currentUser => {
             if (!currentUser) return null;
             const updatedUser = { ...currentUser, ...profileData };
-            localStorage.setItem('auth-user', JSON.stringify(updatedUser));
+            updateUserState(updatedUser);
             return updatedUser;
         });
     }, []);
@@ -68,7 +79,7 @@ export const useAuth = () => {
              if (plan === 'free') {
                 updatedUser.savedArticles = [];
             }
-            localStorage.setItem('auth-user', JSON.stringify(updatedUser));
+            updateUserState(updatedUser);
             return updatedUser;
         });
     }, []);
@@ -78,7 +89,7 @@ export const useAuth = () => {
             if (!currentUser || currentUser.subscription !== 'pro') return currentUser;
             const newAd: Ad = { ...ad, id: `user-ad-${Date.now()}`};
             const updatedUser = { ...currentUser, userAds: [...currentUser.userAds, newAd] };
-            localStorage.setItem('auth-user', JSON.stringify(updatedUser));
+            updateUserState(updatedUser);
             return updatedUser;
         });
     }, []);
@@ -96,7 +107,35 @@ export const useAuth = () => {
                 : [...currentUser.savedArticles, article.id];
             
             const updatedUser = { ...currentUser, savedArticles: newSavedArticles };
-            localStorage.setItem('auth-user', JSON.stringify(updatedUser));
+            updateUserState(updatedUser);
+            return updatedUser;
+        });
+    }, []);
+
+    const addSearchToHistory = useCallback((query: string) => {
+        setUser(currentUser => {
+            if (!currentUser) return null;
+            const updatedHistory = [query, ...currentUser.searchHistory.filter(item => item !== query)].slice(0, 10);
+            const updatedUser = { ...currentUser, searchHistory: updatedHistory };
+            updateUserState(updatedUser);
+            return updatedUser;
+        });
+    }, []);
+
+    const clearSearchHistory = useCallback(() => {
+        setUser(currentUser => {
+            if (!currentUser) return null;
+            const updatedUser = { ...currentUser, searchHistory: [] };
+            updateUserState(updatedUser);
+            return updatedUser;
+        });
+    }, []);
+    
+    const toggleTwoFactor = useCallback((enabled: boolean) => {
+        setUser(currentUser => {
+            if (!currentUser) return null;
+            const updatedUser = { ...currentUser, twoFactorEnabled: enabled };
+            updateUserState(updatedUser);
             return updatedUser;
         });
     }, []);
@@ -111,6 +150,9 @@ export const useAuth = () => {
         subscribe,
         createAd,
         isArticleSaved,
-        toggleSaveArticle
+        toggleSaveArticle,
+        addSearchToHistory,
+        clearSearchHistory,
+        toggleTwoFactor
     };
 };

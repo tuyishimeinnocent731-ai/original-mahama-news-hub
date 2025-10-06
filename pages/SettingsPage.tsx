@@ -27,9 +27,11 @@ type SettingsTab = 'profile' | 'appearance' | 'accessibility' | 'preferences' | 
 interface SettingsPageProps {
     user: User | null;
     onUpgradeClick: () => void;
+    clearSearchHistory: () => void;
+    toggleTwoFactor: (enabled: boolean) => void;
 }
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpgradeClick }) => {
+const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpgradeClick, clearSearchHistory, toggleTwoFactor }) => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
     const { updateProfile } = useAuth();
     const { addToast } = useToast();
@@ -64,9 +66,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpgradeClick }) => 
             case 'subscription':
                 return <SubscriptionSettings user={user} onUpgradeClick={onUpgradeClick} />;
             case 'privacy':
-                return <PrivacySettings />;
+                return <PrivacySettings user={user} clearSearchHistory={clearSearchHistory} addToast={addToast} />;
             case 'security':
-                return <SecuritySettings />;
+                return <SecuritySettings user={user} toggleTwoFactor={toggleTwoFactor} addToast={addToast} />;
             default:
                 return null;
         }

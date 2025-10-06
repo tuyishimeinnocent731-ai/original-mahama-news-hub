@@ -34,6 +34,8 @@ export interface User {
   savedArticles: string[];
   bio?: string;
   userAds: Ad[];
+  searchHistory: string[];
+  twoFactorEnabled: boolean;
 }
 
 export interface NavLink {
@@ -59,4 +61,5 @@ export interface Settings {
     preferredCategories: string[];
     dataSharing: boolean;
     adPersonalization: boolean;
+    showSidebar: boolean;
 }
