@@ -217,22 +217,48 @@ export const useAuth = () => {
             return updatedUser;
         });
     }, [user]);
+    
+    const getAllUsers = useCallback(() => {
+        return Object.values(MOCK_USERS);
+    }, []);
 
-    const addAdmin = useCallback((email: string) => {
+    const toggleAdminRole = useCallback((emailToModify: string, action: 'promote' | 'demote') => {
         if (user?.role !== 'admin') {
-            addToast('You do not have permission to perform this action.', 'error');
-            return;
+            addToast('You do not have permission for this action.', 'error');
+            return false;
         }
-        if (ADMIN_EMAILS.includes(email)) {
-            addToast('This user is already an admin.', 'warning');
-            return;
+        if (emailToModify === 'reponsekdz0@gmail.com') {
+            addToast('Cannot change the primary admin role.', 'warning');
+            return false;
         }
-        ADMIN_EMAILS.push(email);
-        if (MOCK_USERS[email]) {
-            MOCK_USERS[email].role = 'admin';
+
+        const targetUser = MOCK_USERS[emailToModify];
+        if (!targetUser) {
+            addToast('User not found.', 'error');
+            return false;
         }
-        addToast(`${email} has been promoted to an admin.`, 'success');
+        
+        if (action === 'promote') {
+            if (targetUser.role === 'admin') {
+                addToast('User is already an admin.', 'info');
+                return false;
+            }
+            targetUser.role = 'admin';
+            if (!ADMIN_EMAILS.includes(emailToModify)) ADMIN_EMAILS.push(emailToModify);
+            addToast(`${targetUser.name} has been promoted to Admin.`, 'success');
+        } else { // demote
+            if (targetUser.role !== 'admin') {
+                addToast('User is not an admin.', 'info');
+                return false;
+            }
+            targetUser.role = 'user';
+            ADMIN_EMAILS = ADMIN_EMAILS.filter(e => e !== emailToModify);
+             addToast(`${targetUser.name}'s admin role has been revoked.`, 'success');
+        }
+        return true;
+
     }, [user, addToast]);
+
 
     return { 
         user, 
@@ -251,7 +277,7 @@ export const useAuth = () => {
         validatePassword,
         changePassword,
         toggleIntegration,
-        addAdmin,
-        adminEmails: ADMIN_EMAILS,
+        getAllUsers,
+        toggleAdminRole,
     };
 };

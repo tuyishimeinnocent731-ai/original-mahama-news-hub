@@ -12,6 +12,8 @@ import InArticleAd from './InArticleAd';
 import { PlayIcon } from './icons/PlayIcon';
 import { PauseIcon } from './icons/PauseIcon';
 import LoginPrompt from './LoginPrompt';
+import ReadingProgressBar from './ReadingProgressBar';
+import ImageGallery from './ImageGallery';
 
 interface ArticleViewProps {
   article: Article;
@@ -111,13 +113,14 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onArti
 
   return (
     <div className="animate-fade-in">
+      <ReadingProgressBar />
       <button onClick={onBack} className="flex items-center space-x-2 text-yellow-500 hover:underline mb-6 font-semibold">
         <ArrowLeftIcon className="h-5 w-5" />
         <span>Back to News</span>
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <main className="lg:col-span-8">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+        <main className="md:col-span-8">
           <article>
             <header className="mb-6">
               <span className="text-sm font-semibold text-yellow-600 dark:text-yellow-400 uppercase">{article.category}</span>
@@ -148,12 +151,13 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onArti
 
             <div className="prose dark:prose-invert max-w-none text-lg">
                 <p className="lead font-semibold">{article.description}</p>
+                 <ImageGallery images={article.galleryImages} />
                 {articleBodyWithAd}
             </div>
           </article>
         </main>
 
-        <div className="lg:col-span-4">
+        <div className="md:col-span-4">
             <div className="sticky top-24 space-y-8">
                 <div>
                      <button onClick={() => setAIAssistantOpen(true)} className="w-full flex items-center justify-center p-3 mb-6 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors shadow-lg">

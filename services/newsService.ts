@@ -4,7 +4,7 @@ import { Article } from '../types';
 // FIX: Initializing Gemini AI Client according to guidelines
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-let mockArticles: Article[] = [
+export let mockArticles: Article[] = [
   {
     id: '1',
     title: 'Global Tech Summit 2024 Highlights Future of AI',
@@ -147,9 +147,22 @@ let mockArticles: Article[] = [
     source: { name: 'History Unearthed' },
     url: '#',
     urlToImage: 'https://images.unsplash.com/photo-1614631336124-f773347f9f38?q=80&w=1200',
-    category: 'History'
+    category: 'History',
+    galleryImages: [
+        { src: 'https://images.unsplash.com/photo-1528468301502-8a8b1330544a?q=80&w=800', alt: 'Ancient pottery uncovered at the site.' },
+        { src: 'https://images.unsplash.com/photo-1604595213812-30232f471842?q=80&w=800', alt: 'Hieroglyphs on a temple wall.' },
+        { src: 'https://images.unsplash.com/photo-1599879796281-5a4d66723237?q=80&w=800', alt: 'Aerial view of the excavation site.' },
+    ],
   }
 ];
+
+export const getAllArticles = async (): Promise<Article[]> => {
+    return Promise.resolve(mockArticles);
+};
+
+export const deleteArticle = (articleId: string): void => {
+    mockArticles = mockArticles.filter(article => article.id !== articleId);
+};
 
 export const getArticles = async (category: string = 'World'): Promise<Article[]> => {
     console.log(`Fetching articles for category: ${category}`);

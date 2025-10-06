@@ -23,12 +23,14 @@ import Aside from './components/Aside';
 import * as newsService from './services/newsService';
 import { useAuth } from './hooks/useAuth';
 import { useSettings } from './hooks/useSettings';
+import { useToast } from './contexts/ToastContext';
 import { Article } from './types';
 
 type View = 'home' | 'article' | 'settings' | 'saved' | 'my-ads' | 'admin';
 
 const App: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
+  const [allArticles, setAllArticles] = useState<Article[]>([]);
   const [topStories, setTopStories] = useState<Article[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentCategory, setCurrentCategory] = useState('World');
@@ -45,6 +47,7 @@ const App: React.FC = () => {
 
   const auth = useAuth();
   useSettings(); // Initialize settings hook
+  const { addToast } = useToast();
 
   const fetchArticles = useCallback(async (category: string, isSearch: boolean = false) => {
     setIsLoading(true);
@@ -68,10 +71,16 @@ const App: React.FC = () => {
     }
   }, [auth]);
 
+  const fetchAllArticles = useCallback(async () => {
+    const all = await newsService.getAllArticles();
+    setAllArticles(all);
+  }, []);
+
   useEffect(() => {
     fetchArticles('World');
     newsService.getTopStories().then(setTopStories);
-  }, [fetchArticles]);
+    fetchAllArticles();
+  }, [fetchArticles, fetchAllArticles]);
 
   const handleArticleClick = (article: Article) => {
     setCurrentArticle(article);
@@ -105,6 +114,19 @@ const App: React.FC = () => {
       fetchArticles(category);
   }
 
+  const handleAddArticle = (articleData: Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>) => {
+    newsService.addArticle(articleData);
+    fetchAllArticles(); // Refresh the list of all articles
+    addToast('Article uploaded successfully!', 'success');
+  };
+
+  const handleDeleteArticle = (articleId: string) => {
+    newsService.deleteArticle(articleId);
+    fetchAllArticles(); // Refresh the list of all articles
+    setArticles(prev => prev.filter(a => a.id !== articleId)); // Also update current view
+    addToast('Article deleted successfully.', 'success');
+  };
+
   const customAds = auth.user?.subscription === 'pro' ? auth.user.userAds : [];
 
   const renderMainContent = () => {
@@ -124,17 +146,26 @@ const App: React.FC = () => {
       case 'settings':
         return auth.user && <SettingsPage user={auth.user} {...auth} onUpgradeClick={() => setPremiumModalOpen(true)} onMyAdsClick={() => setView('my-ads')} />;
       case 'saved':
-        const savedArticles = articles.filter(a => auth.isArticleSaved(a.id));
+        const savedArticles = allArticles.filter(a => auth.isArticleSaved(a.id));
         return <SavedArticlesPage savedArticles={savedArticles} onArticleClick={handleArticleClick} />;
       case 'my-ads':
         return <MyAdsPage user={auth.user} onBack={handleBackToHome} onCreateAd={auth.createAd} />
       case 'admin':
-        return auth.user?.role === 'admin' && <AdminPage user={auth.user} addAdmin={auth.addAdmin} adminEmails={auth.adminEmails} />;
+        return auth.user?.role === 'admin' && (
+            <AdminPage 
+                user={auth.user}
+                allArticles={allArticles}
+                onAddArticle={handleAddArticle}
+                onDeleteArticle={handleDeleteArticle}
+                getAllUsers={auth.getAllUsers}
+                toggleAdminRole={auth.toggleAdminRole}
+            />
+        );
       case 'home':
       default:
         return (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-8">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+                <div className="md:col-span-8">
                     <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500">{currentCategory}</h1>
                     {isLoading ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -151,7 +182,7 @@ const App: React.FC = () => {
                         </div>
                     )}
                 </div>
-                 <div className="lg:col-span-4">
+                 <div className="md:col-span-4">
                     <Aside
                         title="Top Stories"
                         articles={topStories}

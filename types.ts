@@ -11,6 +11,7 @@ export interface Article {
     url: string;
     urlToImage: string;
     category: string;
+    galleryImages?: { src: string; alt: string }[];
     isOffline?: boolean;
 }
 
