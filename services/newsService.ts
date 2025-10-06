@@ -56,6 +56,14 @@ export const getArticlesByCategory = async (category: string): Promise<Article[]
     return mockArticles.filter(a => a.category.toLowerCase() === lowerCategory);
 };
 
+export const getRelatedArticles = async (category: string, currentArticleId: string): Promise<Article[]> => {
+    await new Promise(res => setTimeout(res, 400));
+    const lowerCategory = category.toLowerCase();
+    return mockArticles
+        .filter(a => a.category.toLowerCase() === lowerCategory && a.id !== currentArticleId)
+        .slice(0, 4);
+};
+
 export const searchArticles = async (query: string): Promise<{articles: Article[], sources: GroundingChunk[]}> => {
     try {
         const response = await ai.models.generateContent({
