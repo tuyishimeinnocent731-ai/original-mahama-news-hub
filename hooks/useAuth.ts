@@ -1,171 +1,116 @@
+
 import { useState, useEffect, useCallback } from 'react';
-import { User, Article, SubscriptionPlan, Ad } from '../types';
+import { User, SubscriptionPlan, Ad, Article } from '../types';
 
-const USER_STORAGE_KEY = 'mahama_news_hub_user';
-const OFFLINE_ARTICLES_KEY_PREFIX = 'mahama_offline_article_';
-
-const defaultUser: Omit<User, 'email' | 'name' | 'avatar'> = {
+const MOCK_USER: User = {
+    id: 'user-123',
+    name: 'Alex Johnson',
+    email: 'alex.j@example.com',
+    avatar: 'https://i.pravatar.cc/150?u=alexj',
     subscription: 'free',
-    savedArticles: [],
-    bio: '',
+    savedArticles: ['1', '3'],
+    bio: 'News enthusiast and tech lover.',
     userAds: [],
-};
-
-// Utility to convert image URL to base64
-const toBase64 = async (url: string): Promise<string> => {
-    try {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
-    } catch (error) {
-        console.error('Error converting image to base64:', error);
-        return url; // Fallback to original URL
-    }
 };
 
 export const useAuth = () => {
     const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [authLoading, setAuthLoading] = useState(true);
 
     useEffect(() => {
+        // Simulate checking auth status on component mount
+        setAuthLoading(true);
         try {
-            const storedUser = localStorage.getItem(USER_STORAGE_KEY);
+            const storedUser = localStorage.getItem('auth-user');
             if (storedUser) {
-                const parsedUser = JSON.parse(storedUser);
-                const name = parsedUser.name || parsedUser.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase());
-                const avatar = parsedUser.avatar || `https://i.pravatar.cc/150?u=${parsedUser.email}`;
-                
-                // Check for offline articles
-                const savedArticlesWithOfflineStatus = parsedUser.savedArticles.map((article: Article) => {
-                    const offlineData = localStorage.getItem(`${OFFLINE_ARTICLES_KEY_PREFIX}${article.id}`);
-                    return offlineData ? { ...article, ...JSON.parse(offlineData), isOffline: true } : article;
-                });
-
-                setUser({ ...defaultUser, ...parsedUser, name, avatar, savedArticles: savedArticlesWithOfflineStatus });
+                setUser(JSON.parse(storedUser));
+                setIsLoggedIn(true);
             }
-        } catch (error) {
-            console.error("Failed to parse user from localStorage", error);
-            localStorage.removeItem(USER_STORAGE_KEY);
+        } catch (e) {
+            console.error("Failed to parse user from storage", e);
+            localStorage.removeItem('auth-user');
         } finally {
-            setLoading(false);
+            setTimeout(() => setAuthLoading(false), 500); // simulate network delay
         }
     }, []);
 
-    const updateUserStorage = (updatedUser: User) => {
-        try {
-            // Don't store the large base64 image data in the main user object
-            const userToStore = { ...updatedUser, savedArticles: updatedUser.savedArticles.map(({ isOffline, ...rest}) => rest) };
-            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userToStore));
-            setUser(updatedUser);
-        } catch (error) {
-            console.error("Failed to save user to localStorage", error);
-        }
-    };
-
     const login = useCallback((email: string) => {
-        const name = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase());
-        const avatar = `https://i.pravatar.cc/150?u=${email}`;
-        const userData: User = { email, name, avatar, subscription: 'free', savedArticles: [], bio: '', userAds: [] };
-        updateUserStorage(userData);
+        setAuthLoading(true);
+        const newUser: User = { ...MOCK_USER, email };
+        localStorage.setItem('auth-user', JSON.stringify(newUser));
+        setUser(newUser);
+        setIsLoggedIn(true);
+        setTimeout(() => setAuthLoading(false), 300);
     }, []);
 
     const logout = useCallback(() => {
-        try {
-            localStorage.removeItem(USER_STORAGE_KEY);
-            setUser(null);
-        } catch (error) {
-            console.error("Failed to remove user from localStorage", error);
-        }
+        setAuthLoading(true);
+        localStorage.removeItem('auth-user');
+        setUser(null);
+        setIsLoggedIn(false);
+        setTimeout(() => setAuthLoading(false), 300);
     }, []);
-    
-    const register = useCallback((email: string) => {
-        login(email);
-    }, [login]);
 
-    const updateSubscription = useCallback((plan: SubscriptionPlan) => {
-        if (user) {
-            const updatedUser = { ...user, subscription: plan };
-            updateUserStorage(updatedUser);
-        }
-    }, [user]);
+    const updateProfile = useCallback((profileData: Partial<Pick<User, 'name' | 'bio'>>) => {
+        setUser(currentUser => {
+            if (!currentUser) return null;
+            const updatedUser = { ...currentUser, ...profileData };
+            localStorage.setItem('auth-user', JSON.stringify(updatedUser));
+            return updatedUser;
+        });
+    }, []);
 
-    const saveArticle = useCallback(async (article: Article) => {
-        if (user && !user.savedArticles.some(a => a.id === article.id)) {
-            // Save article content for offline access
-            const imageBase64 = await toBase64(article.urlToImage);
-            const offlineArticleData = {
-                ...article,
-                urlToImage: imageBase64,
-            };
-            localStorage.setItem(`${OFFLINE_ARTICLES_KEY_PREFIX}${article.id}`, JSON.stringify(offlineArticleData));
-
-            const articleWithStatus = { ...article, isOffline: true };
-            const updatedUser = { ...user, savedArticles: [...user.savedArticles, articleWithStatus] };
-            updateUserStorage(updatedUser);
-        }
-    }, [user]);
-
-    const unsaveArticle = useCallback((articleId: string) => {
-        if (user) {
-            // Remove offline data
-            localStorage.removeItem(`${OFFLINE_ARTICLES_KEY_PREFIX}${articleId}`);
-            const updatedUser = { ...user, savedArticles: user.savedArticles.filter(a => a.id !== articleId) };
-            updateUserStorage(updatedUser);
-        }
-    }, [user]);
-
-    const isArticleSaved = useCallback((articleId: string) => {
-        return user?.savedArticles.some(a => a.id === articleId) || false;
-    }, [user]);
-    
-    const updateProfile = useCallback((profileData: Partial<Pick<User, 'name' | 'avatar' | 'bio'>>) => {
-        if (user) {
-            const updatedUser = { ...user, ...profileData };
-            updateUserStorage(updatedUser);
-        }
-    }, [user]);
+    const subscribe = useCallback((plan: SubscriptionPlan) => {
+        setUser(currentUser => {
+            if (!currentUser) return null;
+            const updatedUser = { ...currentUser, subscription: plan };
+             if (plan === 'free') {
+                updatedUser.savedArticles = [];
+            }
+            localStorage.setItem('auth-user', JSON.stringify(updatedUser));
+            return updatedUser;
+        });
+    }, []);
 
     const createAd = useCallback((ad: Omit<Ad, 'id'>) => {
-        if(user && user.subscription === 'pro') {
-            const newAd = { ...ad, id: `user-ad-${Date.now()}` };
-            const updatedUser = { ...user, userAds: [...user.userAds, newAd] };
-            updateUserStorage(updatedUser);
-        }
-    }, [user]);
-
-    const clearOfflineArticles = useCallback(() => {
-        if (!user) return;
-        
-        user.savedArticles.forEach(article => {
-            localStorage.removeItem(`${OFFLINE_ARTICLES_KEY_PREFIX}${article.id}`);
+        setUser(currentUser => {
+            if (!currentUser || currentUser.subscription !== 'pro') return currentUser;
+            const newAd: Ad = { ...ad, id: `user-ad-${Date.now()}`};
+            const updatedUser = { ...currentUser, userAds: [...currentUser.userAds, newAd] };
+            localStorage.setItem('auth-user', JSON.stringify(updatedUser));
+            return updatedUser;
         });
-
-        const updatedArticles = user.savedArticles.map(a => ({...a, isOffline: false }));
-        const updatedUser = { ...user, savedArticles: updatedArticles };
-        // We only update the state here, but don't re-save to local storage,
-        // as the offline articles are gone. The main user object will still list them as saved, just not available offline.
-        setUser(updatedUser);
-        
+    }, []);
+    
+    const isArticleSaved = useCallback((articleId: string) => {
+        return user?.savedArticles.includes(articleId) ?? false;
     }, [user]);
 
-    return { 
-        user, 
-        login, 
-        logout, 
-        register, 
-        loading, 
-        isLoggedIn: !!user,
-        updateSubscription,
-        saveArticle,
-        unsaveArticle,
-        isArticleSaved,
+    const toggleSaveArticle = useCallback((article: Article) => {
+        setUser(currentUser => {
+            if (!currentUser || currentUser.subscription === 'free') return currentUser;
+            const isSaved = currentUser.savedArticles.includes(article.id);
+            const newSavedArticles = isSaved
+                ? currentUser.savedArticles.filter(id => id !== article.id)
+                : [...currentUser.savedArticles, article.id];
+            
+            const updatedUser = { ...currentUser, savedArticles: newSavedArticles };
+            localStorage.setItem('auth-user', JSON.stringify(updatedUser));
+            return updatedUser;
+        });
+    }, []);
+
+    return {
+        user,
+        isLoggedIn,
+        authLoading,
+        login,
+        logout,
         updateProfile,
+        subscribe,
         createAd,
-        clearOfflineArticles,
+        isArticleSaved,
+        toggleSaveArticle
     };
 };

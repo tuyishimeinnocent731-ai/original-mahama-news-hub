@@ -1,115 +1,115 @@
+
 import { useState, useEffect, useCallback } from 'react';
+import { Settings } from '../types';
 import { ALL_CATEGORIES } from '../constants';
-
-export type Theme = 'light' | 'dark' | 'system';
-export type LayoutMode = 'normal' | 'compact';
-export type FontSize = 'sm' | 'base' | 'lg';
-
-export interface Settings {
-    theme: Theme;
-    layoutMode: LayoutMode;
-    fontSize: FontSize;
-    preferredCategories: string[];
-    highContrast: boolean;
-    dyslexiaFont: boolean;
-    reduceMotion: boolean;
-    notifications: {
-        breakingNews: boolean;
-        weeklyDigest: boolean;
-        specialOffers: boolean;
-    };
-}
-
-const SETTINGS_STORAGE_KEY = 'mahama_news_hub_settings';
 
 const defaultSettings: Settings = {
     theme: 'system',
-    layoutMode: 'normal',
-    fontSize: 'base',
-    preferredCategories: [],
+    fontSize: 'medium',
     highContrast: false,
-    dyslexiaFont: false,
     reduceMotion: false,
+    dyslexiaFont: false,
     notifications: {
         breakingNews: true,
         weeklyDigest: true,
         specialOffers: false,
     },
+    preferredCategories: [],
+    dataSharing: true,
+    adPersonalization: true,
 };
 
-const applyAllSettings = (settings: Settings) => {
+const applySettingsToDOM = (settings: Settings) => {
     const root = window.document.documentElement;
-    
+
     // Theme
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     root.classList.remove('light', 'dark');
     if (settings.theme === 'system') {
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         root.classList.add(systemPrefersDark ? 'dark' : 'light');
     } else {
         root.classList.add(settings.theme);
     }
+    
+    // Font size
+    root.style.fontSize = settings.fontSize === 'small' ? '14px' : settings.fontSize === 'large' ? '18px' : '16px';
 
-    // Font Size
-    root.style.fontSize = settings.fontSize === 'sm' ? '14px' : settings.fontSize === 'lg' ? '18px' : '16px';
+    // High contrast
+    if (settings.highContrast) {
+        root.classList.add('high-contrast');
+    } else {
+        root.classList.remove('high-contrast');
+    }
 
-    // Accessibility
-    root.classList.toggle('high-contrast', settings.highContrast);
-    root.classList.toggle('dyslexia-font', settings.dyslexiaFont);
-    root.classList.toggle('reduce-motion', settings.reduceMotion);
-}
+    // Reduce motion
+    if (settings.reduceMotion) {
+        root.classList.add('reduce-motion');
+    } else {
+        root.classList.remove('reduce-motion');
+    }
+
+    // Dyslexia font
+    if (settings.dyslexiaFont) {
+        root.classList.add('dyslexia-font');
+    } else {
+        root.classList.remove('dyslexia-font');
+    }
+};
 
 export const useSettings = () => {
     const [settings, setSettings] = useState<Settings>(defaultSettings);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
         try {
-            const storedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-            const initialSettings = storedSettings 
-                ? { ...defaultSettings, ...JSON.parse(storedSettings) }
-                : defaultSettings;
-            
-            setSettings(initialSettings);
-            applyAllSettings(initialSettings);
+            const storedSettings = localStorage.getItem('app-settings');
+            if (storedSettings) {
+                const parsedSettings = JSON.parse(storedSettings);
+                // Ensure all default keys are present
+                const mergedSettings = {
+                    ...defaultSettings,
+                    ...parsedSettings,
+                    notifications: {
+                        ...defaultSettings.notifications,
+                        ...(parsedSettings.notifications || {})
+                    }
+                };
+                setSettings(mergedSettings);
+                applySettingsToDOM(mergedSettings);
+            } else {
+                applySettingsToDOM(defaultSettings);
+            }
         } catch (error) {
             console.error("Failed to load settings from localStorage", error);
-            applyAllSettings(defaultSettings);
+            applySettingsToDOM(defaultSettings);
         }
+        setIsInitialized(true);
+    }, []);
+
+    const updateSettings = useCallback((newSettings: Partial<Settings>) => {
+        setSettings(prevSettings => {
+            const updatedSettings = { ...prevSettings, ...newSettings };
+            try {
+                localStorage.setItem('app-settings', JSON.stringify(updatedSettings));
+                applySettingsToDOM(updatedSettings);
+            } catch (error) {
+                console.error("Failed to save settings to localStorage", error);
+            }
+            return updatedSettings;
+        });
     }, []);
 
     useEffect(() => {
+        if (!isInitialized) return;
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
         const handleChange = () => {
             if (settings.theme === 'system') {
-                applyAllSettings(settings);
+                applySettingsToDOM(settings);
             }
         };
         mediaQuery.addEventListener('change', handleChange);
         return () => mediaQuery.removeEventListener('change', handleChange);
-    }, [settings]);
+    }, [settings, isInitialized]);
 
-    const updateSettings = useCallback((newSettings: Partial<Settings>) => {
-        setSettings(prevSettings => {
-            // A simple merge for nested objects
-            const updatedSettings = { 
-                ...prevSettings, 
-                ...newSettings,
-                notifications: {
-                    ...prevSettings.notifications,
-                    ...(newSettings.notifications || {}),
-                }
-            };
-            
-            try {
-                localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updatedSettings));
-                applyAllSettings(updatedSettings);
-            } catch (error) {
-                console.error("Failed to save settings to localStorage", error);
-            }
-
-            return updatedSettings;
-        });
-    }, []);
-    
-
-    return { settings, updateSettings, allCategories: ALL_CATEGORIES };
+    return { settings, updateSettings, allCategories: ALL_CATEGORIES, isInitialized };
 };

@@ -1,47 +1,69 @@
+
 import React from 'react';
-import { useSettings, Settings } from '../../hooks/useSettings';
+import { useSettings } from '../../hooks/useSettings';
+import { SunIcon } from '../icons/SunIcon';
+import { MoonIcon } from '../icons/MoonIcon';
+import { DesktopComputerIcon } from '../icons/DesktopComputerIcon';
+import { Settings } from '../../types';
+
+type Theme = Settings['theme'];
+type FontSize = Settings['fontSize'];
 
 const AppearanceSettings: React.FC = () => {
     const { settings, updateSettings } = useSettings();
 
-    const handleSettingChange = (key: keyof Settings, value: any) => {
-        updateSettings({ [key]: value });
+    const handleThemeChange = (theme: Theme) => {
+        updateSettings({ theme });
     };
+
+    const handleFontSizeChange = (size: FontSize) => {
+        updateSettings({ fontSize: size });
+    };
+
+    const themeOptions = [
+        { value: 'light', label: 'Light', icon: <SunIcon /> },
+        { value: 'dark', label: 'Dark', icon: <MoonIcon /> },
+        { value: 'system', label: 'System', icon: <DesktopComputerIcon /> },
+    ];
+
+    const fontSizeOptions: {value: FontSize, label: string}[] = [
+        { value: 'small', label: 'Small' },
+        { value: 'medium', label: 'Medium' },
+        { value: 'large', label: 'Large' },
+    ];
 
     return (
         <div>
             <h3 className="text-2xl font-bold mb-2">Appearance</h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6">Customize the look and feel of the application.</p>
+            
             <div className="space-y-6">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Theme</label>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Select your preferred color scheme.</p>
-                    <div className="mt-2 flex space-x-2">
-                        {(['light', 'dark', 'system'] as const).map(theme => (
-                            <button key={theme} onClick={() => handleSettingChange('theme', theme)} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${settings.theme === theme ? 'bg-yellow-500 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>
-                                {theme.charAt(0).toUpperCase() + theme.slice(1)}
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Theme</label>
+                    <div className="grid grid-cols-3 gap-4 max-w-md">
+                        {themeOptions.map(option => (
+                            <button
+                                key={option.value}
+                                onClick={() => handleThemeChange(option.value as Theme)}
+                                className={`p-4 border rounded-lg text-center transition-colors ${settings.theme === option.value ? 'border-yellow-500 ring-2 ring-yellow-500' : 'border-gray-300 dark:border-gray-600 hover:border-yellow-400'}`}
+                            >
+                                <div className="mx-auto w-6 h-6 mb-2">{option.icon}</div>
+                                <span className="text-sm font-medium">{option.label}</span>
                             </button>
                         ))}
                     </div>
                 </div>
+
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Article Layout</label>
-                     <p className="text-xs text-gray-500 dark:text-gray-400">Choose how articles are displayed on the homepage.</p>
-                    <div className="mt-2 flex space-x-2">
-                        {(['normal', 'compact'] as const).map(mode => (
-                            <button key={mode} onClick={() => handleSettingChange('layoutMode', mode)} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${settings.layoutMode === mode ? 'bg-yellow-500 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>
-                                {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Font Size</label>
-                     <p className="text-xs text-gray-500 dark:text-gray-400">Adjust the global font size for better readability.</p>
-                    <div className="mt-2 flex space-x-2">
-                        {(['sm', 'base', 'lg'] as const).map(size => (
-                            <button key={size} onClick={() => handleSettingChange('fontSize', size)} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${settings.fontSize === size ? 'bg-yellow-500 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>
-                                {size === 'sm' ? 'Small' : size === 'base' ? 'Normal' : 'Large'}
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Font Size</label>
+                    <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-900/50 p-1 rounded-lg max-w-xs">
+                        {fontSizeOptions.map(option => (
+                            <button
+                                key={option.value}
+                                onClick={() => handleFontSizeChange(option.value)}
+                                className={`w-full py-2 text-sm font-semibold rounded-md transition-colors ${settings.fontSize === option.value ? 'bg-white dark:bg-gray-700 text-yellow-600 shadow' : 'hover:bg-gray-200 dark:hover:bg-gray-700/50'}`}
+                            >
+                                {option.label}
                             </button>
                         ))}
                     </div>

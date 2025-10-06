@@ -1,293 +1,240 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import ArticleCard from './components/ArticleCard';
-import ArticleView from './components/ArticleView';
-import Aside from './components/Aside';
-import SearchOverlay from './components/SearchOverlay';
-import SettingsPage from './pages/SettingsPage';
-import CommandPalette from './components/CommandPalette';
-import AuthModal from './components/AuthModal';
-import PremiumModal from './components/PremiumModal';
-import BackToTopButton from './components/BackToTopButton';
-import ArticleCardSkeleton from './components/ArticleCardSkeleton';
-import SavedArticlesPage from './pages/SavedArticlesPage';
-import InFeedAd from './components/InFeedAd';
-import ReadingProgressBar from './components/ReadingProgressBar';
-import MyAdsPage from './pages/MyAdsPage';
-
+import LoadingSpinner from './components/LoadingSpinner';
 import * as newsService from './services/newsService';
+import { Article, Ad } from './types';
 import { useAuth } from './hooks/useAuth';
 import { useSettings } from './hooks/useSettings';
+import AuthModal from './components/AuthModal';
 import { useToast } from './contexts/ToastContext';
-import { useKeyPress } from './hooks/useKeyPress';
+import SearchOverlay from './components/SearchOverlay';
+import CommandPalette from './components/CommandPalette';
+import ArticleView from './components/ArticleView';
+import PremiumModal from './components/PremiumModal';
+import SettingsPage from './pages/SettingsPage';
+import BackToTopButton from './components/BackToTopButton';
+import ArticleCard from './components/ArticleCard';
+import ArticleCardSkeleton from './components/ArticleCardSkeleton';
+import InFeedAd from './components/InFeedAd';
+import SavedArticlesPage from './pages/SavedArticlesPage';
+import MyAdsPage from './pages/MyAdsPage';
 
-import { Article } from './types';
+type View = 'home' | 'article' | 'search-results' | 'settings' | 'saved-articles' | 'premium' | 'my-ads';
 
-type View = 'home' | 'article' | 'search' | 'saved' | 'settings' | 'my-ads';
+const App: React.FC = () => {
+    const { 
+        user, isLoggedIn, authLoading, login, logout, subscribe, 
+        updateProfile, createAd, isArticleSaved, toggleSaveArticle 
+    } = useAuth();
+    useSettings(); // Initialize settings
+    const { addToast } = useToast();
 
-function App() {
-  const [view, setView] = useState<View>('home');
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [asideArticles, setAsideArticles] = useState<Article[]>([]);
-  const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
-  const [currentCategory, setCurrentCategory] = useState<string>('World');
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSearchOpen, setSearchOpen] = useState(false);
-  const [isLoginOpen, setLoginOpen] = useState(false);
-  const [isPremiumOpen, setPremiumOpen] = useState(false);
-  const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  
-  const { user, login, logout, register, loading: authLoading, isLoggedIn, updateSubscription, saveArticle, unsaveArticle, isArticleSaved, updateProfile, createAd, clearOfflineArticles } = useAuth();
-  const { settings } = useSettings();
-  const { addToast } = useToast();
+    const [view, setView] = useState<View>('home');
+    const [articles, setArticles] = useState<Article[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [selectedCategory, setSelectedCategory] = useState('World');
+    const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+    const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
+    const [isAuthModalOpen, setAuthModalOpen] = useState(false);
+    const [isSearchOpen, setSearchOpen] = useState(false);
+    const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
+    const [isPremiumModalOpen, setPremiumModalOpen] = useState(false);
+    const [searchResults, setSearchResults] = useState<Article[]>([]);
 
-  const cmdKPressed = useKeyPress('k', { metaKey: true });
-  useEffect(() => {
-    if (cmdKPressed) {
-      setCommandPaletteOpen(p => !p);
-    }
-  }, [cmdKPressed]);
+    const fetchArticles = useCallback(async (category: string) => {
+        setIsLoading(true);
+        try {
+            const fetchedArticles = await newsService.getArticles(category);
+            setArticles(fetchedArticles);
+        } catch (error) {
+            addToast('Failed to load articles.', 'error');
+            console.error(error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [addToast]);
 
-  const fetchArticles = useCallback(async (category: string) => {
-    setIsLoading(true);
-    try {
-      const [fetchedArticles, topStories] = await Promise.all([
-        newsService.getArticles(category),
-        newsService.getTopStories()
-      ]);
-      setArticles(fetchedArticles);
-      setAsideArticles(topStories);
-    } catch (error) {
-      console.error('Failed to fetch articles:', error);
-      addToast('Could not load articles. Please try again later.', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [addToast]);
+    useEffect(() => {
+        fetchArticles(selectedCategory);
+    }, [selectedCategory, fetchArticles]);
+    
+    useEffect(() => {
+        const handleKeyPress = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                setCommandPaletteOpen(true);
+            }
+        };
+        window.addEventListener('keydown', handleKeyPress);
+        return () => window.removeEventListener('keydown', handleKeyPress);
+    }, []);
 
-  const fetchRelatedArticles = useCallback(async (articleId: string, category: string) => {
-    const fetchedRelated = await newsService.getRelatedArticles(articleId, category);
-    setRelatedArticles(fetchedRelated);
-  }, []);
+    const handleCategorySelect = (category: string) => {
+        setSelectedCategory(category);
+        setView('home');
+        window.scrollTo(0, 0);
+    };
 
-  useEffect(() => {
-    if (view === 'home' || view === 'search') {
-        fetchArticles(currentCategory);
-    }
-  }, [currentCategory, view, fetchArticles]);
+    const handleArticleClick = async (article: Article) => {
+        setSelectedArticle(article);
+        setView('article');
+        setRelatedArticles([]);
+        window.scrollTo(0, 0);
+        const related = await newsService.getRelatedArticles(article.id, article.category);
+        setRelatedArticles(related);
+    };
 
-  const handleCategorySelect = (category: string) => {
-    setCurrentCategory(category);
-    setView('home');
-    setSelectedArticle(null);
-  };
-  
-  const handleArticleClick = (article: Article) => {
-    setSelectedArticle(article);
-    fetchRelatedArticles(article.id, article.category);
-    setView('article');
-    window.scrollTo(0, 0);
-  };
+    const handleSearch = async (query: string) => {
+        setIsLoading(true);
+        setSearchOpen(false);
+        const results = await newsService.searchArticles(query);
+        setSearchResults(results);
+        setView('search-results');
+        setIsLoading(false);
+    };
 
-  const handleSearch = async (query: string) => {
-    setIsLoading(true);
-    setSearchOpen(false);
-    setView('home');
-    const searchResults = await newsService.searchArticles(query);
-    setArticles(searchResults);
-    setCurrentCategory(`Results for "${query}"`);
-    setIsLoading(false);
-    addToast(`${searchResults.length} articles found for "${query}"`, 'info');
-  };
+    const handleLogin = (email: string) => {
+        login(email);
+        setAuthModalOpen(false);
+        addToast('Login successful!', 'success');
+    };
 
-  const handleLogin = (email: string) => {
-    login(email);
-    setLoginOpen(false);
-    addToast(`Welcome back, ${email.split('@')[0]}!`, 'success');
-  };
+    const handleRegister = (email: string) => {
+        // In a real app, this would be a separate flow
+        login(email);
+        setAuthModalOpen(false);
+        addToast('Registration successful! Welcome!', 'success');
+    };
+    
+    const handleSubscribe = (plan: 'standard' | 'premium' | 'pro') => {
+        subscribe(plan);
+        setPremiumModalOpen(false);
+        addToast(`Successfully subscribed to ${plan} plan!`, 'success');
+    };
+    
+    const handleCreateAd = (ad: Omit<Ad, 'id'>) => {
+        createAd(ad);
+        addToast('Advertisement created successfully!', 'success');
+    };
+    
+    const handleBack = () => {
+        setSelectedArticle(null);
+        setView('home');
+    };
+    
+    const renderMainContent = () => {
+        if (isLoading && view === 'home') {
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }).map((_, i) => <ArticleCardSkeleton key={i} />)}
+                </div>
+            );
+        }
 
-  const handleRegister = (email: string) => {
-    register(email);
-    setLoginOpen(false);
-    addToast(`Account created successfully! Welcome, ${email.split('@')[0]}!`, 'success');
-  };
+        switch (view) {
+            case 'article':
+                return selectedArticle && (
+                    <ArticleView 
+                        article={selectedArticle}
+                        user={user}
+                        onBack={handleBack}
+                        onUpgradeClick={() => setPremiumModalOpen(true)}
+                        isArticleSaved={isArticleSaved}
+                        onToggleSave={toggleSaveArticle}
+                        relatedArticles={relatedArticles}
+                        onArticleClick={handleArticleClick}
+                    />
+                );
+            case 'search-results':
+                return (
+                     <div>
+                        <h1 className="text-3xl font-bold mb-6">Search Results</h1>
+                        {searchResults.length > 0 ? (
+                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {searchResults.map(article => <ArticleCard key={article.id} article={article} onArticleClick={handleArticleClick} />)}
+                            </div>
+                        ) : (
+                            <p>No articles found for your search.</p>
+                        )}
+                    </div>
+                );
+            case 'settings':
+                return <SettingsPage user={user} onUpgradeClick={() => setPremiumModalOpen(true)} />;
+            case 'saved-articles':
+                // This would need more implementation to fetch full article objects
+                const savedArticlesFull = articles.filter(a => user?.savedArticles.includes(a.id));
+                 return <SavedArticlesPage savedArticles={savedArticlesFull} onArticleClick={handleArticleClick} />;
+            case 'my-ads':
+                return <MyAdsPage user={user} onBack={() => setView('home')} onCreateAd={handleCreateAd} />;
+            case 'home':
+            default:
+                return (
+                    <div>
+                         <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500">{selectedCategory}</h1>
+                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {articles.map((article, index) => (
+                                <React.Fragment key={article.id}>
+                                    <ArticleCard article={article} onArticleClick={handleArticleClick} />
+                                    {index === 2 && <InFeedAd />}
+                                </React.Fragment>
+                            ))}
+                        </div>
+                    </div>
+                );
+        }
+    };
 
-  const handleLogout = () => {
-    logout();
-    addToast('You have been logged out.', 'info');
-    setView('home');
-  };
-
-  const handleToggleSaveArticle = (article: Article) => {
-    if (!isLoggedIn) {
-        addToast('Please log in to save articles.', 'warning');
-        setLoginOpen(true);
-        return;
-    }
-    if(user?.subscription === 'free') {
-        addToast('Upgrade to save articles for offline reading.', 'warning');
-        setPremiumOpen(true);
-        return;
-    }
-    if (isArticleSaved(article.id)) {
-        unsaveArticle(article.id);
-        addToast('Article removed from saved list.', 'info');
-    } else {
-        saveArticle(article);
-        addToast('Article saved for offline reading!', 'success');
-    }
-  };
-
-  const handleSubscribe = (plan: 'free' | 'standard' | 'premium' | 'pro') => {
-    if (!user) {
-        addToast('Please log in to subscribe.', 'warning');
-        setLoginOpen(true);
-        return;
-    }
-    updateSubscription(plan);
-    setPremiumOpen(false);
-    addToast(`Successfully subscribed to the ${plan} plan!`, 'success');
-  }
-
-  const handleHomeClick = () => {
-    setView('home');
-    setCurrentCategory('World');
-    setSelectedArticle(null);
-  }
-  
-  const displayedArticles = useMemo(() => {
-    if (settings.preferredCategories.length === 0) {
-      return articles;
-    }
-    const preferred = new Set(settings.preferredCategories.map(c => c.toLowerCase()));
-    return [...articles].sort((a, b) => {
-        const aIsPreferred = preferred.has(a.category.toLowerCase());
-        const bIsPreferred = preferred.has(b.category.toLowerCase());
-        if (aIsPreferred && !bIsPreferred) return -1;
-        if (!aIsPreferred && bIsPreferred) return 1;
-        return 0;
-    });
-  }, [articles, settings.preferredCategories]);
-
-  const mainContent = useMemo(() => {
-    switch (view) {
-      case 'article':
-        return selectedArticle ? (
-          <div className="container mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-2">
-              <ArticleView
-                article={selectedArticle}
+    return (
+        <div className="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col font-sans">
+            <Header
+                onSearchClick={() => setSearchOpen(true)}
+                onSettingsClick={() => setView('settings')}
+                onLoginClick={() => setAuthModalOpen(true)}
+                onCommandPaletteClick={() => setCommandPaletteOpen(true)}
+                onCategorySelect={handleCategorySelect}
+                isLoggedIn={isLoggedIn}
                 user={user}
-                onBack={() => setView('home')}
-                onUpgradeClick={() => setPremiumOpen(true)}
-                isArticleSaved={isArticleSaved}
-                onToggleSave={handleToggleSaveArticle}
-                relatedArticles={relatedArticles}
+                onLogout={() => { logout(); addToast("You've been logged out.", "info"); }}
                 onArticleClick={handleArticleClick}
-              />
-            </div>
-            <div className="md:col-span-1">
-              <Aside title="Related Stories" articles={relatedArticles} onArticleClick={handleArticleClick} userAds={user?.userAds} />
-            </div>
-          </div>
-        ) : null;
-      case 'saved':
-        return (
-          <div className="container mx-auto px-4 py-8">
-            <SavedArticlesPage savedArticles={user?.savedArticles || []} onArticleClick={handleArticleClick} />
-          </div>
-        );
-      case 'settings':
-        return (
-          <SettingsPage 
-            user={user}
-            onBack={() => setView('home')}
-            updateProfile={updateProfile}
-            onUpgradeClick={() => setPremiumOpen(true)}
-            clearOfflineArticles={clearOfflineArticles}
-          />
-        );
-      case 'my-ads':
-        return (
-            <MyAdsPage
-                user={user}
-                onBack={() => setView('home')}
-                onCreateAd={(ad) => {
-                    createAd(ad);
-                    addToast('Advertisement created successfully!', 'success');
-                }}
+                onHomeClick={() => setView('home')}
+                onSavedClick={() => setView('saved-articles')}
+                onPremiumClick={() => setPremiumModalOpen(true)}
+                onMyAdsClick={() => setView('my-ads')}
+                authLoading={authLoading}
             />
-        );
-      case 'home':
-      default:
-        return (
-          <div className="container mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-2">
-              <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500 capitalize">{currentCategory}</h1>
-              {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {Array.from({ length: 4 }).map((_, i) => <ArticleCardSkeleton key={i} layoutMode={settings.layoutMode} />)}
-                </div>
-              ) : (
-                <div className={`grid grid-cols-1 ${settings.layoutMode === 'compact' ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2'} gap-6`}>
-                  {displayedArticles.map((article, index) => (
-                    <React.Fragment key={article.id}>
-                      <ArticleCard article={article} onArticleClick={handleArticleClick} layoutMode={settings.layoutMode} />
-                      {index === 2 && !isLoggedIn && <InFeedAd />}
-                    </React.Fragment>
-                  ))}
-                </div>
-              )}
-            </div>
-             <div className="md:col-span-1">
-                <Aside title="Top Stories" articles={asideArticles} onArticleClick={handleArticleClick} isLoading={isLoading} userAds={user?.userAds} />
-            </div>
-          </div>
-        );
-    }
-  }, [view, selectedArticle, user, isArticleSaved, handleToggleSaveArticle, relatedArticles, handleArticleClick, articles, displayedArticles, asideArticles, currentCategory, isLoading, settings.layoutMode, isLoggedIn, updateProfile, createAd, addToast, clearOfflineArticles]);
-  
-  return (
-    <div className={`bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans text-base flex flex-col`}>
-      <ReadingProgressBar />
-      <Header
-        onSearchClick={() => setSearchOpen(true)}
-        onSettingsClick={() => setView('settings')}
-        onLoginClick={() => setLoginOpen(true)}
-        onCommandPaletteClick={() => setCommandPaletteOpen(true)}
-        onCategorySelect={handleCategorySelect}
-        isLoggedIn={isLoggedIn}
-        user={user}
-        onLogout={handleLogout}
-        onArticleClick={handleArticleClick}
-        onHomeClick={handleHomeClick}
-        onSavedClick={() => setView('saved')}
-        onPremiumClick={() => setPremiumOpen(true)}
-        authLoading={authLoading}
-        onMyAdsClick={() => setView('my-ads')}
-      />
-      
-      <main className="flex-grow">
-        {mainContent}
-      </main>
-
-      {view !== 'settings' && <Footer />}
-      <BackToTopButton />
-
-      <SearchOverlay isOpen={isSearchOpen} onClose={() => setSearchOpen(false)} onSearch={handleSearch} />
-      <AuthModal isOpen={isLoginOpen} onClose={() => setLoginOpen(false)} onLogin={handleLogin} onRegister={handleRegister} />
-      {<PremiumModal isOpen={isPremiumOpen} onClose={() => setPremiumOpen(false)} onSubscribe={handleSubscribe} currentPlan={user?.subscription || 'free'} />}
-      <CommandPalette 
-        isOpen={isCommandPaletteOpen} 
-        onClose={() => setCommandPaletteOpen(false)}
-        onOpenSettings={() => setView('settings')}
-        onOpenPremium={() => setPremiumOpen(true)}
-        onOpenSearch={() => setSearchOpen(true)}
-      />
-    </div>
-  );
-}
+            <main className="container mx-auto px-4 py-8 flex-grow">
+                {renderMainContent()}
+            </main>
+            <Footer />
+            <AuthModal
+                isOpen={isAuthModalOpen}
+                onClose={() => setAuthModalOpen(false)}
+                onLogin={handleLogin}
+                onRegister={handleRegister}
+            />
+            <SearchOverlay 
+                isOpen={isSearchOpen}
+                onClose={() => setSearchOpen(false)}
+                onSearch={handleSearch}
+            />
+            <CommandPalette
+                isOpen={isCommandPaletteOpen}
+                onClose={() => setCommandPaletteOpen(false)}
+                onOpenSettings={() => setView('settings')}
+                onOpenPremium={() => setPremiumModalOpen(true)}
+                onOpenSearch={() => { setSearchOpen(true); }}
+            />
+            <PremiumModal
+                isOpen={isPremiumModalOpen}
+                onClose={() => setPremiumModalOpen(false)}
+                onSubscribe={handleSubscribe}
+                currentPlan={user?.subscription || 'free'}
+            />
+            <BackToTopButton />
+        </div>
+    );
+};
 
 export default App;

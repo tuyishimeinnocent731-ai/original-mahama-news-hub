@@ -1,10 +1,4 @@
 
-export interface NavLink {
-  name: string;
-  href: string;
-  sublinks?: NavLink[];
-}
-
 export interface Article {
   id: string;
   title: string;
@@ -24,19 +18,45 @@ export interface Article {
 export type SubscriptionPlan = 'free' | 'standard' | 'premium' | 'pro';
 
 export interface Ad {
-    id: string;
-    headline: string;
-    image: string; // base64
-    url: string;
-    isUserAd?: boolean;
+  id: string;
+  image: string;
+  headline: string;
+  url: string;
+  isUserAd?: boolean;
 }
 
 export interface User {
-  email: string;
+  id: string;
   name: string;
+  email: string;
   avatar: string;
   subscription: SubscriptionPlan;
-  savedArticles: Article[];
+  savedArticles: string[];
   bio?: string;
   userAds: Ad[];
+}
+
+export interface NavLink {
+  name: string;
+  href: string;
+  sublinks?: NavLink[];
+}
+
+export type Theme = 'light' | 'dark' | 'system';
+export type FontSize = 'small' | 'medium' | 'large';
+
+export interface Settings {
+    theme: Theme;
+    fontSize: FontSize;
+    highContrast: boolean;
+    reduceMotion: boolean;
+    dyslexiaFont: boolean;
+    notifications: {
+        breakingNews: boolean;
+        weeklyDigest: boolean;
+        specialOffers: boolean;
+    };
+    preferredCategories: string[];
+    dataSharing: boolean;
+    adPersonalization: boolean;
 }

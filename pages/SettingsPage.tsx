@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { User } from '../types';
 import { useAuth } from '../hooks/useAuth';
@@ -8,47 +9,44 @@ import AccessibilitySettings from '../components/settings/AccessibilitySettings'
 import PrivacySettings from '../components/settings/PrivacySettings';
 import NotificationSettings from '../components/settings/NotificationSettings';
 import SubscriptionSettings from '../components/settings/SubscriptionSettings';
+import SecuritySettings from '../components/settings/SecuritySettings';
 import PreferencesSettings from '../components/settings/PreferencesSettings';
-import { ArrowLeftIcon } from '../components/icons/ArrowLeftIcon';
+
 import { UserCircleIcon } from '../components/icons/UserCircleIcon';
 import { PaletteIcon } from '../components/icons/PaletteIcon';
 import { AccessibilityIcon } from '../components/icons/AccessibilityIcon';
-import { BellIcon } from '../components/icons/BellIcon';
 import { ShieldCheckIcon } from '../components/icons/ShieldCheckIcon';
+import { BellIcon } from '../components/icons/BellIcon';
 import { StarIcon } from '../components/icons/StarIcon';
 import { ListBulletIcon } from '../components/icons/ListBulletIcon';
+import { ShieldExclamationIcon } from '../components/icons/ShieldExclamationIcon';
+
+
+type SettingsTab = 'profile' | 'appearance' | 'accessibility' | 'preferences' | 'notifications' | 'subscription' | 'privacy' | 'security';
 
 interface SettingsPageProps {
     user: User | null;
-    onBack: () => void;
-    updateProfile: (profileData: Partial<Pick<User, 'name' | 'avatar' | 'bio'>>) => void;
     onUpgradeClick: () => void;
-    clearOfflineArticles: () => void;
 }
 
-type SettingsTab = 'profile' | 'appearance' | 'preferences' | 'accessibility' | 'notifications' | 'privacy' | 'subscription';
-
-const SettingsPage: React.FC<SettingsPageProps> = ({ user, onBack, updateProfile, onUpgradeClick, clearOfflineArticles }) => {
+const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpgradeClick }) => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+    const { updateProfile } = useAuth();
     const { addToast } = useToast();
 
     if (!user) {
-        return (
-            <div className="container mx-auto p-8 text-center">
-                <h1 className="text-2xl font-bold">Please log in to view settings.</h1>
-                <button onClick={onBack} className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded-md">Go Back</button>
-            </div>
-        );
+        return <div className="text-center p-10">Please log in to view settings.</div>;
     }
-    
-    const navItems = [
+
+    const tabs = [
         { id: 'profile', label: 'Profile', icon: <UserCircleIcon className="w-5 h-5" /> },
         { id: 'appearance', label: 'Appearance', icon: <PaletteIcon className="w-5 h-5" /> },
-        { id: 'preferences', label: 'Preferences', icon: <ListBulletIcon className="w-5 h-5" /> },
         { id: 'accessibility', label: 'Accessibility', icon: <AccessibilityIcon className="w-5 h-5" /> },
+        { id: 'preferences', label: 'Preferences', icon: <ListBulletIcon className="w-5 h-5" /> },
         { id: 'notifications', label: 'Notifications', icon: <BellIcon className="w-5 h-5" /> },
-        { id: 'privacy', label: 'Privacy', icon: <ShieldCheckIcon className="w-5 h-5" /> },
         { id: 'subscription', label: 'Subscription', icon: <StarIcon className="w-5 h-5" /> },
+        { id: 'privacy', label: 'Privacy', icon: <ShieldCheckIcon className="w-5 h-5" /> },
+        { id: 'security', label: 'Security', icon: <ShieldExclamationIcon className="w-5 h-5" /> },
     ];
 
     const renderContent = () => {
@@ -57,54 +55,48 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onBack, updateProfile
                 return <ProfileSettings user={user} updateProfile={updateProfile} addToast={addToast} />;
             case 'appearance':
                 return <AppearanceSettings />;
-            case 'preferences':
-                return <PreferencesSettings />;
             case 'accessibility':
                 return <AccessibilitySettings user={user} onUpgradeClick={onUpgradeClick} />;
+            case 'preferences':
+                return <PreferencesSettings />;
             case 'notifications':
                 return <NotificationSettings />;
-            case 'privacy':
-                return <PrivacySettings addToast={addToast} clearOfflineArticles={clearOfflineArticles} />;
             case 'subscription':
                 return <SubscriptionSettings user={user} onUpgradeClick={onUpgradeClick} />;
+            case 'privacy':
+                return <PrivacySettings />;
+            case 'security':
+                return <SecuritySettings />;
             default:
                 return null;
         }
     };
-
+    
     return (
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-             <button onClick={onBack} className="flex items-center space-x-2 text-yellow-500 hover:underline mb-6 font-semibold">
-                <ArrowLeftIcon className="h-5 w-5" />
-                <span>Back to News</span>
-            </button>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
-                <div className="flex flex-col md:flex-row min-h-[calc(100vh-200px)]">
-                    {/* Sidebar */}
-                    <aside className="w-full md:w-64 bg-gray-50 dark:bg-gray-800/50 p-6 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700">
-                        <h2 className="text-xl font-bold mb-6">Settings</h2>
-                        <nav className="flex flex-row md:flex-col gap-2">
-                            {navItems.map(item => (
-                                <button
-                                    key={item.id}
-                                    onClick={() => setActiveTab(item.id as SettingsTab)}
-                                    className={`flex items-center w-full text-left space-x-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                                        activeTab === item.id 
-                                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300' 
-                                            : 'text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700'
-                                    }`}
-                                >
-                                    {item.icon}
-                                    <span className="hidden md:inline">{item.label}</span>
-                                </button>
-                            ))}
-                        </nav>
-                    </aside>
-                    {/* Main Content */}
-                    <main className="flex-1 p-6 sm:p-8">
-                        {renderContent()}
-                    </main>
-                </div>
+            <h1 className="text-3xl font-bold mb-8">Settings</h1>
+            <div className="flex flex-col md:flex-row gap-8">
+                <aside className="md:w-1/4">
+                    <nav className="flex flex-col space-y-1">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as SettingsTab)}
+                                className={`flex items-center space-x-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                                    activeTab === tab.id
+                                        ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300'
+                                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                                }`}
+                            >
+                                {tab.icon}
+                                <span>{tab.label}</span>
+                            </button>
+                        ))}
+                    </nav>
+                </aside>
+                <main className="md:w-3/4 bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-lg shadow-md">
+                    {renderContent()}
+                </main>
             </div>
         </div>
     );

@@ -1,63 +1,42 @@
+
 import React from 'react';
-import { useToast } from '../../contexts/ToastContext';
+import { useSettings } from '../../hooks/useSettings';
+import ToggleSwitch from '../ToggleSwitch';
 
-interface PrivacySettingsProps {
-    addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
-    clearOfflineArticles: () => void;
-}
+const PrivacySettings: React.FC = () => {
+    const { settings, updateSettings } = useSettings();
 
-
-const PrivacySettings: React.FC<PrivacySettingsProps> = ({ addToast, clearOfflineArticles }) => {
-
-    const handleDownloadData = () => {
-        addToast("We've received your request. Your data will be sent to your email shortly.", "info");
+    const handlePrivacyChange = (key: 'dataSharing' | 'adPersonalization', value: boolean) => {
+        updateSettings({ [key]: value });
     };
 
-    const handleDeleteAccount = () => {
-        if (window.confirm("Are you sure you want to delete your account? This action is irreversible.")) {
-            addToast("Your account has been scheduled for deletion.", "success");
-            // In a real app, you would redirect or log the user out here.
-        }
-    };
-    
-    const handleClearOfflineData = () => {
-        if (window.confirm("Are you sure you want to remove all saved article data from this device? You will still see your saved articles, but will need an internet connection to read them.")) {
-            clearOfflineArticles();
-            addToast("Offline article data has been cleared.", "success");
-        }
-    }
-    
     return (
         <div>
             <h3 className="text-2xl font-bold mb-2">Privacy & Data</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">Manage your data and account privacy settings.</p>
-            <div className="space-y-6">
-                <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <h4 className="font-semibold text-lg mb-2">Download Your Data</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                        You can request an export of your personal data, including your saved articles and preferences.
-                    </p>
-                    <button onClick={handleDownloadData} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
-                        Request Data Export
-                    </button>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">Control how your data is used to improve our services and personalize your experience.</p>
+            <div className="space-y-4 max-w-md">
+                <div className="p-4 border dark:border-gray-700 rounded-lg">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <label htmlFor="dataSharing" className="font-medium text-gray-700 dark:text-gray-300">Data Sharing</label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Allow us to use your data to improve our services.</p>
+                        </div>
+                        <ToggleSwitch id="dataSharing" checked={settings.dataSharing} onChange={(e) => handlePrivacyChange('dataSharing', e.target.checked)} />
+                    </div>
                 </div>
-                 <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <h4 className="font-semibold text-lg mb-2">Clear Offline Data</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                        Remove all saved article content from this device to free up space. Your list of saved articles will remain.
-                    </p>
-                    <button onClick={handleClearOfflineData} className="px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700">
-                        Clear Offline Data
-                    </button>
+                <div className="p-4 border dark:border-gray-700 rounded-lg">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <label htmlFor="adPersonalization" className="font-medium text-gray-700 dark:text-gray-300">Ad Personalization</label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Allow us to show you more relevant ads.</p>
+                        </div>
+                        <ToggleSwitch id="adPersonalization" checked={settings.adPersonalization} onChange={(e) => handlePrivacyChange('adPersonalization', e.target.checked)} />
+                    </div>
                 </div>
-                <div className="p-4 border border-red-300 dark:border-red-500/50 rounded-lg">
-                    <h4 className="font-semibold text-lg text-red-700 dark:text-red-400 mb-2">Delete Your Account</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                        Permanently delete your account and all associated data. This action cannot be undone.
-                    </p>
-                    <button onClick={handleDeleteAccount} className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700">
-                        Delete Account
-                    </button>
+                 <div className="pt-4">
+                    <button className="text-sm text-blue-600 dark:text-blue-400 hover:underline">Download Your Data</button>
+                    <span className="mx-2 text-gray-300 dark:text-gray-600">|</span>
+                    <button className="text-sm text-red-600 dark:text-red-400 hover:underline">Delete Your Account</button>
                 </div>
             </div>
         </div>
