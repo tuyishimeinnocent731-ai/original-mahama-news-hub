@@ -24,9 +24,7 @@ const AppContent: React.FC = () => {
 
     const [articles, setArticles] = useState<Article[]>([]);
     const [topStories, setTopStories] = useState<Article[]>([]);
-    const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isRelatedLoading, setIsRelatedLoading] = useState(false);
     const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
     const [searchSources, setSearchSources] = useState<GroundingChunk[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -57,20 +55,6 @@ const AppContent: React.FC = () => {
     useEffect(() => {
         fetchInitialData();
     }, [fetchInitialData]);
-
-    useEffect(() => {
-        if (selectedArticle) {
-            setIsRelatedLoading(true);
-            newsService.getRelatedArticles(selectedArticle.category, selectedArticle.id)
-                .then(setRelatedArticles)
-                .catch(error => {
-                    console.error('Failed to fetch related articles:', error);
-                    addToast('Could not load related stories.', 'error');
-                    setRelatedArticles([]);
-                })
-                .finally(() => setIsRelatedLoading(false));
-        }
-    }, [selectedArticle, addToast]);
 
     const handleArticleClick = (article: Article) => {
         setSelectedArticle(article);
@@ -129,23 +113,14 @@ const AppContent: React.FC = () => {
             <main className="flex-grow container mx-auto p-4 lg:p-6">
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                     {selectedArticle ? (
-                        <>
-                            <div className="lg:col-span-3">
-                                <ArticleView
-                                    article={selectedArticle}
-                                    isPremium={false} // Replace with actual subscription status
-                                    onUpgradeClick={() => setPremiumModalOpen(true)}
-                                />
-                            </div>
-                            <div className="lg:col-span-1">
-                                <Aside 
-                                    title="Related Stories" 
-                                    articles={relatedArticles} 
-                                    onArticleClick={handleArticleClick}
-                                    isLoading={isRelatedLoading}
-                                />
-                            </div>
-                        </>
+                        <div className="lg:col-span-4">
+                            <ArticleView
+                                article={selectedArticle}
+                                onArticleClick={handleArticleClick}
+                                isPremium={false} 
+                                onUpgradeClick={() => setPremiumModalOpen(true)}
+                            />
+                        </div>
                     ) : (
                         <>
                             <div className="lg:col-span-3">

@@ -7,20 +7,44 @@ import { PlayIcon } from './icons/PlayIcon';
 import { PauseIcon } from './icons/PauseIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
 import AIAssistantPanel from './AIAssistantPanel';
+import RelatedArticleCard from './RelatedArticleCard';
 import * as newsService from '../services/newsService';
+import { useToast } from '../contexts/ToastContext';
+
+
+const RelatedArticlesSkeleton: React.FC = () => (
+    <div className="space-y-4 animate-pulse">
+        {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex space-x-4">
+                <div className="w-24 h-24 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+                <div className="flex-1 space-y-3 py-1">
+                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/4"></div>
+                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded"></div>
+                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-5/6"></div>
+                </div>
+            </div>
+        ))}
+    </div>
+);
+
 
 interface ArticleViewProps {
     article: Article;
     isPremium: boolean;
     onUpgradeClick: () => void;
+    onArticleClick: (article: Article) => void;
 }
 
-const ArticleView: React.FC<ArticleViewProps> = ({ article, isPremium, onUpgradeClick }) => {
+const ArticleView: React.FC<ArticleViewProps> = ({ article, isPremium, onUpgradeClick, onArticleClick }) => {
     const [summary, setSummary] = useState<string>('');
     const [keyPoints, setKeyPoints] = useState<string[]>([]);
     const [isSummaryLoading, setSummaryLoading] = useState(false);
     const [isKeyPointsLoading, setKeyPointsLoading] = useState(false);
     const [isAIPanelOpen, setAIPanelOpen] = useState(false);
+    const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
+    const [isRelatedLoading, setIsRelatedLoading] = useState(false);
+    
+    const { addToast } = useToast();
     const { isPlaying, isPaused, isSupported, speak, stop, pause, resume } = useTTS();
 
     useEffect(() => {
@@ -29,7 +53,19 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, isPremium, onUpgrade
         setKeyPoints([]);
         setAIPanelOpen(false);
         stop(); // Stop any ongoing speech
-    }, [article, stop]);
+
+        // Fetch related articles
+        setIsRelatedLoading(true);
+        newsService.getRelatedArticles(article.category, article.id)
+            .then(setRelatedArticles)
+            .catch(error => {
+                console.error('Failed to fetch related articles:', error);
+                addToast('Could not load related stories.', 'error');
+                setRelatedArticles([]);
+            })
+            .finally(() => setIsRelatedLoading(false));
+
+    }, [article, stop, addToast]);
     
     const handleGenerateSummary = async () => {
         if (!article) return;
@@ -71,36 +107,59 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, isPremium, onUpgrade
     };
     
     return (
-        <div className="relative">
-            <article>
-                <header className="mb-8">
-                    <p className="text-sm font-semibold text-yellow-600 dark:text-yellow-400 uppercase tracking-wider mb-2">{article.category}</p>
-                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white leading-tight mb-4">{article.title}</h1>
-                    <div className="flex flex-wrap items-center text-sm text-gray-500 dark:text-gray-400">
-                        <span>By {article.author} / {article.source.name}</span>
-                        <span className="mx-2">&#8226;</span>
-                        <span>{new Date(article.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                    </div>
-                </header>
+        <div className="relative grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+            {/* Main Content */}
+            <div className="lg:col-span-2">
+                <article>
+                    <header className="mb-8">
+                        <p className="text-sm font-semibold text-yellow-600 dark:text-yellow-400 uppercase tracking-wider mb-2">{article.category}</p>
+                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white leading-tight mb-4">{article.title}</h1>
+                        <div className="flex flex-wrap items-center text-sm text-gray-500 dark:text-gray-400">
+                            <span>By {article.author} / {article.source.name}</span>
+                            <span className="mx-2">&#8226;</span>
+                            <span>{new Date(article.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                        </div>
+                    </header>
 
-                <div className="flex items-center space-x-6 my-6 py-4 border-y dark:border-gray-700">
-                    <button className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-yellow-500 transition-colors duration-200"><BookmarkIcon className="h-5 w-5"/><span>Save</span></button>
-                    <button className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-yellow-500 transition-colors duration-200"><ShareIcon className="h-5 w-5"/><span>Share</span></button>
-                    {isSupported && (
-                        <button onClick={handlePlayAudio} className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-yellow-500 transition-colors duration-200">
-                           {isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
-                           <span>{isPlaying ? 'Pause' : (isPaused ? 'Resume' : 'Listen')}</span>
-                        </button>
+                    <div className="flex items-center space-x-6 my-6 py-4 border-y dark:border-gray-700">
+                        <button className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-yellow-500 transition-colors duration-200"><BookmarkIcon className="h-5 w-5"/><span>Save</span></button>
+                        <button className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-yellow-500 transition-colors duration-200"><ShareIcon className="h-5 w-5"/><span>Share</span></button>
+                        {isSupported && (
+                            <button onClick={handlePlayAudio} className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-yellow-500 transition-colors duration-200">
+                            {isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
+                            <span>{isPlaying ? 'Pause' : (isPaused ? 'Resume' : 'Listen')}</span>
+                            </button>
+                        )}
+                    </div>
+
+                    <img src={article.urlToImage} alt={article.title} className="w-full h-auto max-h-[500px] object-cover rounded-lg mb-8 shadow-lg" />
+                    
+                    <div className="prose dark:prose-invert max-w-none text-lg lg:text-xl leading-relaxed">
+                        <p className="lead font-semibold text-gray-700 dark:text-gray-300">{article.description}</p>
+                        <p>{article.body}</p>
+                    </div>
+                </article>
+            </div>
+
+            {/* Aside / Related Articles */}
+            <aside className="lg:col-span-1">
+                <div className="sticky top-24">
+                    <h2 className="text-2xl font-bold mb-6 pb-2 border-b-2 border-yellow-500">Related Stories</h2>
+                    {isRelatedLoading ? (
+                        <RelatedArticlesSkeleton />
+                    ) : (
+                        <div className="space-y-6">
+                            {relatedArticles.map(related => (
+                                <RelatedArticleCard 
+                                    key={related.id} 
+                                    article={related} 
+                                    onArticleClick={() => onArticleClick(related)}
+                                />
+                            ))}
+                        </div>
                     )}
                 </div>
-
-                <img src={article.urlToImage} alt={article.title} className="w-full h-auto max-h-[500px] object-cover rounded-lg mb-8 shadow-lg" />
-                
-                <div className="prose dark:prose-invert max-w-none text-lg lg:text-xl leading-relaxed">
-                    <p className="lead font-semibold text-gray-700 dark:text-gray-300">{article.description}</p>
-                    <p>{article.body}</p>
-                </div>
-            </article>
+            </aside>
 
             {/* Floating AI Companion Button */}
             <button
