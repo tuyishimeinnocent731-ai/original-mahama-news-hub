@@ -1,188 +1,130 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+// FIX: Moved Article import from newsService to types, as it's defined in types.ts
+import { NavLink, User, Article } from '../types';
 import { NAV_LINKS } from '../constants';
-import { NavLink as NavLinkType, Article, User } from '../types';
-import * as newsService from '../services/newsService';
 import { SearchIcon } from './icons/SearchIcon';
-import { SettingsIcon } from './icons/SettingsIcon';
-import { LoginIcon } from './icons/LoginIcon';
-import { CommandIcon } from './icons/CommandIcon';
+import { SunIcon } from './icons/SunIcon';
+import { MoonIcon } from './icons/MoonIcon';
 import { MenuIcon } from './icons/MenuIcon';
-import MobileMenu from './MobileMenu';
-import FeaturedArticleCard from './FeaturedArticleCard';
-import { ChevronDownIcon } from './icons/ChevronDownIcon';
-import { FacebookIcon, InstagramIcon, TwitterIcon } from './icons/SocialIcons';
+import { useSettings } from '../hooks/useSettings';
 import UserMenu from './UserMenu';
-import RelatedArticleCard from './RelatedArticleCard';
-
+import FeaturedArticleCard from './FeaturedArticleCard';
+import { getFeaturedArticleForCategory, getArticlesForMegaMenu } from '../services/newsService';
+import { CommandIcon } from './icons/CommandIcon';
+import { TrendingUpIcon } from './icons/TrendingUpIcon';
 
 interface HeaderProps {
-    onSearchClick: () => void;
-    onSettingsClick: () => void;
-    onLoginClick: () => void;
-    onCommandPaletteClick: () => void;
-    onCategorySelect: (category: string) => void;
-    isLoggedIn: boolean;
     user: User | null;
+    isLoggedIn: boolean;
+    onLoginClick: () => void;
     onLogout: () => void;
-    onArticleClick: (article: Article) => void;
-    onHomeClick: () => void;
+    onSearchClick: () => void;
+    onCommandPaletteClick: () => void;
+    onTopStoriesClick: () => void;
+    onSettingsClick: () => void;
     onSavedClick: () => void;
     onPremiumClick: () => void;
-    authLoading: boolean;
     onMyAdsClick: () => void;
+    onAdminClick: () => void;
+    onCategorySelect: (category: string) => void;
+    onArticleClick: (article: Article) => void;
 }
 
-const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-};
+const Header: React.FC<HeaderProps> = (props) => {
+    const { settings, updateSettings } = useSettings();
+    const { onCategorySelect, onArticleClick } = props;
 
-const NavLink: React.FC<{ link: NavLinkType, onCategorySelect: (category: string) => void, onArticleClick: (article: Article) => void }> = ({ link, onCategorySelect, onArticleClick }) => {
-    const featuredArticle = link.sublinks ? newsService.getFeaturedArticleForCategory(link.name) : null;
-    const menuArticles = link.sublinks ? newsService.getArticlesForMegaMenu(link.name, 2) : [];
+    const toggleTheme = () => {
+        const newTheme = settings.theme === 'dark' || (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'light' : 'dark';
+        updateSettings({ theme: newTheme });
+    };
 
     return (
-        <div className="relative group h-full flex items-center">
-            <button onClick={() => onCategorySelect(link.name)} className="nav-link-underline text-white transition-colors duration-200 px-3 py-2 rounded-md text-sm font-medium flex items-center">
-                {link.name}
-                {link.sublinks && (
-                    <ChevronDownIcon className="w-4 h-4 ml-1 transition-transform duration-300 group-hover:rotate-180" />
-                )}
-            </button>
-            {link.sublinks && (
-                <div className="absolute left-1/2 -translate-x-1/2 top-full pt-2 w-screen max-w-4xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform group-hover:translate-y-0 translate-y-2 z-20">
-                    <div className="mega-menu-backdrop rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6">
-                            {/* Column 1: Sublinks */}
-                            <div className="col-span-1">
-                                <h3 className="font-bold text-gray-900 dark:text-white mb-3 text-base border-b-2 border-yellow-500 pb-2">{link.name}</h3>
-                                 <div className="flex flex-col space-y-2" role="menu" aria-orientation="vertical">
-                                    {link.sublinks.map(sublink => (
-                                        <button key={sublink.name} onClick={() => onCategorySelect(sublink.name)} className="text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors" role="menuitem">
-                                            {sublink.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            
-                            {/* Column 2 & 3: Articles */}
-                            <div className="col-span-2 grid grid-cols-1 gap-4">
-                               {menuArticles.map(article => (
-                                   <RelatedArticleCard key={article.id} article={article} onArticleClick={onArticleClick} />
-                               ))}
-                            </div>
-
-                             {/* Column 4: Featured Article */}
-                            <div className="col-span-1">
-                               {featuredArticle && <FeaturedArticleCard article={featuredArticle} onArticleClick={onArticleClick} />}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-const HeaderControlsSkeleton: React.FC = () => (
-    <div className="flex items-center space-x-2 md:space-x-4 animate-pulse">
-        <div className="h-6 w-6 bg-blue-700 rounded-md"></div>
-        <div className="h-6 w-6 bg-blue-700 rounded-md hidden md:block"></div>
-        <div className="h-6 w-6 bg-blue-700 rounded-md"></div>
-        <div className="w-px h-6 bg-blue-700 dark:bg-gray-700 hidden sm:block"></div>
-        <div className="h-10 w-10 bg-blue-700 rounded-full"></div>
-    </div>
-);
-
-
-const Header: React.FC<HeaderProps> = ({ 
-    onSearchClick, 
-    onSettingsClick, 
-    onLoginClick,
-    onCommandPaletteClick,
-    onCategorySelect,
-    isLoggedIn,
-    user,
-    onLogout,
-    onArticleClick,
-    onHomeClick,
-    onSavedClick,
-    onPremiumClick,
-    authLoading,
-    onMyAdsClick
-}) => {
-    const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [currentDate, setCurrentDate] = useState('');
-
-    useEffect(() => {
-        setCurrentDate(new Date().toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        }));
-    }, []);
-
-    return (
-        <header className="bg-blue-800 dark:bg-gray-900 shadow-md sticky top-0 z-40">
-             {/* Top Bar */}
-            <div className="bg-blue-900 dark:bg-gray-900/50 hidden lg:block border-b border-blue-800/50 dark:border-gray-800/50">
-                <div className="container mx-auto px-4 h-10 flex items-center justify-between text-xs text-blue-200">
-                    <div>
-                        <span>{currentDate}</span>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                         {isLoggedIn && user && <span className="text-sm text-blue-200 hidden xl:block">{getGreeting()}, {user.name.split(' ')[0]}!</span>}
-                        <a href="#" className="hover:text-white transition-colors" aria-label="Facebook"><FacebookIcon className="w-5 h-5"/></a>
-                        <a href="#" className="hover:text-white transition-colors" aria-label="Twitter"><TwitterIcon className="w-5 h-5"/></a>
-                        <a href="#" className="hover:text-white transition-colors" aria-label="Instagram"><InstagramIcon className="w-5 h-5"/></a>
-                    </div>
-                </div>
-            </div>
-            
+        <header className="bg-blue-800 dark:bg-gray-900 text-white shadow-md sticky top-0 z-30">
             <div className="container mx-auto px-4">
-                <div className="flex items-center justify-between h-16">
-                    <div className="flex items-center">
-                        <button className="lg:hidden text-white mr-4" onClick={() => setMobileMenuOpen(true)} aria-label="Open menu">
+                <div className="flex justify-between items-center py-3 border-b border-blue-700 dark:border-gray-700">
+                    <button onClick={() => onCategorySelect('World')} className="text-xl font-bold text-yellow-400">
+                        Mahama News Hub
+                    </button>
+                    <div className="flex items-center space-x-3">
+                        <button onClick={props.onSearchClick} className="p-2 rounded-full hover:bg-blue-700" aria-label="Search">
+                            <SearchIcon />
+                        </button>
+                         <button onClick={props.onCommandPaletteClick} className="hidden md:flex items-center space-x-2 p-2 rounded-md hover:bg-blue-700 text-sm" aria-label="Open command palette">
+                            <CommandIcon />
+                            <span className="hidden lg:inline">Cmd+K</span>
+                        </button>
+                        <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-blue-700" aria-label="Toggle theme">
+                            {settings.theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+                        </button>
+                        {props.isLoggedIn && props.user ? (
+                            <UserMenu 
+                                user={props.user} 
+                                onLogout={props.onLogout} 
+                                onSettingsClick={props.onSettingsClick}
+                                onSavedClick={props.onSavedClick}
+                                onPremiumClick={props.onPremiumClick}
+                                onMyAdsClick={props.onMyAdsClick}
+                                onAdminClick={props.onAdminClick}
+                            />
+                        ) : (
+                            <button onClick={props.onLoginClick} className="hidden sm:block px-4 py-2 text-sm font-semibold bg-yellow-500 rounded-md hover:bg-yellow-600 transition-colors">
+                                Login
+                            </button>
+                        )}
+                        <button onClick={props.onTopStoriesClick} className="lg:hidden p-2 rounded-full hover:bg-blue-700" aria-label="Open mobile menu">
                             <MenuIcon />
                         </button>
-                        <button onClick={onHomeClick} className="text-2xl font-bold text-yellow-400">Mahama News Hub</button>
-                    </div>
-                    <nav className="hidden lg:flex items-center space-x-1 h-full">
-                        {NAV_LINKS.map(link => <NavLink key={link.name} link={link} onCategorySelect={onCategorySelect} onArticleClick={onArticleClick} />)}
-                    </nav>
-                    <div className="flex items-center space-x-2 md:space-x-4">
-                        {authLoading ? <HeaderControlsSkeleton /> : (
-                            <>
-                                <button onClick={onSearchClick} className="text-white hover:text-yellow-300" aria-label="Search"><SearchIcon /></button>
-                                <button onClick={onCommandPaletteClick} className="text-white hover:text-yellow-300 hidden md:block" aria-label="Open command palette"><CommandIcon /></button>
-                                <button onClick={onSettingsClick} className="text-white hover:text-yellow-300" aria-label="Settings"><SettingsIcon /></button>
-                                
-                                <div className="w-px h-6 bg-blue-700 dark:bg-gray-700 hidden sm:block"></div>
-
-                                {isLoggedIn && user ? (
-                                    <UserMenu 
-                                        user={user}
-                                        onLogout={onLogout}
-                                        onSettingsClick={onSettingsClick}
-                                        onSavedClick={onSavedClick}
-                                        onPremiumClick={onPremiumClick}
-                                        onMyAdsClick={onMyAdsClick}
-                                    />
-                                ) : (
-                                    <button onClick={onLoginClick} className="flex items-center space-x-2 text-white hover:text-yellow-300" aria-label="Login">
-                                        <LoginIcon />
-                                        <span className="hidden md:inline text-sm font-medium">Login</span>
-                                    </button>
-                                )}
-                            </>
-                        )}
                     </div>
                 </div>
+                <nav className="hidden lg:flex justify-center items-center py-2 space-x-6">
+                    {NAV_LINKS.map(link => (
+                        <div key={link.name} className="group relative">
+                             <button onClick={() => onCategorySelect(link.name)} className="px-3 py-2 text-sm font-semibold hover:text-yellow-300 transition-colors">
+                                {link.name}
+                            </button>
+                            {link.sublinks && (
+                                <div className="absolute left-1/2 -translate-x-1/2 top-full pt-3 hidden group-hover:block w-screen max-w-4xl">
+                                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 grid grid-cols-4 gap-6">
+                                        <div className="col-span-1">
+                                            <h3 className="font-bold text-gray-900 dark:text-white mb-4">{link.name}</h3>
+                                            <ul className="space-y-2">
+                                                {link.sublinks.map(sublink => (
+                                                    <li key={sublink.name}>
+                                                        <button onClick={() => onCategorySelect(sublink.name)} className="text-sm text-gray-600 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400">
+                                                            {sublink.name}
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                        <div className="col-span-2 grid grid-cols-2 gap-4">
+                                            {getArticlesForMegaMenu(link.name, 2).map(article => (
+                                                <div key={article.id} onClick={() => onArticleClick(article)} className="cursor-pointer group/article">
+                                                    <img src={article.urlToImage} alt={article.title} className="w-full h-24 object-cover rounded-md mb-2" />
+                                                    <h4 className="text-xs font-semibold text-gray-800 dark:text-gray-300 line-clamp-2 group-hover/article:text-yellow-600 dark:group-hover/article:text-yellow-400">{article.title}</h4>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="col-span-1">
+                                            {getFeaturedArticleForCategory(link.name) && (
+                                                <FeaturedArticleCard 
+                                                    article={getFeaturedArticleForCategory(link.name)!} 
+                                                    onArticleClick={onArticleClick}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                     <button onClick={props.onTopStoriesClick} className="flex items-center px-3 py-2 text-sm font-semibold text-yellow-400 hover:text-yellow-300 transition-colors">
+                        <TrendingUpIcon className="w-5 h-5 mr-1" />
+                        Top Stories
+                    </button>
+                </nav>
             </div>
-            <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setMobileMenuOpen(false)} onCategorySelect={onCategorySelect} />
         </header>
     );
 };

@@ -4,7 +4,7 @@ import { Article } from '../types';
 // FIX: Initializing Gemini AI Client according to guidelines
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const mockArticles: Article[] = [
+let mockArticles: Article[] = [
   {
     id: '1',
     title: 'Global Tech Summit 2024 Highlights Future of AI',
@@ -168,6 +168,18 @@ export const getTopStories = async (): Promise<Article[]> => {
     return Promise.resolve(sorted.slice(0, 4));
 }
 
+export const addArticle = (articleData: Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>): Article => {
+    const newArticle: Article = {
+        ...articleData,
+        id: `article-${Date.now()}`,
+        publishedAt: new Date().toISOString(),
+        source: { name: 'Mahama News Hub' },
+        url: '#',
+    };
+    mockArticles.unshift(newArticle);
+    return newArticle;
+};
+
 export const getFeaturedArticleForCategory = (category: string): Article | null => {
     return mockArticles.find(a => a.category.toLowerCase() === category.toLowerCase()) || mockArticles[0] || null;
 };
@@ -212,7 +224,8 @@ export const getKeyPoints = async (body: string): Promise<string[]> => {
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gem-2.5-flash',
+            // FIX: Corrected typo in model name
+            model: 'gemini-2.5-flash',
             contents: prompt,
         });
         // FIX: Using .text property to get the response text and parsing it, as per guidelines

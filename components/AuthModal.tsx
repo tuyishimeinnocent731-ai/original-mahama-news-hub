@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import Modal from './Modal';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onLogin: (email: string) => void;
+  onLogin: (email: string, password?: string) => void;
   onRegister: (email: string) => void;
 }
 
@@ -20,7 +19,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onRegis
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === 'login' && email && password) {
-      onLogin(email);
+      onLogin(email, password);
     } else if (mode === 'register' && email && password && password === confirmPassword) {
       onRegister(email);
     }

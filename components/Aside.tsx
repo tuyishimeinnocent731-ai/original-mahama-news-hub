@@ -8,7 +8,7 @@ interface AsideProps {
   articles: Article[];
   onArticleClick: (article: Article) => void;
   isLoading?: boolean;
-  userAds?: Ad[];
+  customAds?: Ad[];
 }
 
 const AsideSkeleton: React.FC = () => (
@@ -27,7 +27,7 @@ const AsideSkeleton: React.FC = () => (
 );
 
 
-const Aside: React.FC<AsideProps> = ({ title, articles, onArticleClick, isLoading = false, userAds = [] }) => {
+const Aside: React.FC<AsideProps> = ({ title, articles, onArticleClick, isLoading = false, customAds = [] }) => {
   return (
     <aside className="space-y-8 sticky top-24">
       <div>
@@ -46,7 +46,7 @@ const Aside: React.FC<AsideProps> = ({ title, articles, onArticleClick, isLoadin
       </div>
       
       <div>
-         <Advertisement userAds={userAds}/>
+         <Advertisement customAds={customAds}/>
       </div>
     </aside>
   );

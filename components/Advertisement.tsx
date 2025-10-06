@@ -26,14 +26,14 @@ const mockAds: Ad[] = [
 ];
 
 interface AdvertisementProps {
-    userAds?: Ad[];
+    customAds?: Ad[];
 }
 
-const Advertisement: React.FC<AdvertisementProps> = ({ userAds = [] }) => {
+const Advertisement: React.FC<AdvertisementProps> = ({ customAds = [] }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isVisible, setIsVisible] = useState(true);
     
-    const allAds = [...mockAds, ...userAds.map(ad => ({ ...ad, isUserAd: true }))];
+    const allAds = [...mockAds, ...customAds.map(ad => ({ ...ad, isUserAd: true }))];
 
     const nextAd = useCallback(() => {
         setCurrentIndex(prevIndex => (prevIndex + 1) % allAds.length);

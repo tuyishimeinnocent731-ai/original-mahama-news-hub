@@ -4,6 +4,7 @@ import { LogoutIcon } from './icons/LogoutIcon';
 import { NewspaperIcon } from './icons/NewspaperIcon';
 import { StarIcon } from './icons/StarIcon';
 import { MegaphoneIcon } from './icons/MegaphoneIcon';
+import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
 import { User, SubscriptionPlan } from '../types';
 
 interface UserMenuProps {
@@ -13,6 +14,7 @@ interface UserMenuProps {
     onSavedClick: () => void;
     onPremiumClick: () => void;
     onMyAdsClick: () => void;
+    onAdminClick: () => void;
 }
 
 const SubscriptionBadge: React.FC<{ plan: SubscriptionPlan }> = ({ plan }) => {
@@ -30,7 +32,7 @@ const SubscriptionBadge: React.FC<{ plan: SubscriptionPlan }> = ({ plan }) => {
 };
 
 
-const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onSettingsClick, onSavedClick, onPremiumClick, onMyAdsClick }) => {
+const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onSettingsClick, onSavedClick, onPremiumClick, onMyAdsClick, onAdminClick }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -90,6 +92,12 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onSettingsClick, on
                         <SubscriptionBadge plan={user.subscription} />
                     </button>
                     <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                     {user.role === 'admin' && (
+                        <button onClick={() => handleAction(onAdminClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                            <ShieldCheckIcon />
+                            <span className="ml-3">Admin Panel</span>
+                        </button>
+                    )}
                     <button onClick={() => handleAction(onSettingsClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
                         <SettingsIcon />
                         <span className="ml-3">Profile & Settings</span>
