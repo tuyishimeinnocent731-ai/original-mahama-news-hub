@@ -1,11 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 import { Article, GroundingChunk } from '../types';
 
-if (!process.env.API_KEY) {
-  console.warn("API_KEY environment variable not set. Using a placeholder key.");
-}
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "YOUR_API_KEY" });
+// The API key MUST be obtained exclusively from the environment variable `process.env.API_KEY`.
+// Assume this variable is pre-configured, valid, and accessible.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const parseArticlesFromResponse = (text: string, groundingChunks: GroundingChunk[] | undefined): Article[] => {
     try {
