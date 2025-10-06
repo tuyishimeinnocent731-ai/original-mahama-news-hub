@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useSettings, Settings } from '../hooks/useSettings';
 import { User, SubscriptionPlan } from '../types';
@@ -6,6 +5,7 @@ import { SUBSCRIPTION_PLANS } from '../constants';
 import { UserIcon } from '../components/icons/UserIcon';
 import { SettingsIcon } from '../components/icons/SettingsIcon';
 import { StarIcon } from '../components/icons/StarIcon';
+import { CheckCircleIcon } from '../components/icons/CheckCircleIcon';
 
 interface SettingsPageProps {
     user: User;
@@ -21,6 +21,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, settings, onUpdatePro
     const { allCategories } = useSettings();
 
     const [profileName, setProfileName] = useState(user.name);
+    const [subscribingPlan, setSubscribingPlan] = useState<SubscriptionPlan | null>(null);
 
     const handleProfileSave = () => {
         onUpdateProfile({ name: profileName });
@@ -42,6 +43,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, settings, onUpdatePro
                 [key]: !settings.notifications[key]
             }
         });
+    };
+    
+    const handleSubscribeClick = (planId: SubscriptionPlan) => {
+        setSubscribingPlan(planId);
+        // Simulate network delay for better UX
+        setTimeout(() => {
+            onUpdateSubscription(planId);
+            setSubscribingPlan(null);
+            // The toast is fired from App.tsx after the state is updated.
+        }, 1000);
     };
 
     const tabs = [
@@ -156,8 +167,21 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, settings, onUpdatePro
                                             </li>
                                         ))}
                                     </ul>
-                                    <button onClick={() => onUpdateSubscription(plan.id)} disabled={user.subscription === plan.id} className="w-full py-2 rounded-lg font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed bg-yellow-500 text-white hover:bg-yellow-600">
-                                        {user.subscription === plan.id ? 'Current Plan' : 'Switch to this Plan'}
+                                    <button 
+                                        onClick={() => handleSubscribeClick(plan.id)} 
+                                        disabled={user.subscription === plan.id || subscribingPlan !== null} 
+                                        className="w-full h-11 flex items-center justify-center py-2 rounded-lg font-semibold disabled:cursor-not-allowed transition-colors bg-yellow-500 text-white hover:bg-yellow-600 disabled:bg-gray-400 dark:disabled:bg-gray-600"
+                                    >
+                                        {subscribingPlan === plan.id ? (
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        ) : user.subscription === plan.id ? (
+                                            <>
+                                                <CheckCircleIcon className="w-5 h-5 mr-2" />
+                                                Current Plan
+                                            </>
+                                        ) : (
+                                            'Switch to this Plan'
+                                        )}
                                     </button>
                                 </div>
                             ))}

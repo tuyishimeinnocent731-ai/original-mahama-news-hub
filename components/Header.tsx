@@ -27,7 +27,15 @@ interface HeaderProps {
     onHomeClick: () => void;
     onSavedClick: () => void;
     onPremiumClick: () => void;
+    authLoading: boolean;
 }
+
+const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+};
 
 const NavLink: React.FC<{ link: NavLinkType, onCategorySelect: (category: string) => void, onArticleClick: (article: Article) => void }> = ({ link, onCategorySelect, onArticleClick }) => {
     const featuredArticle = link.sublinks ? newsService.getFeaturedArticleForCategory(link.name) : null;
@@ -65,6 +73,17 @@ const NavLink: React.FC<{ link: NavLinkType, onCategorySelect: (category: string
     );
 };
 
+const HeaderControlsSkeleton: React.FC = () => (
+    <div className="flex items-center space-x-2 md:space-x-4 animate-pulse">
+        <div className="h-6 w-6 bg-blue-700 rounded-md"></div>
+        <div className="h-6 w-6 bg-blue-700 rounded-md hidden md:block"></div>
+        <div className="h-6 w-6 bg-blue-700 rounded-md"></div>
+        <div className="w-px h-6 bg-blue-700 dark:bg-gray-700 hidden sm:block"></div>
+        <div className="h-10 w-10 bg-blue-700 rounded-full"></div>
+    </div>
+);
+
+
 const Header: React.FC<HeaderProps> = ({ 
     onSearchClick, 
     onSettingsClick, 
@@ -77,7 +96,8 @@ const Header: React.FC<HeaderProps> = ({
     onArticleClick,
     onHomeClick,
     onSavedClick,
-    onPremiumClick
+    onPremiumClick,
+    authLoading
 }) => {
     const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [currentDate, setCurrentDate] = useState('');
@@ -100,6 +120,7 @@ const Header: React.FC<HeaderProps> = ({
                         <span>{currentDate}</span>
                     </div>
                     <div className="flex items-center space-x-4">
+                         {isLoggedIn && user && <span className="text-sm text-blue-200 hidden xl:block">{getGreeting()}, {user.name.split(' ')[0]}!</span>}
                         <a href="#" className="hover:text-white transition-colors" aria-label="Facebook"><FacebookIcon className="w-5 h-5"/></a>
                         <a href="#" className="hover:text-white transition-colors" aria-label="Twitter"><TwitterIcon className="w-5 h-5"/></a>
                         <a href="#" className="hover:text-white transition-colors" aria-label="Instagram"><InstagramIcon className="w-5 h-5"/></a>
@@ -119,25 +140,29 @@ const Header: React.FC<HeaderProps> = ({
                         {NAV_LINKS.map(link => <NavLink key={link.name} link={link} onCategorySelect={onCategorySelect} onArticleClick={onArticleClick} />)}
                     </nav>
                     <div className="flex items-center space-x-2 md:space-x-4">
-                        <button onClick={onSearchClick} className="text-white hover:text-yellow-300" aria-label="Search"><SearchIcon /></button>
-                        <button onClick={onCommandPaletteClick} className="text-white hover:text-yellow-300 hidden md:block" aria-label="Open command palette"><CommandIcon /></button>
-                        <button onClick={onSettingsClick} className="text-white hover:text-yellow-300" aria-label="Settings"><SettingsIcon /></button>
-                        
-                        <div className="w-px h-6 bg-blue-700 dark:bg-gray-700 hidden sm:block"></div>
+                        {authLoading ? <HeaderControlsSkeleton /> : (
+                            <>
+                                <button onClick={onSearchClick} className="text-white hover:text-yellow-300" aria-label="Search"><SearchIcon /></button>
+                                <button onClick={onCommandPaletteClick} className="text-white hover:text-yellow-300 hidden md:block" aria-label="Open command palette"><CommandIcon /></button>
+                                <button onClick={onSettingsClick} className="text-white hover:text-yellow-300" aria-label="Settings"><SettingsIcon /></button>
+                                
+                                <div className="w-px h-6 bg-blue-700 dark:bg-gray-700 hidden sm:block"></div>
 
-                        {isLoggedIn && user ? (
-                            <UserMenu 
-                                user={user}
-                                onLogout={onLogout}
-                                onSettingsClick={onSettingsClick}
-                                onSavedClick={onSavedClick}
-                                onPremiumClick={onPremiumClick}
-                            />
-                        ) : (
-                             <button onClick={onLoginClick} className="flex items-center space-x-2 text-white hover:text-yellow-300" aria-label="Login">
-                                 <LoginIcon />
-                                 <span className="hidden lg:inline text-sm font-medium">Login</span>
-                             </button>
+                                {isLoggedIn && user ? (
+                                    <UserMenu 
+                                        user={user}
+                                        onLogout={onLogout}
+                                        onSettingsClick={onSettingsClick}
+                                        onSavedClick={onSavedClick}
+                                        onPremiumClick={onPremiumClick}
+                                    />
+                                ) : (
+                                    <button onClick={onLoginClick} className="flex items-center space-x-2 text-white hover:text-yellow-300" aria-label="Login">
+                                        <LoginIcon />
+                                        <span className="hidden lg:inline text-sm font-medium">Login</span>
+                                    </button>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

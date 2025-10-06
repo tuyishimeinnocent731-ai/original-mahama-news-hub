@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -21,7 +20,7 @@ import { ToastProvider, useToast } from './contexts/ToastContext';
 
 const AppContent: React.FC = () => {
     const { settings, updateSettings } = useSettings();
-    const { user, login, logout, register, isLoggedIn, updateSubscription, saveArticle, unsaveArticle, isArticleSaved, updateProfile } = useAuth();
+    const { user, login, logout, register, isLoggedIn, updateSubscription, saveArticle, unsaveArticle, isArticleSaved, updateProfile, loading: authLoading } = useAuth();
     const { addToast } = useToast();
 
     const [articles, setArticles] = useState<Article[]>([]);
@@ -242,17 +241,18 @@ const AppContent: React.FC = () => {
                     setCurrentView('saved');
                 }}
                 onPremiumClick={() => setPremiumModalOpen(true)}
+                authLoading={authLoading}
             />
 
             <main className="flex-grow container mx-auto p-4 lg:p-6">
                  {currentView === 'settings' ? (
                     renderMainContent()
                  ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                        <div className="lg:col-span-3">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                        <div className="md:col-span-3">
                             {renderMainContent()}
                         </div>
-                        <div className="lg:col-span-1">
+                        <div className="md:col-span-1">
                             {selectedArticle ? (
                                 <Aside
                                     title="Related Stories"

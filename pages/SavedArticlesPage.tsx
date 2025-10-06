@@ -10,7 +10,7 @@ interface SavedArticlesPageProps {
 
 const SavedArticlesPage: React.FC<SavedArticlesPageProps> = ({ savedArticles, onArticleClick }) => {
   return (
-    <div>
+    <div className="animate-fade-in">
       <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500">My Saved Articles</h1>
       {savedArticles.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

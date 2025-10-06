@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { UserIcon } from './icons/UserIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
 import { LogoutIcon } from './icons/LogoutIcon';
 import { NewspaperIcon } from './icons/NewspaperIcon';
 import { StarIcon } from './icons/StarIcon';
-import { User } from '../types';
+import { User, SubscriptionPlan } from '../types';
 
 interface UserMenuProps {
     user: User;
@@ -14,6 +13,20 @@ interface UserMenuProps {
     onSavedClick: () => void;
     onPremiumClick: () => void;
 }
+
+const SubscriptionBadge: React.FC<{ plan: SubscriptionPlan }> = ({ plan }) => {
+    const planStyles = {
+        free: 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200',
+        standard: 'bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+        premium: 'bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+    };
+    return (
+        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${planStyles[plan]}`}>
+            {plan.charAt(0).toUpperCase() + plan.slice(1)}
+        </span>
+    );
+};
+
 
 const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onSettingsClick, onSavedClick, onPremiumClick }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -58,9 +71,12 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onSettingsClick, on
                             <NewspaperIcon />
                             <span className="ml-3">My Articles ({user.savedArticles.length})</span>
                         </button>
-                        <button onClick={() => handleAction(onPremiumClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
-                            <StarIcon />
-                            <span className="ml-3">Subscription: <span className="font-semibold capitalize">{user.subscription}</span></span>
+                        <button onClick={() => handleAction(onPremiumClick)} className="w-full text-left flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                            <div className="flex items-center">
+                                <StarIcon />
+                                <span className="ml-3">Subscription</span>
+                            </div>
+                            <SubscriptionBadge plan={user.subscription} />
                         </button>
                         <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                         <button onClick={() => handleAction(onSettingsClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
