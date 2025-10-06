@@ -12,6 +12,7 @@ import FeaturedArticleCard from './FeaturedArticleCard';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import { FacebookIcon, InstagramIcon, TwitterIcon } from './icons/SocialIcons';
 import UserMenu from './UserMenu';
+import RelatedArticleCard from './RelatedArticleCard';
 
 
 interface HeaderProps {
@@ -40,6 +41,7 @@ const getGreeting = () => {
 
 const NavLink: React.FC<{ link: NavLinkType, onCategorySelect: (category: string) => void, onArticleClick: (article: Article) => void }> = ({ link, onCategorySelect, onArticleClick }) => {
     const featuredArticle = link.sublinks ? newsService.getFeaturedArticleForCategory(link.name) : null;
+    const menuArticles = link.sublinks ? newsService.getArticlesForMegaMenu(link.name, 2) : [];
 
     return (
         <div className="relative group h-full flex items-center">
@@ -50,20 +52,30 @@ const NavLink: React.FC<{ link: NavLinkType, onCategorySelect: (category: string
                 )}
             </button>
             {link.sublinks && (
-                <div className="absolute left-1/2 -translate-x-1/2 top-full pt-2 w-screen max-w-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-20">
-                    <div className="rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5">
-                        <div className="grid grid-cols-2 gap-4 p-4">
-                            <div>
-                                <h3 className="font-bold text-gray-900 dark:text-white mb-2 text-base">{link.name}</h3>
-                                 <div className="flex flex-col space-y-1" role="menu" aria-orientation="vertical">
+                <div className="absolute left-1/2 -translate-x-1/2 top-full pt-2 w-screen max-w-4xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform group-hover:translate-y-0 translate-y-2 z-20">
+                    <div className="mega-menu-backdrop rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6">
+                            {/* Column 1: Sublinks */}
+                            <div className="col-span-1">
+                                <h3 className="font-bold text-gray-900 dark:text-white mb-3 text-base border-b-2 border-yellow-500 pb-2">{link.name}</h3>
+                                 <div className="flex flex-col space-y-2" role="menu" aria-orientation="vertical">
                                     {link.sublinks.map(sublink => (
-                                        <button key={sublink.name} onClick={() => onCategorySelect(sublink.name)} className="text-left px-2 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md" role="menuitem">
+                                        <button key={sublink.name} onClick={() => onCategorySelect(sublink.name)} className="text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors" role="menuitem">
                                             {sublink.name}
                                         </button>
                                     ))}
                                 </div>
                             </div>
-                            <div>
+                            
+                            {/* Column 2 & 3: Articles */}
+                            <div className="col-span-2 grid grid-cols-1 gap-4">
+                               {menuArticles.map(article => (
+                                   <RelatedArticleCard key={article.id} article={article} onArticleClick={onArticleClick} />
+                               ))}
+                            </div>
+
+                             {/* Column 4: Featured Article */}
+                            <div className="col-span-1">
                                {featuredArticle && <FeaturedArticleCard article={featuredArticle} onArticleClick={onArticleClick} />}
                             </div>
                         </div>

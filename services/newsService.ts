@@ -172,6 +172,22 @@ export const getFeaturedArticleForCategory = (category: string): Article | null 
     return mockArticles.find(a => a.category.toLowerCase() === category.toLowerCase()) || mockArticles[0] || null;
 };
 
+export const getArticlesForMegaMenu = (category: string, count: number = 2): Article[] => {
+    const lowerCategory = category.toLowerCase();
+    const allCategoryArticles = mockArticles.filter(article => article.category.toLowerCase() === lowerCategory);
+    if (allCategoryArticles.length > 0) return allCategoryArticles.slice(0, count);
+
+    // Fallback for parent categories like 'World'
+    const subCategoryArticles = mockArticles.filter(article => {
+        if (lowerCategory === 'world') return ['africa', 'americas', 'asia', 'europe'].includes(article.category.toLowerCase());
+        if (lowerCategory === 'business') return ['markets', 'companies'].includes(article.category.toLowerCase());
+        if (lowerCategory === 'technology') return ['ai', 'gadgets', 'innovation'].includes(article.category.toLowerCase());
+        return false;
+    });
+
+    return subCategoryArticles.slice(0, count);
+};
+
 export const summarizeArticle = async (body: string, title: string): Promise<string> => {
     const prompt = `Summarize the following news article in 3-4 concise sentences, focusing on the main points.
     Title: ${title}
@@ -196,7 +212,7 @@ export const getKeyPoints = async (body: string): Promise<string[]> => {
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gem-2.5-flash',
             contents: prompt,
         });
         // FIX: Using .text property to get the response text and parsing it, as per guidelines
