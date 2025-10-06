@@ -1,3 +1,10 @@
+
+export interface NavLink {
+  name: string;
+  href: string;
+  sublinks?: NavLink[];
+}
+
 export interface Article {
   id: string;
   title: string;
@@ -11,16 +18,18 @@ export interface Article {
   url: string;
   urlToImage: string;
   category: string;
+  isOffline?: boolean;
 }
 
-// FIX: Defined NavLink interface to remove circular dependency and fix type errors.
-export interface NavLink {
-  name: string;
-  href: string;
-  sublinks?: NavLink[];
-}
+export type SubscriptionPlan = 'free' | 'standard' | 'premium' | 'pro';
 
-export type SubscriptionPlan = 'free' | 'standard' | 'premium';
+export interface Ad {
+    id: string;
+    headline: string;
+    image: string; // base64
+    url: string;
+    isUserAd?: boolean;
+}
 
 export interface User {
   email: string;
@@ -29,4 +38,5 @@ export interface User {
   subscription: SubscriptionPlan;
   savedArticles: Article[];
   bio?: string;
+  userAds: Ad[];
 }

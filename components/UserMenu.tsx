@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { UserIcon } from './icons/UserIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
 import { LogoutIcon } from './icons/LogoutIcon';
 import { NewspaperIcon } from './icons/NewspaperIcon';
 import { StarIcon } from './icons/StarIcon';
+import { MegaphoneIcon } from './icons/MegaphoneIcon';
 import { User, SubscriptionPlan } from '../types';
 
 interface UserMenuProps {
@@ -12,13 +12,15 @@ interface UserMenuProps {
     onSettingsClick: () => void;
     onSavedClick: () => void;
     onPremiumClick: () => void;
+    onMyAdsClick: () => void;
 }
 
 const SubscriptionBadge: React.FC<{ plan: SubscriptionPlan }> = ({ plan }) => {
     const planStyles = {
         free: 'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200',
         standard: 'bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-        premium: 'bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+        premium: 'bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+        pro: 'bg-purple-200 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
     };
     return (
         <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${planStyles[plan]}`}>
@@ -28,11 +30,10 @@ const SubscriptionBadge: React.FC<{ plan: SubscriptionPlan }> = ({ plan }) => {
 };
 
 
-const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onSettingsClick, onSavedClick, onPremiumClick }) => {
+const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onSettingsClick, onSavedClick, onPremiumClick, onMyAdsClick }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Close dropdown on click outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -71,6 +72,12 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onSettingsClick, on
                             <NewspaperIcon />
                             <span className="ml-3">My Articles ({user.savedArticles.length})</span>
                         </button>
+                        {user.subscription === 'pro' && (
+                             <button onClick={() => handleAction(onMyAdsClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                                <MegaphoneIcon />
+                                <span className="ml-3">My Ads ({user.userAds.length})</span>
+                            </button>
+                        )}
                         <button onClick={() => handleAction(onPremiumClick)} className="w-full text-left flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
                             <div className="flex items-center">
                                 <StarIcon />

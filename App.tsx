@@ -14,6 +14,7 @@ import ArticleCardSkeleton from './components/ArticleCardSkeleton';
 import SavedArticlesPage from './pages/SavedArticlesPage';
 import InFeedAd from './components/InFeedAd';
 import ReadingProgressBar from './components/ReadingProgressBar';
+import MyAdsPage from './pages/MyAdsPage';
 
 import * as newsService from './services/newsService';
 import { useAuth } from './hooks/useAuth';
@@ -23,7 +24,7 @@ import { useKeyPress } from './hooks/useKeyPress';
 
 import { Article } from './types';
 
-type View = 'home' | 'article' | 'search' | 'saved' | 'settings';
+type View = 'home' | 'article' | 'search' | 'saved' | 'settings' | 'my-ads';
 
 function App() {
   const [view, setView] = useState<View>('home');
@@ -38,7 +39,7 @@ function App() {
   const [isPremiumOpen, setPremiumOpen] = useState(false);
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
   
-  const { user, login, logout, register, loading: authLoading, isLoggedIn, updateSubscription, saveArticle, unsaveArticle, isArticleSaved, updateProfile } = useAuth();
+  const { user, login, logout, register, loading: authLoading, isLoggedIn, updateSubscription, saveArticle, unsaveArticle, isArticleSaved, updateProfile, createAd } = useAuth();
   const { settings } = useSettings();
   const { addToast } = useToast();
 
@@ -125,16 +126,21 @@ function App() {
         setLoginOpen(true);
         return;
     }
+    if(user?.subscription === 'free') {
+        addToast('Upgrade to save articles for offline reading.', 'warning');
+        setPremiumOpen(true);
+        return;
+    }
     if (isArticleSaved(article.id)) {
         unsaveArticle(article.id);
         addToast('Article removed from saved list.', 'info');
     } else {
         saveArticle(article);
-        addToast('Article saved!', 'success');
+        addToast('Article saved for offline reading!', 'success');
     }
   };
 
-  const handleSubscribe = (plan: 'free' | 'standard' | 'premium') => {
+  const handleSubscribe = (plan: 'free' | 'standard' | 'premium' | 'pro') => {
     if (!user) {
         addToast('Please log in to subscribe.', 'warning');
         setLoginOpen(true);
@@ -169,7 +175,7 @@ function App() {
               />
             </div>
             <div className="md:col-span-1">
-              <Aside title="Related Stories" articles={relatedArticles} onArticleClick={handleArticleClick} />
+              <Aside title="Related Stories" articles={relatedArticles} onArticleClick={handleArticleClick} userAds={user?.userAds} />
             </div>
           </div>
         ) : null;
@@ -187,6 +193,17 @@ function App() {
             updateProfile={updateProfile}
             onUpgradeClick={() => setPremiumOpen(true)}
           />
+        );
+      case 'my-ads':
+        return (
+            <MyAdsPage
+                user={user}
+                onBack={() => setView('home')}
+                onCreateAd={(ad) => {
+                    createAd(ad);
+                    addToast('Advertisement created successfully!', 'success');
+                }}
+            />
         );
       case 'home':
       default:
@@ -210,12 +227,12 @@ function App() {
               )}
             </div>
              <div className="md:col-span-1">
-                <Aside title="Top Stories" articles={asideArticles} onArticleClick={handleArticleClick} isLoading={isLoading}/>
+                <Aside title="Top Stories" articles={asideArticles} onArticleClick={handleArticleClick} isLoading={isLoading} userAds={user?.userAds} />
             </div>
           </div>
         );
     }
-  }, [view, selectedArticle, user, isArticleSaved, handleToggleSaveArticle, relatedArticles, handleArticleClick, articles, asideArticles, currentCategory, isLoading, settings.layoutMode, isLoggedIn, updateProfile]);
+  }, [view, selectedArticle, user, isArticleSaved, handleToggleSaveArticle, relatedArticles, handleArticleClick, articles, asideArticles, currentCategory, isLoading, settings.layoutMode, isLoggedIn, updateProfile, createAd, addToast]);
   
   return (
     <div className={`bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans text-base`}>
@@ -234,6 +251,7 @@ function App() {
         onSavedClick={() => setView('saved')}
         onPremiumClick={() => setPremiumOpen(true)}
         authLoading={authLoading}
+        onMyAdsClick={() => setView('my-ads')}
       />
       
       <main className="flex-grow">

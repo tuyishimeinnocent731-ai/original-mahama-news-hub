@@ -28,21 +28,28 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose, onSubscrib
         }, 2000);
     };
 
+    const plansToDisplay = [{
+        id: 'free',
+        name: 'Free Plan',
+        price: '$0/mo',
+        features: ['Access to standard news', 'Ad-supported', 'Limited article summaries'],
+    }, ...SUBSCRIPTION_PLANS];
+
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Upgrade to Premium">
+        <Modal isOpen={isOpen} onClose={onClose} title="Choose Your Plan">
             <div className="p-6">
                 <p className="text-center text-gray-600 dark:text-gray-400 mb-8">
                     Unlock exclusive features and get the best news experience.
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {SUBSCRIPTION_PLANS.map((plan) => {
+                <div className={`grid grid-cols-1 md:grid-cols-${plansToDisplay.length} gap-6`}>
+                    {plansToDisplay.map((plan) => {
                         const isCurrent = currentPlan === plan.id;
                         const isThisPlanProcessing = isProcessing && selectedPlan === plan.id;
 
                         return (
                             <div 
                                 key={plan.id} 
-                                className={`border rounded-lg p-6 flex flex-col ${plan.id === 'standard' ? 'border-yellow-500' : 'border-gray-200 dark:border-gray-700'}`}
+                                className={`border rounded-lg p-6 flex flex-col ${plan.id === 'premium' ? 'border-yellow-500' : 'border-gray-200 dark:border-gray-700'}`}
                             >
                                 <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
                                 <p className="text-3xl font-bold mb-4">{plan.price}</p>
@@ -55,14 +62,14 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose, onSubscrib
                                     ))}
                                 </ul>
                                 <button 
-                                    onClick={() => handleSubscribeClick(plan.id)}
+                                    onClick={() => handleSubscribeClick(plan.id as SubscriptionPlan)}
                                     disabled={isCurrent || isProcessing}
                                     className={`w-full py-2 rounded-lg font-semibold flex items-center justify-center transition-colors ${
                                         isCurrent 
                                         ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' 
                                         : isThisPlanProcessing
                                         ? 'bg-yellow-400 text-white cursor-wait'
-                                        : plan.id === 'standard' 
+                                        : plan.id === 'premium' 
                                             ? 'bg-yellow-500 text-white hover:bg-yellow-600' 
                                             : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
                                     }`}

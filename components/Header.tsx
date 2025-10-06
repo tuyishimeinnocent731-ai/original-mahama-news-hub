@@ -28,6 +28,7 @@ interface HeaderProps {
     onSavedClick: () => void;
     onPremiumClick: () => void;
     authLoading: boolean;
+    onMyAdsClick: () => void;
 }
 
 const getGreeting = () => {
@@ -97,7 +98,8 @@ const Header: React.FC<HeaderProps> = ({
     onHomeClick,
     onSavedClick,
     onPremiumClick,
-    authLoading
+    authLoading,
+    onMyAdsClick
 }) => {
     const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [currentDate, setCurrentDate] = useState('');
@@ -155,6 +157,7 @@ const Header: React.FC<HeaderProps> = ({
                                         onSettingsClick={onSettingsClick}
                                         onSavedClick={onSavedClick}
                                         onPremiumClick={onPremiumClick}
+                                        onMyAdsClick={onMyAdsClick}
                                     />
                                 ) : (
                                     <button onClick={onLoginClick} className="flex items-center space-x-2 text-white hover:text-yellow-300" aria-label="Login">

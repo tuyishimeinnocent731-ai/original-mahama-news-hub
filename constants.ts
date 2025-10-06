@@ -28,21 +28,21 @@ export const ALL_CATEGORIES = NAV_LINKS.flatMap(link =>
 
 export const SUBSCRIPTION_PLANS: { id: SubscriptionPlan, name: string, price: string, features: string[] }[] = [
     {
-        id: 'free',
-        name: 'Free Plan',
-        price: '$0/mo',
-        features: ['Access to standard news', 'Ad-supported', 'Limited article summaries'],
-    },
-    {
         id: 'standard',
         name: 'Standard',
         price: '$4.99/mo',
-        features: ['Everything in Free', 'Ad-free browsing', 'Unlimited summaries', 'Access to exclusive content'],
+        features: ['Ad-free browsing', 'Unlimited summaries', 'Access to exclusive content', 'Save articles for offline reading'],
     },
     {
         id: 'premium',
         name: 'Premium',
         price: '$9.99/mo',
-        features: ['Everything in Standard', 'High-quality audio articles', 'Priority support', 'Newsletter access'],
+        features: ['Everything in Standard', 'High-quality audio articles', 'Dyslexia-friendly font', 'Priority support'],
+    },
+    {
+        id: 'pro',
+        name: 'Pro',
+        price: '$19.99/mo',
+        features: ['Everything in Premium', 'Create your own ads', 'Access to developer API', 'Early access to new features'],
     }
 ];

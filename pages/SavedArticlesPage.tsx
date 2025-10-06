@@ -15,7 +15,11 @@ const SavedArticlesPage: React.FC<SavedArticlesPageProps> = ({ savedArticles, on
       {savedArticles.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {savedArticles.map(article => (
-            <ArticleCard key={article.id} article={article} onArticleClick={onArticleClick} />
+            <ArticleCard 
+                key={article.id} 
+                article={article} 
+                onArticleClick={onArticleClick} 
+            />
           ))}
         </div>
       ) : (
@@ -23,7 +27,7 @@ const SavedArticlesPage: React.FC<SavedArticlesPageProps> = ({ savedArticles, on
             <NewspaperIcon className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
           <h2 className="text-xl font-semibold">No Saved Articles Yet</h2>
           <p className="text-gray-500 dark:text-gray-400 mt-2">
-            Click the 'Save' button on an article to add it to your list for offline reading.
+            Upgrade to a Standard plan or higher to save articles for offline reading.
           </p>
         </div>
       )}

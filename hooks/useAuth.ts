@@ -1,12 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
-import { User, Article, SubscriptionPlan } from '../types';
+import { User, Article, SubscriptionPlan, Ad } from '../types';
 
 const USER_STORAGE_KEY = 'mahama_news_hub_user';
+const OFFLINE_ARTICLES_KEY_PREFIX = 'mahama_offline_article_';
 
 const defaultUser: Omit<User, 'email' | 'name' | 'avatar'> = {
     subscription: 'free',
     savedArticles: [],
     bio: '',
+    userAds: [],
+};
+
+// Utility to convert image URL to base64
+const toBase64 = async (url: string): Promise<string> => {
+    try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    } catch (error) {
+        console.error('Error converting image to base64:', error);
+        return url; // Fallback to original URL
+    }
 };
 
 export const useAuth = () => {
@@ -18,10 +37,16 @@ export const useAuth = () => {
             const storedUser = localStorage.getItem(USER_STORAGE_KEY);
             if (storedUser) {
                 const parsedUser = JSON.parse(storedUser);
-                // Backwards compatibility for users without name/avatar/bio
                 const name = parsedUser.name || parsedUser.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase());
                 const avatar = parsedUser.avatar || `https://i.pravatar.cc/150?u=${parsedUser.email}`;
-                setUser({ ...defaultUser, ...parsedUser, name, avatar });
+                
+                // Check for offline articles
+                const savedArticlesWithOfflineStatus = parsedUser.savedArticles.map((article: Article) => {
+                    const offlineData = localStorage.getItem(`${OFFLINE_ARTICLES_KEY_PREFIX}${article.id}`);
+                    return offlineData ? { ...article, ...JSON.parse(offlineData), isOffline: true } : article;
+                });
+
+                setUser({ ...defaultUser, ...parsedUser, name, avatar, savedArticles: savedArticlesWithOfflineStatus });
             }
         } catch (error) {
             console.error("Failed to parse user from localStorage", error);
@@ -33,7 +58,9 @@ export const useAuth = () => {
 
     const updateUserStorage = (updatedUser: User) => {
         try {
-            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
+            // Don't store the large base64 image data in the main user object
+            const userToStore = { ...updatedUser, savedArticles: updatedUser.savedArticles.map(({ isOffline, ...rest}) => rest) };
+            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userToStore));
             setUser(updatedUser);
         } catch (error) {
             console.error("Failed to save user to localStorage", error);
@@ -43,7 +70,7 @@ export const useAuth = () => {
     const login = useCallback((email: string) => {
         const name = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase());
         const avatar = `https://i.pravatar.cc/150?u=${email}`;
-        const userData: User = { email, name, avatar, subscription: 'free', savedArticles: [], bio: '' };
+        const userData: User = { email, name, avatar, subscription: 'free', savedArticles: [], bio: '', userAds: [] };
         updateUserStorage(userData);
     }, []);
 
@@ -67,15 +94,26 @@ export const useAuth = () => {
         }
     }, [user]);
 
-    const saveArticle = useCallback((article: Article) => {
+    const saveArticle = useCallback(async (article: Article) => {
         if (user && !user.savedArticles.some(a => a.id === article.id)) {
-            const updatedUser = { ...user, savedArticles: [...user.savedArticles, article] };
+            // Save article content for offline access
+            const imageBase64 = await toBase64(article.urlToImage);
+            const offlineArticleData = {
+                ...article,
+                urlToImage: imageBase64,
+            };
+            localStorage.setItem(`${OFFLINE_ARTICLES_KEY_PREFIX}${article.id}`, JSON.stringify(offlineArticleData));
+
+            const articleWithStatus = { ...article, isOffline: true };
+            const updatedUser = { ...user, savedArticles: [...user.savedArticles, articleWithStatus] };
             updateUserStorage(updatedUser);
         }
     }, [user]);
 
     const unsaveArticle = useCallback((articleId: string) => {
         if (user) {
+            // Remove offline data
+            localStorage.removeItem(`${OFFLINE_ARTICLES_KEY_PREFIX}${articleId}`);
             const updatedUser = { ...user, savedArticles: user.savedArticles.filter(a => a.id !== articleId) };
             updateUserStorage(updatedUser);
         }
@@ -92,6 +130,14 @@ export const useAuth = () => {
         }
     }, [user]);
 
+    const createAd = useCallback((ad: Omit<Ad, 'id'>) => {
+        if(user && user.subscription === 'pro') {
+            const newAd = { ...ad, id: `user-ad-${Date.now()}` };
+            const updatedUser = { ...user, userAds: [...user.userAds, newAd] };
+            updateUserStorage(updatedUser);
+        }
+    }, [user]);
+
     return { 
         user, 
         login, 
@@ -104,5 +150,6 @@ export const useAuth = () => {
         unsaveArticle,
         isArticleSaved,
         updateProfile,
+        createAd,
     };
 };

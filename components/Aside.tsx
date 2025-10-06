@@ -1,5 +1,5 @@
 import React from 'react';
-import { Article } from '../types';
+import { Article, Ad } from '../types';
 import RelatedArticleCard from './RelatedArticleCard';
 import Advertisement from './Advertisement';
 
@@ -8,6 +8,7 @@ interface AsideProps {
   articles: Article[];
   onArticleClick: (article: Article) => void;
   isLoading?: boolean;
+  userAds?: Ad[];
 }
 
 const AsideSkeleton: React.FC = () => (
@@ -26,7 +27,7 @@ const AsideSkeleton: React.FC = () => (
 );
 
 
-const Aside: React.FC<AsideProps> = ({ title, articles, onArticleClick, isLoading = false }) => {
+const Aside: React.FC<AsideProps> = ({ title, articles, onArticleClick, isLoading = false, userAds = [] }) => {
   return (
     <aside className="space-y-8 sticky top-24">
       <div>
@@ -45,7 +46,7 @@ const Aside: React.FC<AsideProps> = ({ title, articles, onArticleClick, isLoadin
       </div>
       
       <div>
-         <Advertisement />
+         <Advertisement userAds={userAds}/>
       </div>
     </aside>
   );

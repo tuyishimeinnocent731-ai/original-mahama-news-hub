@@ -9,7 +9,8 @@ interface SubscriptionSettingsProps {
 }
 
 const SubscriptionSettings: React.FC<SubscriptionSettingsProps> = ({ user, onUpgradeClick }) => {
-    const currentPlanDetails = SUBSCRIPTION_PLANS.find(p => p.id === user.subscription);
+    const currentPlanDetails = SUBSCRIPTION_PLANS.find(p => p.id === user.subscription) 
+        || { id: 'free', name: 'Free Plan', features: ['Access to standard news', 'Ad-supported', 'Limited article summaries'] };
     
     if (!currentPlanDetails) {
         return <div>Could not load subscription details.</div>;
@@ -45,7 +46,7 @@ const SubscriptionSettings: React.FC<SubscriptionSettingsProps> = ({ user, onUpg
                         onClick={onUpgradeClick}
                         className="w-full sm:w-auto px-6 py-2.5 bg-yellow-500 text-white font-semibold rounded-md hover:bg-yellow-600"
                     >
-                        {user.subscription === 'free' ? 'Upgrade Plan' : 'Manage Subscription'}
+                        {user.subscription === 'pro' ? 'Manage Subscription' : 'Upgrade Plan'}
                     </button>
                 </div>
             </div>
