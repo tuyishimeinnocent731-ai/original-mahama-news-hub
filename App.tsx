@@ -28,7 +28,8 @@ const App: React.FC = () => {
     const { 
         user, isLoggedIn, authLoading, login, logout, subscribe, 
         updateProfile, createAd, isArticleSaved, toggleSaveArticle,
-        addSearchToHistory, clearSearchHistory, toggleTwoFactor
+        addSearchToHistory, clearSearchHistory, toggleTwoFactor,
+        validatePassword, changePassword
     } = useAuth();
     const { settings } = useSettings();
     const { addToast } = useToast();
@@ -107,7 +108,9 @@ const App: React.FC = () => {
     const handleSearch = async (query: string) => {
         setIsLoading(true);
         setSearchOpen(false);
-        addSearchToHistory(query);
+        if (isLoggedIn) {
+            addSearchToHistory(query);
+        }
         const results = await newsService.searchArticles(query);
         setSearchResults(results);
         setView('search-results');
@@ -143,88 +146,68 @@ const App: React.FC = () => {
     };
     
     const renderMainContent = () => {
-        const mainContent = () => {
-            if (isLoading && view === 'home') {
+        if (isLoading && view === 'home') {
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }).map((_, i) => <ArticleCardSkeleton key={i} />)}
+                </div>
+            );
+        }
+
+        switch (view) {
+            case 'article':
+                return selectedArticle && (
+                    <ArticleView 
+                        article={selectedArticle}
+                        user={user}
+                        onBack={handleBack}
+                        onUpgradeClick={() => setPremiumModalOpen(true)}
+                        isArticleSaved={isArticleSaved}
+                        onToggleSave={toggleSaveArticle}
+                        relatedArticles={relatedArticles}
+                        onArticleClick={handleArticleClick}
+                    />
+                );
+            case 'search-results':
                 return (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {Array.from({ length: 6 }).map((_, i) => <ArticleCardSkeleton key={i} />)}
+                     <div>
+                        <h1 className="text-3xl font-bold mb-6">Search Results</h1>
+                        {searchResults.length > 0 ? (
+                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {searchResults.map(article => <ArticleCard key={article.id} article={article} onArticleClick={handleArticleClick} />)}
+                            </div>
+                        ) : (
+                            <p>No articles found for your search.</p>
+                        )}
                     </div>
                 );
-            }
-
-            switch (view) {
-                case 'article':
-                    return selectedArticle && (
-                        <ArticleView 
-                            article={selectedArticle}
-                            user={user}
-                            onBack={handleBack}
-                            onUpgradeClick={() => setPremiumModalOpen(true)}
-                            isArticleSaved={isArticleSaved}
-                            onToggleSave={toggleSaveArticle}
-                            relatedArticles={relatedArticles}
-                            onArticleClick={handleArticleClick}
-                        />
-                    );
-                case 'search-results':
-                    return (
-                         <div>
-                            <h1 className="text-3xl font-bold mb-6">Search Results</h1>
-                            {searchResults.length > 0 ? (
-                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {searchResults.map(article => <ArticleCard key={article.id} article={article} onArticleClick={handleArticleClick} />)}
-                                </div>
-                            ) : (
-                                <p>No articles found for your search.</p>
-                            )}
+            case 'settings':
+                return <SettingsPage user={user} onUpgradeClick={() => setPremiumModalOpen(true)} clearSearchHistory={clearSearchHistory} toggleTwoFactor={toggleTwoFactor} validatePassword={validatePassword} changePassword={changePassword} />;
+            case 'saved-articles':
+                const savedArticlesFull = user?.savedArticles.map(id => articles.find(a => a.id === id)).filter(Boolean) as Article[] || [];
+                return <SavedArticlesPage savedArticles={savedArticlesFull} onArticleClick={handleArticleClick} />;
+            case 'my-ads':
+                return <MyAdsPage user={user} onBack={() => setView('home')} onCreateAd={handleCreateAd} />;
+            case 'home':
+            default:
+                return (
+                    <div>
+                         <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500">{selectedCategory}</h1>
+                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {articles.map((article, index) => (
+                                <React.Fragment key={article.id}>
+                                    <ArticleCard article={article} onArticleClick={handleArticleClick} />
+                                    {index === 2 && <InFeedAd />}
+                                </React.Fragment>
+                            ))}
                         </div>
-                    );
-                case 'settings':
-                    return <SettingsPage user={user} onUpgradeClick={() => setPremiumModalOpen(true)} clearSearchHistory={clearSearchHistory} toggleTwoFactor={toggleTwoFactor} />;
-                case 'saved-articles':
-                    const savedArticlesFull = user?.savedArticles.map(id => articles.find(a => a.id === id)).filter(Boolean) as Article[] || [];
-                    return <SavedArticlesPage savedArticles={savedArticlesFull} onArticleClick={handleArticleClick} />;
-                case 'my-ads':
-                    return <MyAdsPage user={user} onBack={() => setView('home')} onCreateAd={handleCreateAd} />;
-                case 'home':
-                default:
-                    return (
-                        <div>
-                             <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500">{selectedCategory}</h1>
-                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {articles.map((article, index) => (
-                                    <React.Fragment key={article.id}>
-                                        <ArticleCard article={article} onArticleClick={handleArticleClick} />
-                                        {index === 2 && <InFeedAd />}
-                                    </React.Fragment>
-                                ))}
-                            </div>
-                        </div>
-                    );
-            }
-        };
-
-        const showSidebar = ['home', 'article', 'search-results'].includes(view);
-
-        return (
-             <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-                <div className={showSidebar ? "md:col-span-8" : "md:col-span-12"}>
-                    {mainContent()}
-                </div>
-                {showSidebar && (
-                    <div className="hidden md:block md:col-span-4">
-                        <Aside
-                            title="Top Stories"
-                            articles={topStories}
-                            onArticleClick={handleArticleClick}
-                            isLoading={isLoading}
-                            userAds={user?.userAds}
-                        />
                     </div>
-                )}
-            </div>
-        )
+                );
+        }
     };
+
+    const isArticleView = view === 'article';
+    const showSidebar = ['home', 'article', 'search-results'].includes(view);
 
     return (
         <div className="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col font-sans">
@@ -245,7 +228,27 @@ const App: React.FC = () => {
                 authLoading={authLoading}
             />
             <main className="container mx-auto px-4 py-8 flex-grow">
-                {renderMainContent()}
+                 <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+                    <div className={`
+                        ${isArticleView ? "md:col-span-8 md:order-2" : "md:col-span-8"}
+                    `}>
+                        {renderMainContent()}
+                    </div>
+                    {showSidebar && (
+                        <div className={`
+                            hidden md:block md:col-span-4 
+                            ${isArticleView ? 'md:order-1' : ''}
+                        `}>
+                            <Aside
+                                title="Top Stories"
+                                articles={topStories}
+                                onArticleClick={handleArticleClick}
+                                isLoading={isLoading}
+                                userAds={user?.userAds}
+                            />
+                        </div>
+                    )}
+                </div>
             </main>
             <Footer />
             <AuthModal
@@ -258,6 +261,8 @@ const App: React.FC = () => {
                 isOpen={isSearchOpen}
                 onClose={() => setSearchOpen(false)}
                 onSearch={handleSearch}
+                user={user}
+                clearSearchHistory={clearSearchHistory}
             />
             <CommandPalette
                 isOpen={isCommandPaletteOpen}

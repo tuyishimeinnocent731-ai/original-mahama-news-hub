@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { User, SubscriptionPlan, Ad, Article } from '../types';
 
@@ -14,6 +13,9 @@ const MOCK_USER: User = {
     searchHistory: ['AI', 'Global Economy'],
     twoFactorEnabled: true,
 };
+
+// Simulate a stored password hash for the mock user
+const MOCK_PASSWORD = "password123";
 
 export const useAuth = () => {
     const [user, setUser] = useState<User | null>(null);
@@ -140,6 +142,26 @@ export const useAuth = () => {
         });
     }, []);
 
+    const validatePassword = async (password: string): Promise<boolean> => {
+        // Simulate an API call
+        return new Promise(resolve => {
+            setTimeout(() => {
+                resolve(password === MOCK_PASSWORD);
+            }, 500);
+        });
+    };
+
+    const changePassword = async (newPassword: string): Promise<boolean> => {
+        // In a real app, this would make an API call to change the password.
+        // For this mock, we just resolve true.
+        console.log("Password changed to:", newPassword);
+        return new Promise(resolve => {
+            setTimeout(() => {
+                resolve(true);
+            }, 500);
+        });
+    };
+
     return {
         user,
         isLoggedIn,
@@ -153,6 +175,8 @@ export const useAuth = () => {
         toggleSaveArticle,
         addSearchToHistory,
         clearSearchHistory,
-        toggleTwoFactor
+        toggleTwoFactor,
+        validatePassword,
+        changePassword
     };
 };

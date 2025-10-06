@@ -5,6 +5,8 @@ import { ShieldCheckIcon } from '../icons/ShieldCheckIcon';
 import { LockIcon } from '../icons/LockIcon';
 import { DeviceMobileIcon } from '../icons/DeviceMobileIcon';
 import { DesktopComputerIcon } from '../icons/DesktopComputerIcon';
+import { EyeIcon } from '../icons/EyeIcon';
+import { EyeOffIcon } from '../icons/EyeOffIcon';
 import ToggleSwitch from '../ToggleSwitch';
 import Modal from '../Modal';
 
@@ -12,6 +14,8 @@ interface SecuritySettingsProps {
     user: User;
     toggleTwoFactor: (enabled: boolean) => void;
     addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
+    validatePassword: (password: string) => Promise<boolean>;
+    changePassword: (newPassword: string) => Promise<boolean>;
 }
 
 const TwoFactorModal: React.FC<{onClose: () => void}> = ({ onClose }) => (
@@ -48,8 +52,78 @@ const TwoFactorModal: React.FC<{onClose: () => void}> = ({ onClose }) => (
     </Modal>
 );
 
-const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, toggleTwoFactor, addToast }) => {
+const PasswordInputField: React.FC<{id: string, label: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void}> = ({ id, label, value, onChange }) => {
+    const [showPassword, setShowPassword] = useState(false);
+    return (
+        <div>
+            <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
+            <div className="relative mt-1">
+                <input 
+                    type={showPassword ? 'text' : 'password'} 
+                    id={id} 
+                    value={value} 
+                    onChange={onChange}
+                    className="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+                />
+                <button 
+                    type="button" 
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                    {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+
+const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, toggleTwoFactor, addToast, validatePassword, changePassword }) => {
     const [is2FAModalOpen, set2FAModalOpen] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+    const handlePasswordSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setPasswordError('');
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            setPasswordError('All fields are required.');
+            return;
+        }
+        if (newPassword.length < 8) {
+            setPasswordError('New password must be at least 8 characters long.');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            setPasswordError('New passwords do not match.');
+            return;
+        }
+
+        setIsChangingPassword(true);
+        const isCurrentPasswordValid = await validatePassword(currentPassword);
+        if (!isCurrentPasswordValid) {
+            setPasswordError('Your current password is not correct.');
+            setIsChangingPassword(false);
+            return;
+        }
+
+        const success = await changePassword(newPassword);
+        if (success) {
+            addToast('Password changed successfully!', 'success');
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } else {
+            addToast('Failed to change password. Please try again.', 'error');
+            setPasswordError('An unexpected error occurred.');
+        }
+        setIsChangingPassword(false);
+    };
 
     const handle2FAToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
         const enabled = e.target.checked;
@@ -72,17 +146,24 @@ const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, toggleTwoFact
             <h3 className="text-2xl font-bold mb-2">Sign In & Security</h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6">Manage your password, two-factor authentication, and signed-in devices.</p>
             
-            <div className="space-y-6">
-                <div className="p-4 border dark:border-gray-700 rounded-lg">
-                    <div className="flex items-center space-x-3 mb-2">
+            <div className="space-y-8">
+                <form onSubmit={handlePasswordSubmit} className="p-4 border dark:border-gray-700 rounded-lg">
+                    <div className="flex items-center space-x-3 mb-4">
                         <LockIcon className="w-5 h-5 text-gray-500" />
-                        <h4 className="font-semibold">Change Password</h4>
+                        <h4 className="font-semibold text-lg">Change Password</h4>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Last changed on Jan 1, 2024</p>
-                    <button className="mt-4 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700">
-                        Change Password
-                    </button>
-                </div>
+                    <div className="space-y-4">
+                        <PasswordInputField id="current-password" label="Current Password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
+                        <PasswordInputField id="new-password" label="New Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                        <PasswordInputField id="confirm-password" label="Confirm New Password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+                        {passwordError && <p className="text-sm text-red-500">{passwordError}</p>}
+                        <div className="text-right pt-2">
+                             <button type="submit" disabled={isChangingPassword} className="px-5 py-2.5 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 font-semibold disabled:bg-yellow-300 disabled:cursor-not-allowed">
+                                {isChangingPassword ? 'Saving...' : 'Save Password'}
+                            </button>
+                        </div>
+                    </div>
+                </form>
 
                 <div className="p-4 border dark:border-gray-700 rounded-lg">
                     <div className="flex items-start justify-between">

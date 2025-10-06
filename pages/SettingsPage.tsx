@@ -29,9 +29,11 @@ interface SettingsPageProps {
     onUpgradeClick: () => void;
     clearSearchHistory: () => void;
     toggleTwoFactor: (enabled: boolean) => void;
+    validatePassword: (password: string) => Promise<boolean>;
+    changePassword: (newPassword: string) => Promise<boolean>;
 }
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpgradeClick, clearSearchHistory, toggleTwoFactor }) => {
+const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpgradeClick, clearSearchHistory, toggleTwoFactor, validatePassword, changePassword }) => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
     const { updateProfile } = useAuth();
     const { addToast } = useToast();
@@ -68,7 +70,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpgradeClick, clear
             case 'privacy':
                 return <PrivacySettings user={user} clearSearchHistory={clearSearchHistory} addToast={addToast} />;
             case 'security':
-                return <SecuritySettings user={user} toggleTwoFactor={toggleTwoFactor} addToast={addToast} />;
+                return <SecuritySettings user={user} toggleTwoFactor={toggleTwoFactor} addToast={addToast} validatePassword={validatePassword} changePassword={changePassword} />;
             default:
                 return null;
         }
