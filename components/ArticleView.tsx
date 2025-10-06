@@ -10,6 +10,7 @@ import { PauseIcon } from './icons/PauseIcon';
 import AIAssistantPanel from './AIAssistantPanel';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { ArrowLeftIcon } from './icons/ArrowLeftIcon';
+import ArticleCard from './ArticleCard';
 
 interface ArticleViewProps {
     article: Article;
@@ -18,9 +19,11 @@ interface ArticleViewProps {
     onUpgradeClick: () => void;
     isArticleSaved: (id: string) => boolean;
     onToggleSave: (article: Article) => void;
+    relatedArticles: Article[];
+    onArticleClick: (article: Article) => void;
 }
 
-const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onUpgradeClick, isArticleSaved, onToggleSave }) => {
+const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onUpgradeClick, isArticleSaved, onToggleSave, relatedArticles, onArticleClick }) => {
     const [summary, setSummary] = useState('');
     const [keyPoints, setKeyPoints] = useState<string[]>([]);
     const [isSummaryLoading, setSummaryLoading] = useState(false);
@@ -114,6 +117,22 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onUpgr
                     </div>
                  </div>
             </article>
+
+            {relatedArticles.length > 0 && (
+                <div className="mt-12">
+                    <h2 className="text-2xl font-bold mb-6 pb-2 border-b-2 border-yellow-500">You might also like</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        {relatedArticles.map((relatedArticle) => (
+                            <ArticleCard
+                                key={relatedArticle.id}
+                                article={relatedArticle}
+                                onArticleClick={onArticleClick}
+                                layoutMode="compact"
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
 
              <AIAssistantPanel
                 isOpen={isAIPanelOpen}

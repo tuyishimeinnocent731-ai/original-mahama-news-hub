@@ -1,251 +1,133 @@
-import React, { useState } from 'react';
+
+import React from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { useSettings, Settings } from '../hooks/useSettings';
-import { User, SubscriptionPlan, Article } from '../types';
-import { SUBSCRIPTION_PLANS } from '../constants';
-import { UserIcon } from '../components/icons/UserIcon';
-import { SettingsIcon } from '../components/icons/SettingsIcon';
-import { StarIcon } from '../components/icons/StarIcon';
-import { CheckCircleIcon } from '../components/icons/CheckCircleIcon';
-import { NewspaperIcon } from '../components/icons/NewspaperIcon';
-import ArticleCard from '../components/ArticleCard';
+import { useToast } from '../contexts/ToastContext';
 
+const SettingsPage: React.FC = () => {
+  const { user, updateProfile } = useAuth();
+  const { settings, updateSettings, allCategories } = useSettings();
+  const { addToast } = useToast();
 
-interface SettingsPageProps {
-    user: User;
-    settings: Settings;
-    onUpdateProfile: (profileData: Partial<Pick<User, 'name' | 'avatar'>>) => void;
-    onUpdateSettings: (newSettings: Partial<Settings>) => void;
-    onUpdateSubscription: (plan: SubscriptionPlan) => void;
-    addToast: (message: string, type: 'success' | 'error' | 'info') => void;
-    onArticleClick: (article: Article) => void;
-}
+  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user) return;
+    updateProfile({ [e.target.name]: e.target.value });
+  };
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ user, settings, onUpdateProfile, onUpdateSettings, onUpdateSubscription, addToast, onArticleClick }) => {
-    const [activeTab, setActiveTab] = useState('profile');
-    const { allCategories } = useSettings();
+  const handleProfileSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    addToast('Profile updated successfully!', 'success');
+  };
+  
+  const handleSettingChange = (key: keyof Settings, value: any) => {
+    updateSettings({ [key]: value });
+  };
 
-    const [profileName, setProfileName] = useState(user.name);
-    const [subscribingPlan, setSubscribingPlan] = useState<SubscriptionPlan | null>(null);
+  const handleCategoryToggle = (category: string) => {
+    const currentCategories = settings.preferredCategories;
+    const newCategories = currentCategories.includes(category)
+      ? currentCategories.filter(c => c !== category)
+      : [...currentCategories, category];
+    updateSettings({ preferredCategories: newCategories });
+  };
 
-    const handleProfileSave = () => {
-        onUpdateProfile({ name: profileName });
-        addToast('Profile updated successfully!', 'success');
-    };
-
-    const handleCategoryToggle = (category: string) => {
-        const currentCategories = settings.preferredCategories;
-        const newCategories = currentCategories.includes(category)
-            ? currentCategories.filter(c => c !== category)
-            : [...currentCategories, category];
-        onUpdateSettings({ preferredCategories: newCategories });
-    };
-    
-    const handleNotificationToggle = (key: 'email' | 'push' | 'breakingNews') => {
-        onUpdateSettings({
-            notifications: {
-                ...settings.notifications,
-                [key]: !settings.notifications[key]
-            }
-        });
-    };
-    
-    const handleSubscribeClick = (planId: SubscriptionPlan) => {
-        setSubscribingPlan(planId);
-        // Simulate network delay for better UX
-        setTimeout(() => {
-            onUpdateSubscription(planId);
-            setSubscribingPlan(null);
-            // The toast is fired from App.tsx after the state is updated.
-        }, 1000);
-    };
-
-    const tabs = [
-        { id: 'profile', label: 'Profile', icon: <UserIcon /> },
-        { id: 'preferences', label: 'Preferences', icon: <SettingsIcon /> },
-        { id: 'subscription', label: 'Subscription', icon: <StarIcon /> },
-        { id: 'library', label: 'My Library', icon: <NewspaperIcon /> },
-    ];
-
-    const renderContent = () => {
-        switch (activeTab) {
-            case 'profile':
-                return (
-                    <div>
-                        <h2 className="text-2xl font-bold mb-6">Public Profile</h2>
-                        <div className="flex items-center space-x-6 mb-8">
-                            <img src={user.avatar} alt="User Avatar" className="w-24 h-24 rounded-full" />
-                            <div>
-                                <button className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700">Change Avatar</button>
-                                <p className="text-xs text-gray-500 mt-2">JPG, GIF or PNG. 1MB max.</p>
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                             <div>
-                                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-                                <input type="text" id="name" value={profileName} onChange={(e) => setProfileName(e.target.value)} className="mt-1 block w-full md:w-1/2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-yellow-500 focus:border-yellow-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" />
-                            </div>
-                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-                                <input type="email" id="email" value={user.email} disabled className="mt-1 block w-full md:w-1/2 bg-gray-200 border border-gray-300 text-gray-500 text-sm rounded-lg p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 cursor-not-allowed" />
-                            </div>
-                        </div>
-                        <div className="mt-8 pt-6 border-t dark:border-gray-700">
-                             <button onClick={handleProfileSave} className="px-6 py-2 bg-yellow-500 text-white font-semibold rounded-md hover:bg-yellow-600">Save Changes</button>
-                        </div>
-                    </div>
-                );
-            case 'preferences':
-                 return (
-                    <div>
-                        <h2 className="text-2xl font-bold mb-6">Content Preferences</h2>
-                        <div className="space-y-8">
-                            <div>
-                                <h3 className="text-lg font-semibold mb-3">Theme</h3>
-                                <div className="flex space-x-2">
-                                    {(['light', 'dark', 'system'] as const).map(theme => (
-                                        <button key={theme} onClick={() => onUpdateSettings({ theme })} className={`px-4 py-2 rounded-md text-sm ${settings.theme === theme ? 'bg-yellow-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
-                                            {theme.charAt(0).toUpperCase() + theme.slice(1)}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-semibold mb-3">Article Layout</h3>
-                                <div className="flex space-x-2">
-                                    {(['normal', 'compact'] as const).map(mode => (
-                                        <button key={mode} onClick={() => onUpdateSettings({ layoutMode: mode })} className={`px-4 py-2 rounded-md text-sm ${settings.layoutMode === mode ? 'bg-yellow-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
-                                            {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-semibold mb-3">Font Size</h3>
-                                <div className="flex space-x-2">
-                                    {(['sm', 'base', 'lg'] as const).map(size => (
-                                        <button key={size} onClick={() => onUpdateSettings({ fontSize: `text-${size}` as any })} className={`px-4 py-2 rounded-md text-sm ${settings.fontSize.includes(size) ? 'bg-yellow-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
-                                            {size === 'sm' ? 'Small' : size === 'base' ? 'Normal' : 'Large'}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-semibold mb-3">Favorite Categories</h3>
-                                <div className="flex flex-wrap gap-2">
-                                    {allCategories.map(category => (
-                                        <button key={category} onClick={() => handleCategoryToggle(category)} className={`px-3 py-1.5 rounded-full text-xs transition-colors ${settings.preferredCategories.includes(category) ? 'bg-yellow-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
-                                            {category}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-semibold mb-3">Notifications</h3>
-                                <div className="space-y-3">
-                                    {Object.entries(settings.notifications).map(([key, value]) => (
-                                         <label key={key} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md">
-                                            <span className="text-sm font-medium">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
-                                            <button onClick={() => handleNotificationToggle(key as any)} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
-                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${value ? 'translate-x-6' : 'translate-x-1'}`} />
-                                            </button>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-            case 'subscription':
-                return (
-                     <div>
-                        <h2 className="text-2xl font-bold mb-6">My Subscription</h2>
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {SUBSCRIPTION_PLANS.map((plan) => (
-                                <div key={plan.id} className={`border rounded-lg p-6 flex flex-col ${user.subscription === plan.id ? 'border-yellow-500 border-2' : 'border-gray-200 dark:border-gray-700'}`}>
-                                    <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
-                                    <p className="text-3xl font-bold mb-4">{plan.price}</p>
-                                    <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-6 flex-grow">
-                                        {plan.features.map((feature, index) => (
-                                            <li key={index} className="flex items-start">
-                                                 <svg className="w-4 h-4 mr-2 text-green-500 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path></svg>
-                                                 <span>{feature}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    <button 
-                                        onClick={() => handleSubscribeClick(plan.id)} 
-                                        disabled={user.subscription === plan.id || subscribingPlan !== null} 
-                                        className="w-full h-11 flex items-center justify-center py-2 rounded-lg font-semibold disabled:cursor-not-allowed transition-colors bg-yellow-500 text-white hover:bg-yellow-600 disabled:bg-gray-400 dark:disabled:bg-gray-600"
-                                    >
-                                        {subscribingPlan === plan.id ? (
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        ) : user.subscription === plan.id ? (
-                                            <>
-                                                <CheckCircleIcon className="w-5 h-5 mr-2" />
-                                                Current Plan
-                                            </>
-                                        ) : (
-                                            'Switch to this Plan'
-                                        )}
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                );
-             case 'library':
-                return (
-                    <div>
-                        <h2 className="text-2xl font-bold mb-6">My Library ({user.savedArticles.length})</h2>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                            These are the articles you've saved. They are available for offline reading.
-                        </p>
-                        {user.savedArticles.length > 0 ? (
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {user.savedArticles.map(article => (
-                                    <ArticleCard key={article.id} article={article} onArticleClick={onArticleClick} layoutMode={settings.layoutMode}/>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center py-16 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                                <NewspaperIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
-                                <h3 className="text-lg font-semibold">Your Library is Empty</h3>
-                                <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm">
-                                    Save articles to read them here later.
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                );
-            default:
-                return null;
-        }
-    };
-
+  if (!user) {
     return (
-        <div className="animate-fade-in">
-            <h1 className="text-4xl font-bold mb-8">Account Settings</h1>
-            <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-                <aside className="lg:w-1/4">
-                    <nav className="space-y-2">
-                        {tabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`w-full flex items-center space-x-3 text-left p-3 rounded-md transition-colors ${activeTab === tab.id ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}
-                            >
-                                {tab.icon}
-                                <span className="font-semibold">{tab.label}</span>
-                            </button>
-                        ))}
-                    </nav>
-                </aside>
-                <main className="lg:w-3/4 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sm:p-8">
-                    {renderContent()}
-                </main>
-            </div>
-        </div>
+      <div className="container mx-auto p-8 text-center">
+        <h1 className="text-2xl font-bold">Please log in to view settings.</h1>
+      </div>
     );
+  }
+
+  return (
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-4xl animate-fade-in">
+      <h1 className="text-3xl font-bold mb-8">Settings</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-1">
+          <h2 className="text-xl font-semibold">Profile</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your public profile information.</p>
+        </div>
+        <div className="md:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+          <form onSubmit={handleProfileSubmit} className="space-y-6">
+            <div className="flex items-center space-x-4">
+              <img src={user.avatar} alt="User Avatar" className="h-20 w-20 rounded-full" />
+              <div>
+                <label htmlFor="avatar-upload" className="cursor-pointer px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700">
+                  Change
+                </label>
+                <input id="avatar-upload" name="avatar-upload" type="file" className="sr-only" />
+                <p className="text-xs text-gray-500 mt-2">JPG, GIF or PNG. 1MB max.</p>
+              </div>
+            </div>
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
+              <input type="text" name="name" id="name" value={user.name} onChange={handleProfileChange} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500 sm:text-sm" />
+            </div>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email Address</label>
+              <input type="email" name="email" id="email" value={user.email} disabled className="mt-1 block w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm sm:text-sm cursor-not-allowed" />
+            </div>
+            <div className="text-right">
+              <button type="submit" className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 font-semibold">
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div className="my-12 border-t border-gray-200 dark:border-gray-700"></div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-1">
+          <h2 className="text-xl font-semibold">Preferences</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Customize your news reading experience.</p>
+        </div>
+        <div className="md:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-lg shadow space-y-6">
+          {/* Theme Setting from SettingsModal */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Theme</label>
+            <div className="mt-2 flex space-x-2">
+                {(['light', 'dark', 'system'] as const).map(theme => (
+                    <button key={theme} onClick={() => handleSettingChange('theme', theme)} className={`px-4 py-2 rounded-md text-sm ${settings.theme === theme ? 'bg-yellow-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                        {theme.charAt(0).toUpperCase() + theme.slice(1)}
+                    </button>
+                ))}
+            </div>
+          </div>
+
+          {/* Font Size from SettingsModal */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Font Size</label>
+              <div className="mt-2 flex space-x-2">
+                {(['sm', 'base', 'lg'] as const).map(size => (
+                    <button key={size} onClick={() => handleSettingChange('fontSize', size)} className={`px-4 py-2 rounded-md text-sm ${settings.fontSize === size ? 'bg-yellow-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                        {size === 'sm' ? 'Small' : size === 'base' ? 'Normal' : 'Large'}
+                    </button>
+                ))}
+            </div>
+          </div>
+          
+          {/* Preferred Categories from SettingsModal */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Preferred Categories</label>
+            <div className="mt-2 flex flex-wrap gap-2">
+                {allCategories.map(category => (
+                    <button 
+                        key={category} 
+                        onClick={() => handleCategoryToggle(category)} 
+                        className={`px-3 py-1.5 rounded-full text-xs ${settings.preferredCategories.includes(category) ? 'bg-yellow-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+                    >
+                        {category}
+                    </button>
+                ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default SettingsPage;

@@ -155,6 +155,22 @@ export const searchArticles = async (query: string): Promise<Article[]> => {
     ));
 };
 
-export const getRelatedArticles = async (currentArticleId: string): Promise<Article[]> => {
-    return Promise.resolve(mockArticles.filter(a => a.id !== currentArticleId).slice(0, 4));
-}
+export const getRelatedArticles = async (currentArticleId: string, category: string): Promise<Article[]> => {
+    const relatedInCategory = mockArticles.filter(a =>
+        a.id !== currentArticleId && a.category.toLowerCase() === category.toLowerCase()
+    );
+
+    if (relatedInCategory.length >= 4) {
+        return Promise.resolve(relatedInCategory.slice(0, 4));
+    }
+
+    // Get other articles to fill up, excluding current article and ones already selected.
+    const otherArticles = mockArticles.filter(a => {
+        if (a.id === currentArticleId) return false;
+        if (relatedInCategory.some(r => r.id === a.id)) return false;
+        return true;
+    });
+    
+    const combined = [...relatedInCategory, ...otherArticles];
+    return Promise.resolve(combined.slice(0, 4));
+};
