@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -162,6 +161,7 @@ const AppContainer: React.FC = () => {
                         onUpdateSettings={updateSettings}
                         onUpdateSubscription={handleUpdateSubscription}
                         addToast={addToast}
+                        onArticleClick={handleArticleClick}
                     />;
         }
         if (currentView === 'saved' && user) {
@@ -175,8 +175,8 @@ const AppContainer: React.FC = () => {
         const showNoResults = currentView === 'search' && !isLoading && articles.length === 0;
 
         return (
-            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                <div className="lg:col-span-2 xl:col-span-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-8">
+                <div className="md:col-span-2 xl:col-span-3">
                     <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500">{title}</h1>
                     {isLoading ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -202,7 +202,7 @@ const AppContainer: React.FC = () => {
                         </div>
                     )}
                 </div>
-                <div className="lg:col-span-1 xl:col-span-1">
+                <div className="md:col-span-1 xl:col-span-1">
                     <Aside title="Trending Stories" articles={relatedArticles} onArticleClick={handleArticleClick} isLoading={isLoading} />
                 </div>
             </div>

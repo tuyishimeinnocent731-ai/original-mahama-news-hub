@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useSettings, Settings } from '../hooks/useSettings';
-import { User, SubscriptionPlan } from '../types';
+import { User, SubscriptionPlan, Article } from '../types';
 import { SUBSCRIPTION_PLANS } from '../constants';
 import { UserIcon } from '../components/icons/UserIcon';
 import { SettingsIcon } from '../components/icons/SettingsIcon';
 import { StarIcon } from '../components/icons/StarIcon';
 import { CheckCircleIcon } from '../components/icons/CheckCircleIcon';
+import { NewspaperIcon } from '../components/icons/NewspaperIcon';
+import ArticleCard from '../components/ArticleCard';
+
 
 interface SettingsPageProps {
     user: User;
@@ -14,9 +17,10 @@ interface SettingsPageProps {
     onUpdateSettings: (newSettings: Partial<Settings>) => void;
     onUpdateSubscription: (plan: SubscriptionPlan) => void;
     addToast: (message: string, type: 'success' | 'error' | 'info') => void;
+    onArticleClick: (article: Article) => void;
 }
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ user, settings, onUpdateProfile, onUpdateSettings, onUpdateSubscription, addToast }) => {
+const SettingsPage: React.FC<SettingsPageProps> = ({ user, settings, onUpdateProfile, onUpdateSettings, onUpdateSubscription, addToast, onArticleClick }) => {
     const [activeTab, setActiveTab] = useState('profile');
     const { allCategories } = useSettings();
 
@@ -59,6 +63,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, settings, onUpdatePro
         { id: 'profile', label: 'Profile', icon: <UserIcon /> },
         { id: 'preferences', label: 'Preferences', icon: <SettingsIcon /> },
         { id: 'subscription', label: 'Subscription', icon: <StarIcon /> },
+        { id: 'library', label: 'My Library', icon: <NewspaperIcon /> },
     ];
 
     const renderContent = () => {
@@ -186,6 +191,30 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, settings, onUpdatePro
                                 </div>
                             ))}
                         </div>
+                    </div>
+                );
+             case 'library':
+                return (
+                    <div>
+                        <h2 className="text-2xl font-bold mb-6">My Library ({user.savedArticles.length})</h2>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                            These are the articles you've saved. They are available for offline reading.
+                        </p>
+                        {user.savedArticles.length > 0 ? (
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {user.savedArticles.map(article => (
+                                    <ArticleCard key={article.id} article={article} onArticleClick={onArticleClick} layoutMode={settings.layoutMode}/>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-16 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                                <NewspaperIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
+                                <h3 className="text-lg font-semibold">Your Library is Empty</h3>
+                                <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm">
+                                    Save articles to read them here later.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 );
             default:

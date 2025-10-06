@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface ModalProps {
@@ -20,7 +19,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
       onClick={onClose}
     >
       <div 
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl transform transition-all sm:my-8 w-full sm:max-w-lg"
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl transform transition-all sm:my-8 w-full sm:max-w-3xl"
         onClick={e => e.stopPropagation()} // Prevent closing modal when clicking inside
       >
         {title && (
