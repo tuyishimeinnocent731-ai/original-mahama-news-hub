@@ -1,5 +1,4 @@
 import React from 'react';
-// FIX: The 'Settings' type is not exported from 'useSettings'. It should be imported from 'types'.
 import { useSettings } from '../../hooks/useSettings';
 import { User, Settings } from '../../types';
 import ToggleSwitch from '../ToggleSwitch';
