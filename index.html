@@ -63,6 +63,26 @@
       .high-contrast .border-b, .high-contrast .border-t {
         border-color: var(--border-color) !important;
       }
+
+      /* Modern underline effect for header nav links */
+      .nav-link-underline {
+        position: relative;
+        text-decoration: none;
+      }
+      .nav-link-underline::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 2px;
+        background-color: #FBBF24; /* yellow-400 */
+        transition: width 0.3s ease-in-out;
+      }
+      .nav-link-underline:hover::after {
+        width: 100%;
+      }
     </style>
     <script type="importmap">
     {

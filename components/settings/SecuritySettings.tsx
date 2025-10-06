@@ -7,6 +7,7 @@ import { DeviceMobileIcon } from '../icons/DeviceMobileIcon';
 import { DesktopComputerIcon } from '../icons/DesktopComputerIcon';
 import { EyeIcon } from '../icons/EyeIcon';
 import { EyeOffIcon } from '../icons/EyeOffIcon';
+import { GlobeAltIcon } from '../icons/GlobeAltIcon';
 import ToggleSwitch from '../ToggleSwitch';
 import Modal from '../Modal';
 
@@ -77,6 +78,12 @@ const PasswordInputField: React.FC<{id: string, label: string, value: string, on
         </div>
     );
 };
+
+const loginHistory = [
+    { device: 'Chrome on Windows', location: 'New York, US', time: 'June 20, 2024 at 8:15 PM', icon: <DesktopComputerIcon className="w-6 h-6"/>, current: true },
+    { device: 'iPhone App', location: 'New York, US', time: 'June 18, 2024 at 10:30 AM', icon: <DeviceMobileIcon className="w-6 h-6"/> },
+    { device: 'Safari on macOS', location: 'Boston, US', time: 'June 15, 2024 at 5:00 PM', icon: <DesktopComputerIcon className="w-6 h-6"/> },
+];
 
 
 const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, toggleTwoFactor, addToast, validatePassword, changePassword }) => {
@@ -179,28 +186,28 @@ const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, toggleTwoFact
                 </div>
                 
                 <div>
-                    <h4 className="text-lg font-semibold mb-2">Signed-in Devices</h4>
+                    <div className="flex items-center space-x-3 mb-2">
+                        <GlobeAltIcon className="w-5 h-5 text-gray-500" />
+                        <h4 className="text-lg font-semibold">Login History</h4>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Review recent sign-ins to your account.</p>
                     <ul className="space-y-3">
-                        <li className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
-                            <div className="flex items-center space-x-3">
-                                <DesktopComputerIcon className="w-6 h-6"/>
-                                <div>
-                                    <p className="font-semibold">Chrome on Windows</p>
-                                    <p className="text-xs text-green-600 dark:text-green-400">Current session</p>
+                        {loginHistory.map((item, index) => (
+                             <li key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
+                                <div className="flex items-center space-x-3">
+                                    {item.icon}
+                                    <div>
+                                        <p className="font-semibold">{item.device}</p>
+                                        <p className="text-xs text-gray-500">{item.location} - {item.time}</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <button className="text-sm text-red-600 hover:underline">Sign out</button>
-                        </li>
-                        <li className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
-                            <div className="flex items-center space-x-3">
-                                <DeviceMobileIcon className="w-6 h-6"/>
-                                <div>
-                                    <p className="font-semibold">iPhone App</p>
-                                    <p className="text-xs text-gray-500">New York, US - 2 days ago</p>
-                                </div>
-                            </div>
-                             <button className="text-sm text-red-600 hover:underline">Sign out</button>
-                        </li>
+                                {item.current ? (
+                                    <span className="text-xs text-green-600 dark:text-green-400 font-semibold mt-2 sm:mt-0">Current session</span>
+                                ) : (
+                                    <button className="text-sm text-red-600 hover:underline mt-2 sm:mt-0 self-start sm:self-center">Not you? Secure account</button>
+                                )}
+                            </li>
+                        ))}
                     </ul>
                 </div>
             </div>

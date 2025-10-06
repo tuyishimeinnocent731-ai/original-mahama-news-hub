@@ -205,8 +205,7 @@ const App: React.FC = () => {
                 );
         }
     };
-
-    const isArticleView = view === 'article';
+    
     const showSidebar = ['home', 'article', 'search-results'].includes(view);
 
     return (
@@ -229,16 +228,11 @@ const App: React.FC = () => {
             />
             <main className="container mx-auto px-4 py-8 flex-grow">
                  <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-                    <div className={`
-                        ${isArticleView ? "md:col-span-8 md:order-2" : "md:col-span-8"}
-                    `}>
+                    <div className="md:col-span-8">
                         {renderMainContent()}
                     </div>
                     {showSidebar && (
-                        <div className={`
-                            hidden md:block md:col-span-4 
-                            ${isArticleView ? 'md:order-1' : ''}
-                        `}>
+                        <div className="hidden md:block md:col-span-4">
                             <Aside
                                 title="Top Stories"
                                 articles={topStories}

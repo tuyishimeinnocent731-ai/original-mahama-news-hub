@@ -43,7 +43,7 @@ const NavLink: React.FC<{ link: NavLinkType, onCategorySelect: (category: string
 
     return (
         <div className="relative group h-full flex items-center">
-            <button onClick={() => onCategorySelect(link.name)} className="text-white hover:text-yellow-300 transition-colors duration-200 px-3 py-2 rounded-md text-sm font-medium flex items-center">
+            <button onClick={() => onCategorySelect(link.name)} className="nav-link-underline text-white transition-colors duration-200 px-3 py-2 rounded-md text-sm font-medium flex items-center">
                 {link.name}
                 {link.sublinks && (
                     <ChevronDownIcon className="w-4 h-4 ml-1 transition-transform duration-300 group-hover:rotate-180" />
@@ -116,7 +116,7 @@ const Header: React.FC<HeaderProps> = ({
     return (
         <header className="bg-blue-800 dark:bg-gray-900 shadow-md sticky top-0 z-40">
              {/* Top Bar */}
-            <div className="bg-blue-900 dark:bg-gray-900/50 hidden lg:block">
+            <div className="bg-blue-900 dark:bg-gray-900/50 hidden lg:block border-b border-blue-800/50 dark:border-gray-800/50">
                 <div className="container mx-auto px-4 h-10 flex items-center justify-between text-xs text-blue-200">
                     <div>
                         <span>{currentDate}</span>

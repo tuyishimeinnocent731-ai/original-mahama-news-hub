@@ -61,42 +61,46 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onSettingsClick, on
             >
                 <img src={user.avatar} alt="User avatar" className="h-10 w-10 rounded-full" />
             </button>
-            {isOpen && (
-                <div className="origin-top-right absolute right-0 mt-2 w-64 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-20" role="menu" aria-orientation="vertical">
-                    <div className="py-1" role="none">
-                        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.name}</p>
-                             <p className="text-sm text-gray-700 dark:text-gray-300 truncate">{user.email}</p>
-                        </div>
-                        <button onClick={() => handleAction(onSavedClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
-                            <NewspaperIcon />
-                            <span className="ml-3">My Articles ({user.savedArticles.length})</span>
-                        </button>
-                        {user.subscription === 'pro' && (
-                             <button onClick={() => handleAction(onMyAdsClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
-                                <MegaphoneIcon />
-                                <span className="ml-3">My Ads ({user.userAds.length})</span>
-                            </button>
-                        )}
-                        <button onClick={() => handleAction(onPremiumClick)} className="w-full text-left flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
-                            <div className="flex items-center">
-                                <StarIcon />
-                                <span className="ml-3">Subscription</span>
-                            </div>
-                            <SubscriptionBadge plan={user.subscription} />
-                        </button>
-                        <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                        <button onClick={() => handleAction(onSettingsClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
-                            <SettingsIcon />
-                            <span className="ml-3">Profile & Settings</span>
-                        </button>
-                        <button onClick={() => handleAction(onLogout)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
-                            <LogoutIcon />
-                            <span className="ml-3">Logout</span>
-                        </button>
+            
+            <div 
+                className={`origin-top-right absolute right-0 mt-2 w-64 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-20 transition-all duration-200 ease-out ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`} 
+                role="menu" 
+                aria-orientation="vertical"
+            >
+                <div className="py-1" role="none">
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.name}</p>
+                            <p className="text-sm text-gray-700 dark:text-gray-300 truncate">{user.email}</p>
                     </div>
+                    <button onClick={() => handleAction(onSavedClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                        <NewspaperIcon />
+                        <span className="ml-3">My Articles ({user.savedArticles.length})</span>
+                    </button>
+                    {user.subscription === 'pro' && (
+                            <button onClick={() => handleAction(onMyAdsClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                            <MegaphoneIcon />
+                            <span className="ml-3">My Ads ({user.userAds.length})</span>
+                        </button>
+                    )}
+                    <button onClick={() => handleAction(onPremiumClick)} className="w-full text-left flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                        <div className="flex items-center">
+                            <StarIcon />
+                            <span className="ml-3">Subscription</span>
+                        </div>
+                        <SubscriptionBadge plan={user.subscription} />
+                    </button>
+                    <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                    <button onClick={() => handleAction(onSettingsClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                        <SettingsIcon />
+                        <span className="ml-3">Profile & Settings</span>
+                    </button>
+                    <button onClick={() => handleAction(onLogout)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                        <LogoutIcon />
+                        <span className="ml-3">Logout</span>
+                    </button>
                 </div>
-            )}
+            </div>
+            
         </div>
     );
 };
