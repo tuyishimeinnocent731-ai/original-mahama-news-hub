@@ -228,12 +228,12 @@ const App: React.FC = () => {
                 authLoading={authLoading}
             />
             <main className="container mx-auto px-4 py-8 flex-grow">
-                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    <div className={showSidebar ? "lg:col-span-8" : "col-span-full"}>
+                 <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+                    <div className={showSidebar ? "md:col-span-8" : "col-span-full"}>
                         {renderMainContent()}
                     </div>
                      {showSidebar && (
-                        <div className="hidden lg:block lg:col-span-4">
+                        <div className="hidden md:block md:col-span-4">
                             <Aside
                                 title="Top Stories"
                                 articles={topStories}

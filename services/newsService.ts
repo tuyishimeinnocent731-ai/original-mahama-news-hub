@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { Article } from '../types';
 
@@ -99,8 +98,7 @@ const mockArticles: Article[] = [
     publishedAt: '2024-07-16T15:00:00Z',
     source: { name: 'Americas Herald' },
     url: '#',
-    // FIX: Corrected the malformed unsplash URL
-    urlToImage: 'https://images.unsplash.com/photo-1541829076-2489971_F-YI?q=80&w=1200',
+    urlToImage: 'https://images.unsplash.com/photo-1541829076-24899719F-YI?q=80&w=1200',
     category: 'Americas'
   },
   {
