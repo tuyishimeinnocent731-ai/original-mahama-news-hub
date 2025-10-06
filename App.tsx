@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -29,6 +28,7 @@ type View = 'home' | 'article' | 'search' | 'saved' | 'premium' | 'settings';
 function App() {
   const [view, setView] = useState<View>('home');
   const [articles, setArticles] = useState<Article[]>([]);
+  const [asideArticles, setAsideArticles] = useState<Article[]>([]);
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
   const [currentCategory, setCurrentCategory] = useState<string>('World');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
@@ -53,8 +53,12 @@ function App() {
   const fetchArticles = useCallback(async (category: string) => {
     setIsLoading(true);
     try {
-      const fetchedArticles = await newsService.getArticles(category);
+      const [fetchedArticles, topStories] = await Promise.all([
+        newsService.getArticles(category),
+        newsService.getTopStories()
+      ]);
       setArticles(fetchedArticles);
+      setAsideArticles(topStories);
     } catch (error) {
       console.error('Failed to fetch articles:', error);
       addToast('Could not load articles. Please try again later.', 'error');
@@ -179,26 +183,31 @@ function App() {
       case 'home':
       default:
         return (
-          <div className="container mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500 capitalize">{currentCategory}</h1>
-            {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.from({ length: 6 }).map((_, i) => <ArticleCardSkeleton key={i} layoutMode={settings.layoutMode} />)}
-              </div>
-            ) : (
-              <div className={`grid grid-cols-1 ${settings.layoutMode === 'compact' ? 'md:grid-cols-3 lg:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6`}>
-                {articles.map((article, index) => (
-                  <React.Fragment key={article.id}>
-                    <ArticleCard article={article} onArticleClick={handleArticleClick} layoutMode={settings.layoutMode} />
-                    {index === 2 && !isLoggedIn && <InFeedAd />}
-                  </React.Fragment>
-                ))}
-              </div>
-            )}
+          <div className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500 capitalize">{currentCategory}</h1>
+              {isLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {Array.from({ length: 4 }).map((_, i) => <ArticleCardSkeleton key={i} layoutMode={settings.layoutMode} />)}
+                </div>
+              ) : (
+                <div className={`grid grid-cols-1 ${settings.layoutMode === 'compact' ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2'} gap-6`}>
+                  {articles.map((article, index) => (
+                    <React.Fragment key={article.id}>
+                      <ArticleCard article={article} onArticleClick={handleArticleClick} layoutMode={settings.layoutMode} />
+                      {index === 2 && !isLoggedIn && <InFeedAd />}
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
+            </div>
+             <div className="lg:col-span-1">
+                <Aside title="Top Stories" articles={asideArticles} onArticleClick={handleArticleClick} isLoading={isLoading}/>
+            </div>
           </div>
         );
     }
-  }, [view, selectedArticle, user, isArticleSaved, handleToggleSaveArticle, relatedArticles, handleArticleClick, articles, currentCategory, isLoading, settings.layoutMode, isLoggedIn]);
+  }, [view, selectedArticle, user, isArticleSaved, handleToggleSaveArticle, relatedArticles, handleArticleClick, articles, asideArticles, currentCategory, isLoading, settings.layoutMode, isLoggedIn]);
   
   return (
     <div className={`bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans text-base`}>
@@ -227,7 +236,15 @@ function App() {
       <BackToTopButton />
 
       <SearchOverlay isOpen={isSearchOpen} onClose={() => setSearchOpen(false)} onSearch={handleSearch} />
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsModal 
+        isOpen={isSettingsOpen} 
+        onClose={() => setSettingsOpen(false)} 
+        user={user}
+        onUpgradeClick={() => {
+            setSettingsOpen(false);
+            setPremiumOpen(true);
+        }}
+      />
       <AuthModal isOpen={isLoginOpen} onClose={() => setLoginOpen(false)} onLogin={handleLogin} onRegister={handleRegister} />
       {<PremiumModal isOpen={isPremiumOpen} onClose={() => setPremiumOpen(false)} onSubscribe={handleSubscribe} currentPlan={user?.subscription || 'free'} />}
       <CommandPalette 

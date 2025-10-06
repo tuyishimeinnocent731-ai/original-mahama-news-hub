@@ -13,6 +13,7 @@
           extend: {
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
+              dyslexic: ['Atkinson Hyperlegible', 'sans-serif'],
             },
           }
         }
@@ -20,11 +21,47 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
     <style>
       /* Apply a clean, modern font for better readability and UI aesthetics */
       body {
         font-family: 'Inter', sans-serif;
+      }
+      /* Reduce motion for users who prefer it */
+      .reduce-motion * {
+        transition: none !important;
+        animation: none !important;
+      }
+      /* Dyslexia-friendly font */
+      .dyslexia-font {
+        font-family: 'Atkinson Hyperlegible', sans-serif;
+      }
+      /* High Contrast Modes */
+      .high-contrast.light {
+        --bg-color: white;
+        --text-color: black;
+        --card-bg: #f0f0f0;
+        --border-color: #666;
+      }
+      .high-contrast.dark {
+        --bg-color: black;
+        --text-color: white;
+        --card-bg: #1f1f1f;
+        --border-color: #999;
+      }
+      .high-contrast {
+        background-color: var(--bg-color) !important;
+        color: var(--text-color) !important;
+      }
+      .high-contrast .bg-white, .high-contrast .dark\:bg-gray-800, 
+      .high-contrast .bg-gray-100, .high-contrast .dark\:bg-gray-900,
+      .high-contrast .bg-blue-800, .high-contrast .dark\:bg-gray-900,
+      .high-contrast .bg-blue-900 {
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+      }
+      .high-contrast .border-b, .high-contrast .border-t {
+        border-color: var(--border-color) !important;
       }
     </style>
     <script type="importmap">

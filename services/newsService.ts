@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { Article } from '../types';
 
@@ -103,6 +102,11 @@ export const getArticles = async (category: string = 'World'): Promise<Article[]
     });
     return Promise.resolve(filtered.length > 0 ? filtered : mockArticles.slice(0, 5));
 };
+
+export const getTopStories = async (): Promise<Article[]> => {
+    const sorted = [...mockArticles].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+    return Promise.resolve(sorted.slice(0, 4));
+}
 
 export const getFeaturedArticleForCategory = (category: string): Article | null => {
     return mockArticles.find(a => a.category.toLowerCase() === category.toLowerCase()) || mockArticles[0] || null;

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { ALL_CATEGORIES } from '../constants';
 
@@ -11,6 +10,9 @@ export interface Settings {
     layoutMode: LayoutMode;
     fontSize: FontSize;
     preferredCategories: string[];
+    highContrast: boolean;
+    dyslexiaFont: boolean;
+    reduceMotion: boolean;
 }
 
 const SETTINGS_STORAGE_KEY = 'mahama_news_hub_settings';
@@ -20,24 +22,30 @@ const defaultSettings: Settings = {
     layoutMode: 'normal',
     fontSize: 'base',
     preferredCategories: [],
+    highContrast: false,
+    dyslexiaFont: false,
+    reduceMotion: false,
 };
 
-const applyTheme = (theme: Theme) => {
+const applyAllSettings = (settings: Settings) => {
     const root = window.document.documentElement;
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
+    // Theme
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     root.classList.remove('light', 'dark');
-
-    if (theme === 'system') {
+    if (settings.theme === 'system') {
         root.classList.add(systemPrefersDark ? 'dark' : 'light');
     } else {
-        root.classList.add(theme);
+        root.classList.add(settings.theme);
     }
-};
 
-const applyFontSize = (size: FontSize) => {
-    const root = window.document.documentElement;
-    root.style.fontSize = size === 'sm' ? '14px' : size === 'lg' ? '18px' : '16px';
+    // Font Size
+    root.style.fontSize = settings.fontSize === 'sm' ? '14px' : settings.fontSize === 'lg' ? '18px' : '16px';
+
+    // Accessibility
+    root.classList.toggle('high-contrast', settings.highContrast);
+    root.classList.toggle('dyslexia-font', settings.dyslexiaFont);
+    root.classList.toggle('reduce-motion', settings.reduceMotion);
 }
 
 export const useSettings = () => {
@@ -46,20 +54,15 @@ export const useSettings = () => {
     useEffect(() => {
         try {
             const storedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-            if (storedSettings) {
-                const parsedSettings = JSON.parse(storedSettings);
-                const newSettings = { ...defaultSettings, ...parsedSettings };
-                setSettings(newSettings);
-                applyTheme(newSettings.theme);
-                applyFontSize(newSettings.fontSize);
-            } else {
-                applyTheme(defaultSettings.theme);
-                applyFontSize(defaultSettings.fontSize);
-            }
+            const initialSettings = storedSettings 
+                ? { ...defaultSettings, ...JSON.parse(storedSettings) }
+                : defaultSettings;
+            
+            setSettings(initialSettings);
+            applyAllSettings(initialSettings);
         } catch (error) {
             console.error("Failed to load settings from localStorage", error);
-            applyTheme(defaultSettings.theme);
-            applyFontSize(defaultSettings.fontSize);
+            applyAllSettings(defaultSettings);
         }
     }, []);
 
@@ -67,12 +70,12 @@ export const useSettings = () => {
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
         const handleChange = () => {
             if (settings.theme === 'system') {
-                applyTheme('system');
+                applyAllSettings(settings);
             }
         };
         mediaQuery.addEventListener('change', handleChange);
         return () => mediaQuery.removeEventListener('change', handleChange);
-    }, [settings.theme]);
+    }, [settings]);
 
     const updateSettings = useCallback((newSettings: Partial<Settings>) => {
         setSettings(prevSettings => {
@@ -80,12 +83,7 @@ export const useSettings = () => {
             
             try {
                 localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updatedSettings));
-                if (newSettings.theme) {
-                    applyTheme(updatedSettings.theme);
-                }
-                if (newSettings.fontSize) {
-                    applyFontSize(updatedSettings.fontSize);
-                }
+                applyAllSettings(updatedSettings);
             } catch (error) {
                 console.error("Failed to save settings to localStorage", error);
             }
