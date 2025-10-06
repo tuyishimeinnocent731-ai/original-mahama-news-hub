@@ -64,6 +64,12 @@ export const getRelatedArticles = async (category: string, currentArticleId: str
         .slice(0, 4);
 };
 
+export const getFeaturedArticleForCategory = (category: string): Article | undefined => {
+    const lowerCategory = category.toLowerCase();
+    return mockArticles.find(a => a.category.toLowerCase() === lowerCategory);
+};
+
+
 export const searchArticles = async (query: string): Promise<{articles: Article[], sources: GroundingChunk[]}> => {
     try {
         const response = await ai.models.generateContent({

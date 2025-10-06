@@ -28,6 +28,7 @@ const AppContent: React.FC = () => {
     const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
     const [searchSources, setSearchSources] = useState<GroundingChunk[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('all');
 
     const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
     const [isAuthModalOpen, setAuthModalOpen] = useState(false);
@@ -35,29 +36,43 @@ const AppContent: React.FC = () => {
     const [isSearchOverlayOpen, setSearchOverlayOpen] = useState(false);
     const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
-    const fetchInitialData = useCallback(async () => {
+    const fetchArticles = useCallback(async (category: string) => {
         setIsLoading(true);
+        setSelectedArticle(null);
         try {
-            const [fetchedArticles, fetchedTopStories] = await Promise.all([
-                newsService.getArticlesByCategory('all'),
-                newsService.getTopStories(),
-            ]);
+            const fetchedArticles = await newsService.getArticlesByCategory(category);
             setArticles(fetchedArticles);
-            setTopStories(fetchedTopStories);
         } catch (error) {
-            console.error('Failed to fetch initial data:', error);
-            addToast('Failed to load news. Please try again later.', 'error');
+            console.error(`Failed to fetch articles for ${category}:`, error);
+            addToast(`Failed to load articles for ${category}.`, 'error');
         } finally {
             setIsLoading(false);
         }
     }, [addToast]);
 
     useEffect(() => {
-        fetchInitialData();
-    }, [fetchInitialData]);
+        // Fetch top stories once on initial load
+        newsService.getTopStories()
+            .then(setTopStories)
+            .catch(error => {
+                console.error('Failed to fetch top stories:', error);
+                addToast('Failed to load top stories.', 'error');
+            });
+    }, [addToast]);
+
+    useEffect(() => {
+        fetchArticles(selectedCategory);
+    }, [selectedCategory, fetchArticles]);
 
     const handleArticleClick = (article: Article) => {
         setSelectedArticle(article);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleCategorySelect = (category: string) => {
+        setSearchQuery('');
+        setSearchSources([]);
+        setSelectedCategory(category.toLowerCase());
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -66,6 +81,7 @@ const AppContent: React.FC = () => {
         setSearchOverlayOpen(false);
         setSearchQuery(`Search results for: "${query}"`);
         setSelectedArticle(null);
+        setSelectedCategory(''); // Clear category selection on search
         try {
             const { articles: searchedArticles, sources } = await newsService.searchArticles(query);
             setArticles(searchedArticles);
@@ -98,6 +114,10 @@ const AppContent: React.FC = () => {
         addToast('You have been logged out.', 'info');
     };
 
+    const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+    const pageTitle = searchQuery || (selectedCategory ? `${capitalize(selectedCategory)} News` : 'Latest News');
+
     return (
         <div className={`font-sans bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col ${settings.fontSize}`}>
             <Header
@@ -108,6 +128,7 @@ const AppContent: React.FC = () => {
                 isLoggedIn={isLoggedIn}
                 userEmail={user?.email || null}
                 onLogout={handleLogout}
+                onCategorySelect={handleCategorySelect}
             />
 
             <main className="flex-grow container mx-auto p-4 lg:p-6">
@@ -124,7 +145,7 @@ const AppContent: React.FC = () => {
                     ) : (
                         <>
                             <div className="lg:col-span-3">
-                                <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500">{searchQuery || 'Latest News'}</h1>
+                                <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500">{pageTitle}</h1>
                                 {searchSources.length > 0 && (
                                     <div className="mb-6 p-4 bg-gray-200 dark:bg-gray-800 rounded-lg">
                                         <h3 className="font-semibold mb-2">Sources from Google Search:</h3>
@@ -150,7 +171,7 @@ const AppContent: React.FC = () => {
                                     title="Top Stories" 
                                     articles={topStories} 
                                     onArticleClick={handleArticleClick} 
-                                    isLoading={isLoading}
+                                    isLoading={topStories.length === 0}
                                 />
                             </div>
                         </>
