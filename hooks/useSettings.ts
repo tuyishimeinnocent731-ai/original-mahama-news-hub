@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Settings } from '../types';
 import { ALL_CATEGORIES } from '../constants';
 
-const defaultSettings: Settings = {
+const defaultSettings: Omit<Settings, 'showSidebar'> = {
     theme: 'system',
     fontSize: 'medium',
     highContrast: false,
@@ -17,7 +17,6 @@ const defaultSettings: Settings = {
     preferredCategories: [],
     dataSharing: true,
     adPersonalization: true,
-    showSidebar: true,
 };
 
 const applySettingsToDOM = (settings: Settings) => {
@@ -58,7 +57,7 @@ const applySettingsToDOM = (settings: Settings) => {
 };
 
 export const useSettings = () => {
-    const [settings, setSettings] = useState<Settings>(defaultSettings);
+    const [settings, setSettings] = useState<Settings>(defaultSettings as Settings);
     const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
@@ -67,7 +66,7 @@ export const useSettings = () => {
             if (storedSettings) {
                 const parsedSettings = JSON.parse(storedSettings);
                 // Ensure all default keys are present
-                const mergedSettings = {
+                const mergedSettings: Settings = {
                     ...defaultSettings,
                     ...parsedSettings,
                     notifications: {
@@ -78,11 +77,11 @@ export const useSettings = () => {
                 setSettings(mergedSettings);
                 applySettingsToDOM(mergedSettings);
             } else {
-                applySettingsToDOM(defaultSettings);
+                applySettingsToDOM(defaultSettings as Settings);
             }
         } catch (error) {
             console.error("Failed to load settings from localStorage", error);
-            applySettingsToDOM(defaultSettings);
+            applySettingsToDOM(defaultSettings as Settings);
         }
         setIsInitialized(true);
     }, []);

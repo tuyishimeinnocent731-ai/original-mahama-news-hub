@@ -204,7 +204,7 @@ const App: React.FC = () => {
             }
         };
 
-        const showSidebar = settings.showSidebar && ['home', 'article', 'search-results'].includes(view);
+        const showSidebar = ['home', 'article', 'search-results'].includes(view);
 
         return (
              <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
@@ -212,7 +212,7 @@ const App: React.FC = () => {
                     {mainContent()}
                 </div>
                 {showSidebar && (
-                    <div className="md:col-span-4">
+                    <div className="hidden md:block md:col-span-4">
                         <Aside
                             title="Top Stories"
                             articles={topStories}

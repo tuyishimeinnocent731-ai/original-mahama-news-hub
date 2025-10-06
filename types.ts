@@ -1,3 +1,4 @@
+// FIX: Removed circular dependency with constants.ts. The NavLink interface can refer to itself for nested structures.
 
 export interface Article {
   id: string;
@@ -41,6 +42,7 @@ export interface User {
 export interface NavLink {
   name: string;
   href: string;
+  // FIX: Changed NavLinkType to NavLink to allow for recursive type definition.
   sublinks?: NavLink[];
 }
 
@@ -61,5 +63,4 @@ export interface Settings {
     preferredCategories: string[];
     dataSharing: boolean;
     adPersonalization: boolean;
-    showSidebar: boolean;
 }

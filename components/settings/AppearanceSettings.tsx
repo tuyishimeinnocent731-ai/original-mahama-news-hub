@@ -20,11 +20,6 @@ const AppearanceSettings: React.FC = () => {
     const handleFontSizeChange = (size: FontSize) => {
         updateSettings({ fontSize: size });
     };
-    
-    const handleSidebarToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
-        updateSettings({ showSidebar: event.target.checked });
-    };
-
 
     const themeOptions = [
         { value: 'light', label: 'Light', icon: <SunIcon /> },
@@ -73,14 +68,6 @@ const AppearanceSettings: React.FC = () => {
                             </button>
                         ))}
                     </div>
-                </div>
-
-                <div className="p-4 border dark:border-gray-700 rounded-lg flex items-center justify-between max-w-md">
-                    <div>
-                        <label htmlFor="showSidebar" className="font-medium text-gray-700 dark:text-gray-300">Show Top Stories Sidebar</label>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Display the sidebar on the homepage.</p>
-                    </div>
-                    <ToggleSwitch id="showSidebar" checked={settings.showSidebar} onChange={handleSidebarToggle} />
                 </div>
             </div>
         </div>
