@@ -235,7 +235,7 @@ function App() {
   }, [view, selectedArticle, user, isArticleSaved, handleToggleSaveArticle, relatedArticles, handleArticleClick, articles, asideArticles, currentCategory, isLoading, settings.layoutMode, isLoggedIn, updateProfile, createAd, addToast]);
   
   return (
-    <div className={`bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans text-base`}>
+    <div className={`bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans text-base flex flex-col`}>
       <ReadingProgressBar />
       <Header
         onSearchClick={() => setSearchOpen(true)}

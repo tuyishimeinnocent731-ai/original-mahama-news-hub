@@ -78,7 +78,7 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onUpgr
             <article className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
                  <img src={article.urlToImage} alt={article.title} className="w-full h-auto max-h-[500px] object-cover" />
                  
-                 <div className="p-4 sm:p-8">
+                 <div className="p-6 sm:p-8">
                     <header className="mb-6">
                          <span className="text-sm font-semibold text-yellow-600 dark:text-yellow-400 uppercase">{article.category}</span>
                          <h1 className="text-3xl md:text-4xl font-bold mt-2 text-gray-900 dark:text-white leading-tight">{article.title}</h1>
