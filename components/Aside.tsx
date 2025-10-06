@@ -33,15 +33,19 @@ const Aside: React.FC<AsideProps> = ({ title, articles, onArticleClick, isLoadin
       <div>
         <h2 className="text-xl font-bold mb-4 pb-2 border-b-2 border-yellow-500">{title}</h2>
         {isLoading ? <AsideSkeleton /> : (
-            <div className="space-y-6">
-            {articles.map((article) => (
-                <RelatedArticleCard 
-                    key={article.id} 
-                    article={article} 
-                    onArticleClick={() => onArticleClick(article)}
-                />
-            ))}
-            </div>
+            articles.length > 0 ? (
+                <div className="space-y-6">
+                {articles.map((article) => (
+                    <RelatedArticleCard 
+                        key={article.id} 
+                        article={article} 
+                        onArticleClick={() => onArticleClick(article)}
+                    />
+                ))}
+                </div>
+            ) : (
+                <p className="text-sm text-gray-500 dark:text-gray-400">No stories available in this section.</p>
+            )
         )}
       </div>
       

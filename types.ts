@@ -23,7 +23,6 @@ export interface Ad {
     headline: string;
     image: string;
     url: string;
-    isUserAd?: boolean;
 }
 
 export interface User {

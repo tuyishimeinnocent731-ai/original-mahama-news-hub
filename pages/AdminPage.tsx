@@ -1,13 +1,64 @@
 import React, { useState } from 'react';
-import { User, Article } from '../types';
+import { User, Article, Ad } from '../types';
 import { NewspaperIcon } from '../components/icons/NewspaperIcon';
 import { UserGroupIcon } from '../components/icons/UserGroupIcon';
 import { TrashIcon } from '../components/icons/TrashIcon';
 import { ArrowUpCircleIcon } from '../components/icons/ArrowUpCircleIcon';
 import { ArrowDownCircleIcon } from '../components/icons/ArrowDownCircleIcon';
+import { ChartPieIcon } from '../components/icons/ChartPieIcon';
+import { MegaphoneIcon } from '../components/icons/MegaphoneIcon';
 import { ALL_CATEGORIES } from '../constants';
 
 type ArticleFormData = Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>;
+type AdFormData = Omit<Ad, 'id'>;
+
+interface DashboardProps {
+    users: User[];
+    articles: Article[];
+    ads: Ad[];
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ users, articles, ads }) => {
+    const totalUsers = users.length;
+    const totalArticles = articles.length;
+    const totalAds = ads.length;
+    const subscriptions = users.reduce((acc, user) => {
+        acc[user.subscription] = (acc[user.subscription] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+
+    return (
+        <div>
+            <h3 className="text-2xl font-bold mb-4">Dashboard Overview</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-lg shadow-md">
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Articles</h4>
+                    <p className="text-3xl font-bold mt-2">{totalArticles}</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-lg shadow-md">
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Ads</h4>
+                    <p className="text-3xl font-bold mt-2">{totalAds}</p>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-lg shadow-md">
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Users</h4>
+                    <p className="text-3xl font-bold mt-2">{totalUsers}</p>
+                </div>
+                 <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-lg shadow-md">
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Subscriptions</h4>
+                    <div className="mt-2 space-y-1">
+                        {Object.entries(subscriptions).map(([plan, count]) => (
+                             <div key={plan} className="flex justify-between text-sm">
+                                <span className="capitalize font-medium">{plan}</span>
+                                <span className="font-semibold">{count}</span>
+                             </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 interface ArticleManagerProps {
     onAddArticle: (data: ArticleFormData) => void;
@@ -119,6 +170,100 @@ const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, allArticl
     );
 };
 
+interface AdManagerProps {
+    onAddAd: (data: AdFormData) => void;
+    allAds: Ad[];
+    onDeleteAd: (id: string) => void;
+}
+
+const AdManager: React.FC<AdManagerProps> = ({ onAddAd, allAds, onDeleteAd }) => {
+    const [formData, setFormData] = useState<AdFormData>({
+        headline: '', url: '', image: ''
+    });
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+    
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+                setFormData(prev => ({ ...prev, image: base64String }));
+                setImagePreview(base64String);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        onAddAd(formData);
+        // Reset form
+        setFormData({ headline: '', url: '', image: '' });
+        setImagePreview(null);
+        const fileInput = document.getElementById('ad-image-upload') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
+    };
+
+    return (
+        <div className="space-y-12">
+            <div>
+                <h3 className="text-2xl font-bold mb-4">Create New Advertisement</h3>
+                <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg dark:border-gray-700">
+                    <div>
+                        <label htmlFor="headline" className="block text-sm font-medium">Headline</label>
+                        <input type="text" name="headline" id="headline" value={formData.headline} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500" />
+                    </div>
+                     <div>
+                        <label htmlFor="url" className="block text-sm font-medium">Target URL</label>
+                        <input type="url" name="url" id="url" value={formData.url} onChange={handleChange} placeholder="https://example.com" required className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500" />
+                    </div>
+                     <div>
+                        <label htmlFor="ad-image-upload" className="block text-sm font-medium">Ad Image</label>
+                        <input type="file" name="image" id="ad-image-upload" onChange={handleImageChange} required accept="image/*" className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100 dark:file:bg-gray-600 dark:file:text-gray-200" />
+                    </div>
+                    {imagePreview && <img src={imagePreview} alt="Ad Preview" className="mt-2 rounded-md max-h-48" />}
+                    <div className="text-right">
+                        <button type="submit" className="px-5 py-2.5 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 font-semibold">Create Ad</button>
+                    </div>
+                </form>
+            </div>
+            <div>
+                 <h3 className="text-2xl font-bold mb-4">Existing Ads</h3>
+                 <div className="overflow-x-auto border rounded-lg dark:border-gray-700">
+                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-gray-50 dark:bg-gray-700/50">
+                            <tr>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Image</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Headline</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider hidden md:table-cell">URL</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            {allAds.map(ad => (
+                                <tr key={ad.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap"><img src={ad.image} alt={ad.headline} className="w-16 h-10 object-cover rounded"/></td>
+                                    <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm font-medium max-w-xs truncate">{ad.headline}</div></td>
+                                    <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell text-sm"><a href={ad.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate">{ad.url}</a></td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button onClick={() => { if(window.confirm('Are you sure?')) onDeleteAd(ad.id); }} className="text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400"><TrashIcon /></button>
+                                    </td>
+                                </tr>
+                            ))}
+                         </tbody>
+                     </table>
+                 </div>
+            </div>
+        </div>
+    );
+};
+
 interface UserManagerProps {
     getAllUsers: () => User[];
     toggleAdminRole: (email: string, action: 'promote' | 'demote') => boolean;
@@ -185,29 +330,38 @@ const UserManager: React.FC<UserManagerProps> = ({ getAllUsers, toggleAdminRole 
     );
 };
 
-type AdminTab = 'articles' | 'users';
+type AdminTab = 'dashboard' | 'articles' | 'ads' | 'users';
 
 interface AdminPageProps {
     user: User;
     allArticles: Article[];
+    allAds: Ad[];
     onAddArticle: (data: ArticleFormData) => void;
     onDeleteArticle: (id: string) => void;
+    onAddAd: (data: AdFormData) => void;
+    onDeleteAd: (id: string) => void;
     getAllUsers: () => User[];
     toggleAdminRole: (email: string, action: 'promote' | 'demote') => boolean;
 }
 
 const AdminPage: React.FC<AdminPageProps> = (props) => {
-    const [activeTab, setActiveTab] = useState<AdminTab>('articles');
+    const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
     
     const tabs = [
+        { id: 'dashboard', label: 'Dashboard', icon: <ChartPieIcon className="w-5 h-5" /> },
         { id: 'articles', label: 'Manage Articles', icon: <NewspaperIcon className="w-5 h-5" /> },
+        { id: 'ads', label: 'Manage Ads', icon: <MegaphoneIcon className="w-5 h-5" /> },
         { id: 'users', label: 'Manage Users', icon: <UserGroupIcon className="w-5 h-5" /> },
     ];
 
     const renderContent = () => {
         switch (activeTab) {
+            case 'dashboard':
+                return <Dashboard users={props.getAllUsers()} articles={props.allArticles} ads={props.allAds} />;
             case 'articles':
                 return <ArticleManager onAddArticle={props.onAddArticle} allArticles={props.allArticles} onDeleteArticle={props.onDeleteArticle} />;
+            case 'ads':
+                return <AdManager onAddAd={props.onAddAd} allAds={props.allAds} onDeleteAd={props.onDeleteAd} />;
             case 'users':
                 return <UserManager getAllUsers={props.getAllUsers} toggleAdminRole={props.toggleAdminRole} />;
             default:

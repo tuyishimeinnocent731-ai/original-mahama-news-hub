@@ -13,7 +13,6 @@ interface UserMenuProps {
     onSettingsClick: () => void;
     onSavedClick: () => void;
     onPremiumClick: () => void;
-    onMyAdsClick: () => void;
     onAdminClick: () => void;
 }
 
@@ -32,7 +31,7 @@ const SubscriptionBadge: React.FC<{ plan: SubscriptionPlan }> = ({ plan }) => {
 };
 
 
-const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onSettingsClick, onSavedClick, onPremiumClick, onMyAdsClick, onAdminClick }) => {
+const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onSettingsClick, onSavedClick, onPremiumClick, onAdminClick }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -78,12 +77,6 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onSettingsClick, on
                         <NewspaperIcon />
                         <span className="ml-3">My Articles ({user.savedArticles.length})</span>
                     </button>
-                    {user.subscription === 'pro' && (
-                            <button onClick={() => handleAction(onMyAdsClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
-                            <MegaphoneIcon />
-                            <span className="ml-3">My Ads ({user.userAds.length})</span>
-                        </button>
-                    )}
                     <button onClick={() => handleAction(onPremiumClick)} className="w-full text-left flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
                         <div className="flex items-center">
                             <StarIcon />

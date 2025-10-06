@@ -1,67 +1,48 @@
 import { useState, useEffect, useCallback } from 'react';
-import { User, Article, Ad, IntegrationId } from '../types';
+import { User, Article, Ad, IntegrationId, SubscriptionPlan } from '../types';
 import { useToast } from '../contexts/ToastContext';
 
-// This would be in a secure backend in a real app
-let ADMIN_EMAILS = ['reponsekdz0@gmail.com'];
+// --- LocalStorage Persistence for Users ---
+const loadUsersFromStorage = (): { [email: string]: User } => {
+    try {
+        const storedUsers = localStorage.getItem('users');
+        if (storedUsers) {
+            return JSON.parse(storedUsers);
+        }
+    } catch (error) {
+        console.error("Error loading users from storage", error);
+    }
+    // If no users, create the default admin
+    const defaultAdmin: User = {
+        id: 'admin-001',
+        name: 'Admin Reponse',
+        email: 'reponsekdz0@gmail.com',
+        avatar: `https://i.pravatar.cc/150?u=adminreponse`,
+        bio: 'Site Administrator.',
+        subscription: 'pro',
+        savedArticles: [],
+        searchHistory: [],
+        userAds: [],
+        twoFactorEnabled: true,
+        integrations: { slack: true, notion: true, 'google-calendar': true },
+        role: 'admin',
+    };
+    const initialUsers = { [defaultAdmin.email]: defaultAdmin };
+    saveUsersToStorage(initialUsers);
+    return initialUsers;
+};
 
-const MOCK_USERS: { [email: string]: User } = {
-  'user@example.com': {
-    id: 'user-123',
-    name: 'Alex Johnson',
-    email: 'user@example.com',
-    avatar: 'https://i.pravatar.cc/150?u=alexjohnson',
-    bio: 'News enthusiast and tech lover. Following the latest trends in AI and business.',
-    subscription: 'premium',
-    savedArticles: ['1', '3'],
-    searchHistory: ['AI', 'Renewable Energy', 'Climate Summit'],
-    userAds: [],
-    twoFactorEnabled: true,
-    integrations: {
-        slack: true,
-        notion: false,
-        'google-calendar': false,
-    },
-    role: 'user',
-  },
-  'pro@example.com': {
-    id: 'user-456',
-    name: 'Samantha Bee',
-    email: 'pro@example.com',
-    avatar: 'https://i.pravatar.cc/150?u=samanthabee',
-    bio: 'Marketing professional and content creator. Exploring the future of digital advertising.',
-    subscription: 'pro',
-    savedArticles: ['2', '5', '6'],
-    searchHistory: ['Tech Regulation', 'Politics', 'EU'],
-    userAds: [
-      { id: 'user-ad-1', headline: 'My Custom Ad!', image: 'https://images.unsplash.com/photo-1504270997621-af75a1ea5e4f?q=80&w=800', url: '#' }
-    ],
-    twoFactorEnabled: false,
-    integrations: {
-        slack: true,
-        notion: true,
-        'google-calendar': true,
-    },
-    role: 'user',
-  },
-  'reponsekdz0@gmail.com': {
-    id: 'admin-001',
-    name: 'Admin Reponse',
-    email: 'reponsekdz0@gmail.com',
-    avatar: 'https://i.pravatar.cc/150?u=adminreponse',
-    bio: 'Site Administrator.',
-    subscription: 'pro',
-    savedArticles: [],
-    searchHistory: [],
-    userAds: [],
-    twoFactorEnabled: true,
-    integrations: { slack: true, notion: true, 'google-calendar': true },
-    role: 'admin',
-  }
+const saveUsersToStorage = (users: { [email: string]: User }) => {
+    try {
+        localStorage.setItem('users', JSON.stringify(users));
+    } catch (error) {
+        console.error("Error saving users to storage", error);
+    }
 };
 
 export const useAuth = () => {
     const [user, setUser] = useState<User | null>(null);
+    const [users, setUsers] = useState<{ [email: string]: User }>(loadUsersFromStorage);
     const [loading, setLoading] = useState(true);
     const { addToast } = useToast();
 
@@ -69,36 +50,47 @@ export const useAuth = () => {
         // Simulate checking for a logged-in user
         setTimeout(() => {
             const storedUserEmail = localStorage.getItem('loggedInUser');
-            if (storedUserEmail && MOCK_USERS[storedUserEmail]) {
-                 const loggedInUser = MOCK_USERS[storedUserEmail];
-                 // Ensure role is correctly assigned on load
-                 loggedInUser.role = ADMIN_EMAILS.includes(loggedInUser.email) ? 'admin' : 'user';
-                 setUser(loggedInUser);
+            if (storedUserEmail && users[storedUserEmail]) {
+                 setUser(users[storedUserEmail]);
             }
             setLoading(false);
-        }, 1000);
-    }, []);
+        }, 500);
+    }, [users]);
+    
+    const persistUserUpdate = (updatedUser: User) => {
+        const newUsers = { ...users, [updatedUser.email]: updatedUser };
+        setUsers(newUsers);
+        saveUsersToStorage(newUsers);
+        if (user?.email === updatedUser.email) {
+            setUser(updatedUser);
+        }
+    };
+
 
     const login = useCallback((email: string, password?: string) => {
-        if (email === 'reponsekdz0@gmail.com' && password === '2025') {
-            const adminUser = MOCK_USERS[email];
-            setUser({...adminUser, role: 'admin'});
-            localStorage.setItem('loggedInUser', email);
-            addToast(`Welcome back, Admin ${adminUser.name.split(' ')[0]}!`, 'success');
-            return true;
-        }
+        const potentialUser = users[email];
 
-        if (MOCK_USERS[email] && email !== 'reponsekdz0@gmail.com') {
-            const regularUser = MOCK_USERS[email];
-            setUser({...regularUser, role: ADMIN_EMAILS.includes(email) ? 'admin' : 'user'});
-            localStorage.setItem('loggedInUser', email);
-            addToast(`Welcome back, ${regularUser.name.split(' ')[0]}!`, 'success');
-            return true;
+        if (potentialUser) {
+            // In a real app, you'd check the password hash
+            // For admins, we have a special password
+            if (potentialUser.role === 'admin' && password === '2025') {
+                 setUser(potentialUser);
+                 localStorage.setItem('loggedInUser', email);
+                 addToast(`Welcome back, Admin ${potentialUser.name.split(' ')[0]}!`, 'success');
+                 return true;
+            }
+            // For regular users, any password works for this mock setup
+            if (potentialUser.role !== 'admin') {
+                 setUser(potentialUser);
+                 localStorage.setItem('loggedInUser', email);
+                 addToast(`Welcome back, ${potentialUser.name.split(' ')[0]}!`, 'success');
+                 return true;
+            }
         }
         
         addToast('Invalid credentials. Please try again.', 'error');
         return false;
-    }, [addToast]);
+    }, [users, addToast]);
     
     const logout = useCallback(() => {
         setUser(null);
@@ -106,10 +98,37 @@ export const useAuth = () => {
         addToast('You have been logged out.', 'info');
     }, [addToast]);
     
-    const register = useCallback((email: string) => {
-        // For mock purposes, just log in as the default user
-        return login(Object.keys(MOCK_USERS)[0]);
-    }, [login]);
+    const register = useCallback((email: string, password?: string) => {
+        if (users[email]) {
+            addToast('An account with this email already exists.', 'error');
+            return false;
+        }
+
+        const newUser: User = {
+            id: `user-${Date.now()}`,
+            name: email.split('@')[0],
+            email: email,
+            avatar: `https://i.pravatar.cc/150?u=${email}`,
+            subscription: 'free',
+            savedArticles: [],
+            searchHistory: [],
+            userAds: [],
+            twoFactorEnabled: false,
+            integrations: {},
+            role: 'user',
+        };
+        
+        const newUsers = { ...users, [email]: newUser };
+        setUsers(newUsers);
+        saveUsersToStorage(newUsers);
+        
+        addToast('Registration successful! Welcome.', 'success');
+        // Automatically log in the new user
+        setUser(newUser);
+        localStorage.setItem('loggedInUser', email);
+        return true;
+
+    }, [users, addToast]);
 
     const isArticleSaved = useCallback((articleId: string) => {
         return user?.savedArticles.includes(articleId) || false;
@@ -120,107 +139,67 @@ export const useAuth = () => {
             addToast('You must be logged in to save articles.', 'warning');
             return;
         }
-        setUser(currentUser => {
-            if (!currentUser) return null;
-            const isSaved = currentUser.savedArticles.includes(article.id);
-            const newSavedArticles = isSaved
-                ? currentUser.savedArticles.filter(id => id !== article.id)
-                : [...currentUser.savedArticles, article.id];
-            
-            addToast(isSaved ? 'Article removed from saved.' : 'Article saved!', 'success');
-
-            const updatedUser = { ...currentUser, savedArticles: newSavedArticles };
-            // In a real app, you would persist this to a backend
-            MOCK_USERS[currentUser.email] = updatedUser;
-            return updatedUser;
-        });
+        const isSaved = user.savedArticles.includes(article.id);
+        const newSavedArticles = isSaved
+            ? user.savedArticles.filter(id => id !== article.id)
+            : [...user.savedArticles, article.id];
+        
+        addToast(isSaved ? 'Article removed from saved.' : 'Article saved!', 'success');
+        persistUserUpdate({ ...user, savedArticles: newSavedArticles });
     }, [user, addToast]);
     
     const addSearchHistory = useCallback((query: string) => {
         if (!user || user.searchHistory.includes(query)) return;
-        setUser(currentUser => {
-            if (!currentUser) return null;
-            const newHistory = [query, ...currentUser.searchHistory].slice(0, 5); // Keep last 5
-            const updatedUser = { ...currentUser, searchHistory: newHistory };
-            MOCK_USERS[currentUser.email] = updatedUser;
-            return updatedUser;
-        });
+        const newHistory = [query, ...user.searchHistory].slice(0, 5); // Keep last 5
+        persistUserUpdate({ ...user, searchHistory: newHistory });
     }, [user]);
 
     const clearSearchHistory = useCallback(() => {
         if (!user) return;
-        setUser(currentUser => {
-            if (!currentUser) return null;
-            const updatedUser = { ...currentUser, searchHistory: [] };
-            MOCK_USERS[currentUser.email] = updatedUser;
-            return updatedUser;
-        });
+        persistUserUpdate({ ...user, searchHistory: [] });
     }, [user]);
-
-    const createAd = useCallback((adData: Omit<Ad, 'id'>) => {
-        if (!user) return;
-        const newAd: Ad = { ...adData, id: `user-ad-${Date.now()}` };
-        
-        if(user.subscription !== 'pro' && user.role !== 'admin') return;
-
-        setUser(currentUser => {
-            if (!currentUser) return null;
-            const updatedUser = { ...currentUser, userAds: [...currentUser.userAds, newAd] };
-            MOCK_USERS[currentUser.email] = updatedUser;
-            addToast('Advertisement created successfully!', 'success');
-            return updatedUser;
-        });
-    }, [user, addToast]);
 
     const updateProfile = useCallback((profileData: Partial<Pick<User, 'name' | 'bio'>>) => {
         if (!user) return;
-        setUser(currentUser => {
-            if (!currentUser) return null;
-            const updatedUser = { ...currentUser, ...profileData };
-            MOCK_USERS[currentUser.email] = updatedUser;
-            return updatedUser;
-        });
+        persistUserUpdate({ ...user, ...profileData });
     }, [user]);
 
     const toggleTwoFactor = useCallback((enabled: boolean) => {
         if (!user) return;
-        setUser(currentUser => {
-            if (!currentUser) return null;
-            const updatedUser = { ...currentUser, twoFactorEnabled: enabled };
-            MOCK_USERS[currentUser.email] = updatedUser;
-            return updatedUser;
-        });
+        persistUserUpdate({ ...user, twoFactorEnabled: enabled });
     }, [user]);
     
     const validatePassword = async (password: string): Promise<boolean> => {
-        // Mock validation
-        return new Promise(resolve => setTimeout(() => resolve(password === 'password123' || password === '2025'), 500));
+        // Mock validation for any password for regular users, specific for admin
+        return new Promise(resolve => setTimeout(() => {
+            if (user?.role === 'admin') {
+                resolve(password === '2025');
+            } else {
+                resolve(true); // Allow any password for demo purposes
+            }
+        }, 500));
     };
 
     const changePassword = async (newPassword: string): Promise<boolean> => {
         // Mock password change
+        console.log(`Password for ${user?.email} changed to ${newPassword}`);
         return new Promise(resolve => setTimeout(() => resolve(true), 500));
     };
 
     const toggleIntegration = useCallback((integrationId: IntegrationId) => {
         if (!user) return;
-        setUser(currentUser => {
-            if (!currentUser) return null;
-            const updatedUser = { 
-                ...currentUser,
-                integrations: {
-                    ...currentUser.integrations,
-                    [integrationId]: !currentUser.integrations[integrationId]
-                }
-            };
-            MOCK_USERS[currentUser.email] = updatedUser;
-            return updatedUser;
+        persistUserUpdate({ 
+            ...user,
+            integrations: {
+                ...user.integrations,
+                [integrationId]: !user.integrations[integrationId]
+            }
         });
     }, [user]);
     
     const getAllUsers = useCallback(() => {
-        return Object.values(MOCK_USERS);
-    }, []);
+        return Object.values(users);
+    }, [users]);
 
     const toggleAdminRole = useCallback((emailToModify: string, action: 'promote' | 'demote') => {
         if (user?.role !== 'admin') {
@@ -232,7 +211,7 @@ export const useAuth = () => {
             return false;
         }
 
-        const targetUser = MOCK_USERS[emailToModify];
+        const targetUser = users[emailToModify];
         if (!targetUser) {
             addToast('User not found.', 'error');
             return false;
@@ -244,7 +223,6 @@ export const useAuth = () => {
                 return false;
             }
             targetUser.role = 'admin';
-            if (!ADMIN_EMAILS.includes(emailToModify)) ADMIN_EMAILS.push(emailToModify);
             addToast(`${targetUser.name} has been promoted to Admin.`, 'success');
         } else { // demote
             if (targetUser.role !== 'admin') {
@@ -252,12 +230,12 @@ export const useAuth = () => {
                 return false;
             }
             targetUser.role = 'user';
-            ADMIN_EMAILS = ADMIN_EMAILS.filter(e => e !== emailToModify);
              addToast(`${targetUser.name}'s admin role has been revoked.`, 'success');
         }
+        persistUserUpdate(targetUser);
         return true;
 
-    }, [user, addToast]);
+    }, [user, users, addToast]);
 
 
     return { 
@@ -271,7 +249,6 @@ export const useAuth = () => {
         toggleSaveArticle,
         addSearchHistory,
         clearSearchHistory,
-        createAd,
         updateProfile,
         toggleTwoFactor,
         validatePassword,

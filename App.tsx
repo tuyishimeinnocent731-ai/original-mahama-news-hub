@@ -12,27 +12,29 @@ import PremiumModal from './components/PremiumModal';
 import SettingsPage from './pages/SettingsPage';
 import ArticleView from './components/ArticleView';
 import SavedArticlesPage from './pages/SavedArticlesPage';
-import MyAdsPage from './pages/MyAdsPage';
 import InFeedAd from './components/InFeedAd';
 import TopStoriesBanner from './components/TopStoriesBanner';
 import TopStoriesDrawer from './components/TopStoriesDrawer';
 import ArticleCardSkeleton from './components/ArticleCardSkeleton';
 import AdminPage from './pages/AdminPage';
 import Aside from './components/Aside';
+import { NewspaperIcon } from './components/icons/NewspaperIcon';
 
 import * as newsService from './services/newsService';
 import { useAuth } from './hooks/useAuth';
 import { useSettings } from './hooks/useSettings';
 import { useToast } from './contexts/ToastContext';
-import { Article } from './types';
+import { Article, Ad } from './types';
 
-type View = 'home' | 'article' | 'settings' | 'saved' | 'my-ads' | 'admin';
+type View = 'home' | 'article' | 'settings' | 'saved' | 'admin';
 
 const App: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [allArticles, setAllArticles] = useState<Article[]>([]);
+  const [allAds, setAllAds] = useState<Ad[]>([]);
   const [topStories, setTopStories] = useState<Article[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isTopStoriesLoading, setIsTopStoriesLoading] = useState(true);
   const [currentCategory, setCurrentCategory] = useState('World');
   const [currentArticle, setCurrentArticle] = useState<Article | null>(null);
   const [view, setView] = useState<View>('home');
@@ -71,16 +73,28 @@ const App: React.FC = () => {
     }
   }, [auth]);
 
-  const fetchAllArticles = useCallback(async () => {
+  const fetchAllContent = useCallback(async () => {
+    setIsLoading(true);
+    setIsTopStoriesLoading(true);
     const all = await newsService.getAllArticles();
     setAllArticles(all);
-  }, []);
+    const stories = await newsService.getTopStories();
+    setTopStories(stories);
+    setIsTopStoriesLoading(false);
+    
+    // Fetch current category articles after all articles are loaded
+    const currentCategoryArticles = await newsService.getArticles(currentCategory);
+    setArticles(currentCategoryArticles);
+    setIsLoading(false);
+
+    const ads = await newsService.getAds();
+    setAllAds(ads);
+  }, [currentCategory]);
+
 
   useEffect(() => {
-    fetchArticles('World');
-    newsService.getTopStories().then(setTopStories);
-    fetchAllArticles();
-  }, [fetchArticles, fetchAllArticles]);
+    fetchAllContent();
+  }, [fetchAllContent]);
 
   const handleArticleClick = (article: Article) => {
     setCurrentArticle(article);
@@ -104,8 +118,8 @@ const App: React.FC = () => {
     }
   };
   
-  const handleRegisterSuccess = (email: string) => {
-    if (auth.register(email)) {
+  const handleRegisterSuccess = (email: string, password?: string) => {
+    if (auth.register(email, password)) {
       setAuthModalOpen(false);
     }
   };
@@ -116,18 +130,32 @@ const App: React.FC = () => {
 
   const handleAddArticle = (articleData: Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>) => {
     newsService.addArticle(articleData);
-    fetchAllArticles(); // Refresh the list of all articles
+    fetchAllContent();
     addToast('Article uploaded successfully!', 'success');
   };
 
   const handleDeleteArticle = (articleId: string) => {
     newsService.deleteArticle(articleId);
-    fetchAllArticles(); // Refresh the list of all articles
-    setArticles(prev => prev.filter(a => a.id !== articleId)); // Also update current view
+    fetchAllContent();
     addToast('Article deleted successfully.', 'success');
   };
 
-  const customAds = auth.user?.subscription === 'pro' ? auth.user.userAds : [];
+  const handleAddAd = (adData: Omit<Ad, 'id'>) => {
+    newsService.addAd(adData);
+    fetchAllContent();
+    addToast('Advertisement created successfully!', 'success');
+  };
+
+  const handleDeleteAd = (adId: string) => {
+    newsService.deleteAd(adId);
+    fetchAllContent();
+    addToast('Advertisement deleted successfully.', 'success');
+  };
+
+  const inFeedAd = allAds.length > 0
+    ? allAds[Math.floor(Math.random() * allAds.length)]
+    : null;
+
 
   const renderMainContent = () => {
     switch(view) {
@@ -140,23 +168,24 @@ const App: React.FC = () => {
             onArticleClick={handleArticleClick}
             onUpgradeClick={() => setPremiumModalOpen(true)}
             onLoginClick={() => setAuthModalOpen(true)}
-            customAds={customAds}
+            customAds={allAds}
           />
         );
       case 'settings':
-        return auth.user && <SettingsPage user={auth.user} {...auth} onUpgradeClick={() => setPremiumModalOpen(true)} onMyAdsClick={() => setView('my-ads')} />;
+        return auth.user && <SettingsPage user={auth.user} {...auth} onUpgradeClick={() => setPremiumModalOpen(true)} />;
       case 'saved':
         const savedArticles = allArticles.filter(a => auth.isArticleSaved(a.id));
         return <SavedArticlesPage savedArticles={savedArticles} onArticleClick={handleArticleClick} />;
-      case 'my-ads':
-        return <MyAdsPage user={auth.user} onBack={handleBackToHome} onCreateAd={auth.createAd} />
       case 'admin':
         return auth.user?.role === 'admin' && (
             <AdminPage 
                 user={auth.user}
                 allArticles={allArticles}
+                allAds={allAds}
                 onAddArticle={handleAddArticle}
                 onDeleteArticle={handleDeleteArticle}
+                onAddAd={handleAddAd}
+                onDeleteAd={handleDeleteAd}
                 getAllUsers={auth.getAllUsers}
                 toggleAdminRole={auth.toggleAdminRole}
             />
@@ -171,14 +200,22 @@ const App: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {[...Array(6)].map((_, i) => <ArticleCardSkeleton key={i} />)}
                         </div>
-                    ) : (
+                    ) : articles.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {articles.map((article, index) => (
                             <React.Fragment key={article.id}>
-                            <ArticleCard article={article} onArticleClick={handleArticleClick} />
-                            {index === 1 && <InFeedAd />}
+                                <ArticleCard article={article} onArticleClick={handleArticleClick} />
+                                {index === 1 && inFeedAd && <InFeedAd ad={inFeedAd} />}
                             </React.Fragment>
                         ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-20 bg-gray-50 dark:bg-gray-800/50 rounded-lg col-span-full">
+                            <NewspaperIcon className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
+                            <h2 className="text-xl font-semibold">No Articles Published Yet</h2>
+                            <p className="text-gray-500 dark:text-gray-400 mt-2">
+                                Admins are working on it. Please check back later for the latest news.
+                            </p>
                         </div>
                     )}
                 </div>
@@ -187,8 +224,8 @@ const App: React.FC = () => {
                         title="Top Stories"
                         articles={topStories}
                         onArticleClick={handleArticleClick}
-                        isLoading={topStories.length === 0}
-                        customAds={customAds}
+                        isLoading={isTopStoriesLoading}
+                        customAds={allAds}
                     />
                 </div>
             </div>
@@ -212,7 +249,6 @@ const App: React.FC = () => {
             onSettingsClick={() => setView('settings')}
             onSavedClick={() => setView('saved')}
             onPremiumClick={() => setPremiumModalOpen(true)}
-            onMyAdsClick={() => setView('my-ads')}
             onAdminClick={() => setView('admin')}
         />
         <main className="container mx-auto p-4 sm:p-6 lg:p-8">

@@ -31,7 +31,6 @@ interface SettingsPageProps {
     validatePassword: (password: string) => Promise<boolean>;
     changePassword: (newPassword: string) => Promise<boolean>;
     toggleIntegration: (integrationId: IntegrationId) => void;
-    onMyAdsClick: () => void;
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = (props) => {

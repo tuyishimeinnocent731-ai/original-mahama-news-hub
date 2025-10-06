@@ -15,10 +15,10 @@ const MyAdsPage: React.FC<MyAdsPageProps> = ({ user, onBack, onCreateAd }) => {
     const [image, setImage] = useState<string | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-    if (!user || user.subscription !== 'pro') {
+    if (!user || (user.subscription !== 'pro' && user.role !== 'admin')) {
         return (
             <div className="container mx-auto p-8 text-center">
-                <h1 className="text-2xl font-bold">This feature is available for Pro subscribers only.</h1>
+                <h1 className="text-2xl font-bold">This feature is available for Pro subscribers or Admins only.</h1>
                 <button onClick={onBack} className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded-md">Go Back</button>
             </div>
         );

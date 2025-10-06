@@ -5,7 +5,7 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLogin: (email: string, password?: string) => void;
-  onRegister: (email: string) => void;
+  onRegister: (email: string, password?: string) => void;
 }
 
 type AuthMode = 'login' | 'register';
@@ -21,7 +21,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onRegis
     if (mode === 'login' && email && password) {
       onLogin(email, password);
     } else if (mode === 'register' && email && password && password === confirmPassword) {
-      onRegister(email);
+      onRegister(email, password);
     }
   };
   

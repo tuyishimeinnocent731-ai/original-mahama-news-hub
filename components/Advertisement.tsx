@@ -4,27 +4,6 @@ import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
 import { ChevronRightIcon } from './icons/ChevronRightIcon';
 import { Ad } from '../types';
 
-const mockAds: Ad[] = [
-    {
-        id: 'mock-1',
-        image: 'https://images.unsplash.com/photo-1511389026284-d62134a11773?q=80&w=800',
-        headline: 'Blazing Fast Web Hosting',
-        url: '#',
-    },
-    {
-        id: 'mock-2',
-        image: 'https://images.unsplash.com/photo-1522199755839-a2bacb67c546?q=80&w=800',
-        headline: 'Master Your Workflow',
-        url: '#',
-    },
-    {
-        id: 'mock-3',
-        image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=800',
-        headline: 'The Ultimate Design Tool',
-        url: '#',
-    }
-];
-
 interface AdvertisementProps {
     customAds?: Ad[];
 }
@@ -33,13 +12,15 @@ const Advertisement: React.FC<AdvertisementProps> = ({ customAds = [] }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isVisible, setIsVisible] = useState(true);
     
-    const allAds = [...mockAds, ...customAds.map(ad => ({ ...ad, isUserAd: true }))];
+    const allAds = customAds;
 
     const nextAd = useCallback(() => {
+        if (allAds.length === 0) return;
         setCurrentIndex(prevIndex => (prevIndex + 1) % allAds.length);
     }, [allAds.length]);
 
     const prevAd = () => {
+        if (allAds.length === 0) return;
         setCurrentIndex(prevIndex => (prevIndex - 1 + allAds.length) % allAds.length);
     };
 
@@ -48,8 +29,17 @@ const Advertisement: React.FC<AdvertisementProps> = ({ customAds = [] }) => {
         return () => clearInterval(adInterval);
     }, [nextAd]);
 
-    if (!isVisible || allAds.length === 0) {
+    if (!isVisible) {
         return null;
+    }
+
+    if (allAds.length === 0) {
+        return (
+             <div className="bg-gray-200 dark:bg-gray-800 rounded-lg p-4 relative shadow-md text-center">
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Your Ad Could Be Here!</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Contact an admin to display advertisements.</p>
+            </div>
+        );
     }
 
     const currentAd = allAds[currentIndex];
@@ -82,7 +72,7 @@ const Advertisement: React.FC<AdvertisementProps> = ({ customAds = [] }) => {
                 </div>
                 <div className="flex justify-between items-center mt-3">
                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {currentAd.isUserAd ? 'User Ad' : 'Advertisement'}
+                        Sponsored Content
                     </span>
                      <span className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-md hover:bg-blue-700 transition-colors">
                         Learn More

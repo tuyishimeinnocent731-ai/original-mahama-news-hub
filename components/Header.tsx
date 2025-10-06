@@ -24,7 +24,6 @@ interface HeaderProps {
     onSettingsClick: () => void;
     onSavedClick: () => void;
     onPremiumClick: () => void;
-    onMyAdsClick: () => void;
     onAdminClick: () => void;
     onCategorySelect: (category: string) => void;
     onArticleClick: (article: Article) => void;
@@ -64,7 +63,6 @@ const Header: React.FC<HeaderProps> = (props) => {
                                 onSettingsClick={props.onSettingsClick}
                                 onSavedClick={props.onSavedClick}
                                 onPremiumClick={props.onPremiumClick}
-                                onMyAdsClick={props.onMyAdsClick}
                                 onAdminClick={props.onAdminClick}
                             />
                         ) : (
