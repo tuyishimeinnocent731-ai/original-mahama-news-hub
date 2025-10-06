@@ -1,5 +1,6 @@
 import React from 'react';
 import { Article } from '../types';
+import RelatedArticleCard from './RelatedArticleCard';
 
 interface AsideProps {
   title: string;
@@ -11,11 +12,12 @@ interface AsideProps {
 const AsideSkeleton: React.FC = () => (
     <div className="space-y-4 animate-pulse">
         {[...Array(4)].map((_, i) => (
-            <div key={i} className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded"></div>
-                <div className="flex-1 space-y-2 py-1">
-                    <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-5/6"></div>
-                    <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/3"></div>
+             <div key={i} className="flex space-x-4">
+                <div className="w-24 h-24 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+                <div className="flex-1 space-y-3 py-1">
+                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/4"></div>
+                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded"></div>
+                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-5/6"></div>
                 </div>
             </div>
         ))}
@@ -25,23 +27,17 @@ const AsideSkeleton: React.FC = () => (
 
 const Aside: React.FC<AsideProps> = ({ title, articles, onArticleClick, isLoading = false }) => {
   return (
-    <aside className="space-y-8 sticky top-20">
+    <aside className="space-y-8 sticky top-24">
       <div>
         <h2 className="text-xl font-bold mb-4 pb-2 border-b-2 border-yellow-500">{title}</h2>
         {isLoading ? <AsideSkeleton /> : (
-            <div className="space-y-4">
-            {articles.map((article, index) => (
-                <div 
+            <div className="space-y-6">
+            {articles.map((article) => (
+                <RelatedArticleCard 
                     key={article.id} 
-                    className="flex items-start space-x-3 cursor-pointer group"
-                    onClick={() => onArticleClick(article)}
-                >
-                <span className="text-2xl font-bold text-gray-300 dark:text-gray-600">{`0${index + 1}`}</span>
-                <div>
-                    <h3 className="text-sm font-semibold group-hover:text-yellow-500 transition-colors">{article.title}</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{article.source.name}</p>
-                </div>
-                </div>
+                    article={article} 
+                    onArticleClick={() => onArticleClick(article)}
+                />
             ))}
             </div>
         )}

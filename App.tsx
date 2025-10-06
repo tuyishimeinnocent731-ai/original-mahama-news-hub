@@ -24,7 +24,9 @@ const AppContent: React.FC = () => {
 
     const [articles, setArticles] = useState<Article[]>([]);
     const [topStories, setTopStories] = useState<Article[]>([]);
+    const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRelatedLoading, setIsRelatedLoading] = useState(false);
     const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
     const [searchSources, setSearchSources] = useState<GroundingChunk[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -63,6 +65,20 @@ const AppContent: React.FC = () => {
     useEffect(() => {
         fetchArticles(selectedCategory);
     }, [selectedCategory, fetchArticles]);
+
+    useEffect(() => {
+        if (selectedArticle) {
+            setIsRelatedLoading(true);
+            newsService.getRelatedArticles(selectedArticle.category, selectedArticle.id)
+                .then(setRelatedArticles)
+                .catch(error => {
+                    console.error('Failed to fetch related articles:', error);
+                    addToast('Could not load related stories.', 'error');
+                    setRelatedArticles([]);
+                })
+                .finally(() => setIsRelatedLoading(false));
+        }
+    }, [selectedArticle, addToast]);
 
     const handleArticleClick = (article: Article) => {
         setSelectedArticle(article);
@@ -133,18 +149,15 @@ const AppContent: React.FC = () => {
 
             <main className="flex-grow container mx-auto p-4 lg:p-6">
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                    {selectedArticle ? (
-                        <div className="lg:col-span-4">
+                    <div className="lg:col-span-3">
+                        {selectedArticle ? (
                             <ArticleView
                                 article={selectedArticle}
-                                onArticleClick={handleArticleClick}
-                                isPremium={false} 
+                                isPremium={false}
                                 onUpgradeClick={() => setPremiumModalOpen(true)}
                             />
-                        </div>
-                    ) : (
-                        <>
-                            <div className="lg:col-span-3">
+                        ) : (
+                            <>
                                 <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500">{pageTitle}</h1>
                                 {searchSources.length > 0 && (
                                     <div className="mb-6 p-4 bg-gray-200 dark:bg-gray-800 rounded-lg">
@@ -165,17 +178,26 @@ const AppContent: React.FC = () => {
                                         ))
                                     )}
                                 </div>
-                            </div>
-                            <div className="lg:col-span-1">
-                                <Aside 
-                                    title="Top Stories" 
-                                    articles={topStories} 
-                                    onArticleClick={handleArticleClick} 
-                                    isLoading={topStories.length === 0}
-                                />
-                            </div>
-                        </>
-                    )}
+                            </>
+                        )}
+                    </div>
+                    <div className="lg:col-span-1">
+                         {selectedArticle ? (
+                            <Aside
+                                title="Related Stories"
+                                articles={relatedArticles}
+                                onArticleClick={handleArticleClick}
+                                isLoading={isRelatedLoading}
+                            />
+                        ) : (
+                            <Aside 
+                                title="Top Stories" 
+                                articles={topStories} 
+                                onArticleClick={handleArticleClick} 
+                                isLoading={topStories.length === 0}
+                            />
+                        )}
+                    </div>
                 </div>
             </main>
 
