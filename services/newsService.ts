@@ -1,85 +1,82 @@
-import { GoogleGenAI, Type } from '@google/genai';
-import { Article, GroundingChunk, SearchResult } from '../types';
-import { NEWS_CATEGORIES } from '../constants';
+import { GoogleGenAI } from "@google/genai";
+import { Article, GroundingChunk } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+if (!process.env.API_KEY) {
+  console.warn("API_KEY environment variable not set. Using a placeholder key.");
+}
 
-const articleSchema = {
-    type: Type.OBJECT,
-    properties: {
-        headline: { type: Type.STRING, description: 'A compelling news headline, 7-12 words long.' },
-        summary: { type: Type.STRING, description: 'A brief summary of the article, 2-3 sentences.' },
-        category: { type: Type.STRING, description: 'The category of the news article.'},
-        imageUrl: { type: Type.STRING, description: 'A placeholder image URL from https://picsum.photos of size 800x600.'}
-    },
-    required: ['headline', 'summary', 'category', 'imageUrl']
-};
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "YOUR_API_KEY" });
 
-export const getInitialNews = async (categories: string[] = NEWS_CATEGORIES): Promise<{ topStory: Article; secondaryStories: Article[] }> => {
+const parseArticlesFromResponse = (text: string, groundingChunks: GroundingChunk[] | undefined): Article[] => {
     try {
-        const categoriesToFetch = categories.length > 0 ? categories : NEWS_CATEGORIES;
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `Generate a set of diverse, realistic news articles in the style of a major international news outlet. Provide one top story and 8 secondary stories covering these categories: ${categoriesToFetch.join(', ')}. Ensure all image URLs are from picsum.photos with size 800/600.`,
-            config: {
-                responseMimeType: 'application/json',
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        topStory: articleSchema,
-                        secondaryStories: {
-                            type: Type.ARRAY,
-                            items: articleSchema,
-                            description: "An array of 8 secondary news articles."
-                        }
-                    },
-                    required: ['topStory', 'secondaryStories']
-                }
-            }
-        });
+        const cleanedText = text.replace(/```json|```/g, '').trim();
+        const parsed = JSON.parse(cleanedText);
         
-        const jsonResponse = JSON.parse(response.text);
-        
-        // Data validation
-        if (!jsonResponse.topStory || !jsonResponse.secondaryStories || jsonResponse.secondaryStories.length === 0) {
-            throw new Error("Invalid data structure received from API.");
+        if (!Array.isArray(parsed.articles)) {
+            console.error("Parsed response is not in the expected format:", parsed);
+            return [];
         }
-
-        return {
-            topStory: jsonResponse.topStory,
-            secondaryStories: jsonResponse.secondaryStories,
-        };
+        
+        return parsed.articles.map((article: any, index: number) => ({
+            id: article.title + index,
+            title: article.title || "No title",
+            description: article.description || "No description",
+            body: article.body || article.content || "Full content not available.", // Prioritize 'body'
+            author: article.author || "Unknown",
+            publishedAt: article.publishedAt || new Date().toISOString(),
+            source: {
+                name: article.source?.name || "Unknown Source"
+            },
+            url: article.url || groundingChunks?.[index]?.web?.uri || "#",
+            urlToImage: article.urlToImage || `https://picsum.photos/seed/${encodeURIComponent(article.title || index)}/400/200`,
+            category: 'search'
+        }));
     } catch (error) {
-        console.error("Error fetching initial news:", error);
-        throw new Error("Could not fetch news from the Gemini API.");
+        console.error("Error parsing articles from AI response:", error);
+        console.error("Original response text:", text);
+        return [{
+            id: 'fallback-1',
+            title: "AI Response",
+            description: text.substring(0, 150) + '...',
+            body: text,
+            author: "Gemini",
+            publishedAt: new Date().toISOString(),
+            source: { name: "Google Search" },
+            url: groundingChunks?.[0]?.web?.uri || "#",
+            urlToImage: `https://picsum.photos/seed/fallback/400/200`,
+            category: 'search'
+        }];
     }
 };
 
-export const searchNews = async (query: string): Promise<SearchResult> => {
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: `Provide a concise, neutral news summary about: "${query}".`,
-            config: {
-                tools: [{ googleSearch: {} }]
-            }
-        });
+export const fetchNews = async (query: string): Promise<{articles: Article[], sources: GroundingChunk[]}> => {
+  try {
+    const prompt = `Fetch the latest top 10 news articles about "${query}". For each article, provide:
+    1. title
+    2. description (a concise summary)
+    3. body (a full, multi-paragraph article body, at least 3-4 paragraphs long)
+    4. author
+    5. source name
+    6. publication date
+    7. URL
+    8. image URL.
+    Format the output as a JSON object with a single key "articles" which is an array of article objects.`;
+    
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+      },
+    });
 
-        const summary = response.text;
-        
-        const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks as GroundingChunk[] || [];
+    const text = response.text;
+    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+    const articles = parseArticlesFromResponse(text, groundingChunks);
 
-        const sources = groundingChunks
-            .map(chunk => chunk.web)
-            .filter(web => web?.uri); // Filter out any undefined/null chunks
-
-        return {
-            summary,
-            sources
-        };
-
-    } catch (error) {
-        console.error("Error searching news:", error);
-        throw new Error("Could not perform search with the Gemini API.");
-    }
+    return { articles, sources: groundingChunks || [] };
+  } catch (error) {
+    console.error("Error fetching news from Gemini API:", error);
+    return { articles: [], sources: [] };
+  }
 };

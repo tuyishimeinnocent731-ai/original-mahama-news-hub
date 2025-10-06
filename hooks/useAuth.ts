@@ -1,35 +1,50 @@
-import { useState, useEffect, useCallback } from 'react';
-
-const AUTH_TOKEN_KEY = 'authToken';
+import { useState, useEffect } from 'react';
+import { User, SubscriptionPlan } from '../types';
 
 export const useAuth = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [plan, setPlan] = useState<SubscriptionPlan>('free');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem(AUTH_TOKEN_KEY);
-    if (token) {
-      setIsLoggedIn(true);
+    try {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+        const storedPlan = localStorage.getItem('subscriptionPlan') as SubscriptionPlan;
+        if (storedPlan) {
+          setPlan(storedPlan);
+        }
+    } catch (error) {
+        console.error("Failed to parse user from localStorage", error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('subscriptionPlan');
     }
+    setLoading(false);
   }, []);
 
-  const login = useCallback((email: string) => {
-    // Simulate API call and token generation
-    const mockToken = `mock-token-for-${email}`;
-    localStorage.setItem(AUTH_TOKEN_KEY, mockToken);
-    setIsLoggedIn(true);
-  }, []);
-  
-  const register = useCallback((email: string) => {
-    // Simulate user creation and login
-    const mockToken = `mock-token-for-new-user-${email}`;
-    localStorage.setItem(AUTH_TOKEN_KEY, mockToken);
-    setIsLoggedIn(true);
-  }, []);
+  const login = (email: string) => {
+    const newUser = { email };
+    localStorage.setItem('user', JSON.stringify(newUser));
+    setUser(newUser);
+  };
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    setIsLoggedIn(false);
-  }, []);
+  const logout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('subscriptionPlan');
+    setUser(null);
+    setPlan('free');
+  };
 
-  return { isLoggedIn, login, register, logout };
+  const register = (email: string) => {
+    login(email);
+  };
+
+  const subscribe = (newPlan: SubscriptionPlan) => {
+    localStorage.setItem('subscriptionPlan', newPlan);
+    setPlan(newPlan);
+  };
+
+  return { user, loading, login, logout, register, subscribe, plan };
 };

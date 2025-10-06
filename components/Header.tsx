@@ -1,88 +1,104 @@
-import React from 'react';
+import React, { useState } from 'react';
 import SearchBar from './SearchBar';
-import { MoonIcon } from './icons/MoonIcon';
-import { SunIcon } from './icons/SunIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
 import { LoginIcon } from './icons/LoginIcon';
 import { LogoutIcon } from './icons/LogoutIcon';
 import { MenuIcon } from './icons/MenuIcon';
-import { Theme } from '../hooks/useSettings';
+import { NAV_LINKS } from '../constants';
+import { NavLink as NavLinkType } from '../types';
 
 interface HeaderProps {
-    onSearch: (query: string) => void;
-    onLogoClick: () => void;
-    theme: Theme;
-    toggleTheme: (theme: Theme) => void;
-    isLoggedIn: boolean;
-    onLoginClick: () => void;
-    onLogoutClick: () => void;
-    onSettingsClick: () => void;
-    onMobileMenuClick: () => void;
+  onSearch: (query: string) => void;
+  onNavClick: (category: string) => void;
+  onAuthClick: () => void;
+  onMobileMenuClick: () => void;
+  isLoggedIn: boolean;
+  onLogout: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onSearch, onLogoClick, theme, toggleTheme, isLoggedIn, onLoginClick, onLogoutClick, onSettingsClick, onMobileMenuClick }) => {
+const NavLink: React.FC<{ link: NavLinkType, onNavClick: (category: string) => void }> = ({ link, onNavClick }) => {
+    const [isOpen, setIsOpen] = useState(false);
     return (
-        <header className="bg-gray-900 text-white sticky top-0 z-50">
-            <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-20">
-                    <div className="flex items-center">
-                        <button onClick={onLogoClick} className="flex-shrink-0 flex items-center space-x-3" aria-label="Home">
-                           <div className="bg-gray-800 p-2 rounded-md">
-                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-6 w-auto text-yellow-400">
-                               <path d="M4 20V4H8L12 12L16 4H20V20H17V8L13 16H11L7 8V20H4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                             </svg>
-                           </div>
-                           <div className="flex flex-col items-start leading-none">
-                            <span className="text-xl font-bold tracking-wider">MAHAMA</span>
-                            <span className="text-xs font-semibold tracking-widest text-gray-300">NEWS TV</span>
-                           </div>
-                        </button>
-                    </div>
-                    <div className="hidden md:flex flex-1 justify-center px-2 lg:ml-6 lg:justify-end">
-                        <SearchBar onSearch={onSearch} />
-                    </div>
-                     <div className="flex items-center space-x-2 sm:space-x-4 ml-4">
-                        <button onClick={() => toggleTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle dark mode" className="p-2 rounded-full hover:bg-gray-700">
-                            {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-                        </button>
-                        <button onClick={onSettingsClick} aria-label="Settings" className="p-2 rounded-full hover:bg-gray-700">
-                            <SettingsIcon />
-                        </button>
-                         {isLoggedIn ? (
-                            <button onClick={onLogoutClick} aria-label="Logout" className="p-2 rounded-full hover:bg-gray-700">
-                                <LogoutIcon />
-                            </button>
-                         ) : (
-                            <button onClick={onLoginClick} aria-label="Login" className="p-2 rounded-full hover:bg-gray-700">
-                                <LoginIcon />
-                            </button>
-                         )}
-                         <div className="md:hidden">
-                            <button onClick={onMobileMenuClick} aria-label="Open menu" className="p-2 rounded-full hover:bg-gray-700">
-                                <MenuIcon />
-                            </button>
-                         </div>
+        <div 
+            className="relative"
+            onMouseEnter={() => setIsOpen(true)}
+            onMouseLeave={() => setIsOpen(false)}
+        >
+            <a
+                href={link.href}
+                onClick={(e) => {e.preventDefault(); onNavClick(link.name);}}
+                className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center"
+            >
+                {link.name}
+                {link.sublinks && (
+                    <svg className={`w-4 h-4 ml-1 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                )}
+            </a>
+            {link.sublinks && isOpen && (
+                <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50">
+                    <div className="py-1" role="menu" aria-orientation="vertical">
+                        {link.sublinks.map(sublink => (
+                            <a
+                                key={sublink.name}
+                                href={sublink.href}
+                                onClick={(e) => {e.preventDefault(); onNavClick(sublink.name); setIsOpen(false);}}
+                                className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                role="menuitem"
+                            >
+                                {sublink.name}
+                            </a>
+                        ))}
                     </div>
                 </div>
-                <nav className="hidden md:block bg-gray-800 -mx-4 sm:-mx-6 lg:-mx-8">
-                    <div className="max-w-screen-xl mx-auto px-2 sm:px-6 lg:px-8">
-                        <div className="relative flex items-center justify-between h-10">
-                            <div className="flex items-center space-x-1 sm:space-x-4 overflow-x-auto">
-                                <a href="#" onClick={(e) => { e.preventDefault(); onLogoClick(); }} className="text-white hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium border-b-2 border-yellow-400">Home</a>
-                                <a href="#" className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">World</a>
-                                <a href="#" className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Politics</a>
-                                <a href="#" className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Business</a>
-                                <a href="#" className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Economy</a>
-                                <a href="#" className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Technology</a>
-                                <a href="#" className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Sport</a>
-                                <a href="#" className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">History</a>
-                            </div>
-                        </div>
-                    </div>
-                </nav>
-            </div>
-        </header>
+            )}
+        </div>
     );
+};
+
+const Header: React.FC<HeaderProps> = ({ onSearch, onNavClick, onAuthClick, onMobileMenuClick, isLoggedIn, onLogout }) => {
+
+  return (
+    <header className="bg-blue-900 dark:bg-gray-900 shadow-lg sticky top-0 z-40">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center">
+            <a href="#" onClick={(e) => {e.preventDefault(); onNavClick('home');}} className="flex-shrink-0 text-white text-2xl font-bold tracking-wider">
+              Mahama News TV
+            </a>
+            <nav className="hidden md:block ml-10">
+              <div className="flex items-baseline space-x-1">
+                {NAV_LINKS.map((link) => (
+                  <NavLink key={link.name} link={link} onNavClick={onNavClick} />
+                ))}
+              </div>
+            </nav>
+          </div>
+          <div className="flex items-center">
+            <div className="hidden md:block">
+               <SearchBar onSearch={onSearch} />
+            </div>
+             <a href="#/settings" aria-label="Open settings" className="p-2 rounded-full text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white ml-2">
+                <SettingsIcon />
+            </a>
+            {isLoggedIn ? (
+                <button onClick={onLogout} aria-label="Logout" className="p-2 rounded-full text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white ml-2">
+                    <LogoutIcon />
+                </button>
+            ) : (
+                <button onClick={onAuthClick} aria-label="Login" className="p-2 rounded-full text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white ml-2">
+                    <LoginIcon />
+                </button>
+            )}
+             <div className="md:hidden ml-2">
+                <button onClick={onMobileMenuClick} aria-label="Open menu" className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none">
+                    <MenuIcon />
+                </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
 };
 
 export default Header;

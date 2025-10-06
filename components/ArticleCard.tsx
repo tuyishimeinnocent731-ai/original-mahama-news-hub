@@ -3,35 +3,48 @@ import { Article } from '../types';
 
 interface ArticleCardProps {
   article: Article;
-  isTopStory?: boolean;
+  onArticleClick: (article: Article) => void;
+  layoutMode?: 'normal' | 'compact';
 }
 
-const ArticleCard: React.FC<ArticleCardProps> = ({ article, isTopStory = false }) => {
-  if (isTopStory) {
-    return (
-      <div className="group border-b-2 pb-4 border-gray-200 dark:border-gray-700">
-        <div className="relative">
-          <img src={article.imageUrl} alt={article.headline} className="w-full h-auto object-cover" />
-          <div className="absolute bottom-0 left-0 bg-black bg-opacity-60 text-white p-4 w-full">
-            <h2 className="text-2xl md:text-4xl font-bold group-hover:text-yellow-300 transition-colors duration-300">{article.headline}</h2>
-            <p className="mt-2 text-sm md:text-base hidden md:block">{article.summary}</p>
-          </div>
-        </div>
-        <p className="mt-2 text-sm md:text-base md:hidden text-gray-800 dark:text-gray-300">{article.summary}</p>
-        <span className="mt-2 inline-block text-yellow-500 font-semibold text-sm uppercase">{article.category}</span>
-      </div>
-    );
+const ArticleCard: React.FC<ArticleCardProps> = ({ article, onArticleClick, layoutMode = 'normal' }) => {
+  const { title, description, urlToImage, source, publishedAt } = article;
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    e.currentTarget.src = 'https://via.placeholder.com/400x200?text=No+Image';
+  };
+
+  if (layoutMode === 'compact') {
+      return (
+         <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col cursor-pointer"
+            onClick={() => onArticleClick(article)}
+        >
+            <img className="h-32 w-full object-cover" src={urlToImage} alt={title} onError={handleImageError} loading="lazy"/>
+             <div className="p-4 flex-grow flex flex-col">
+                <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-2 line-clamp-3 flex-grow">{title}</h3>
+                <div className="mt-auto flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <span className="truncate pr-2">{source?.name || 'Unknown'}</span>
+                    <span>{new Date(publishedAt).toLocaleDateString()}</span>
+                </div>
+            </div>
+         </div>
+      );
   }
 
   return (
-    <div className="group flex flex-col h-full">
-      <div className="relative">
-        <img src={article.imageUrl} alt={article.headline} className="w-full h-48 object-cover" />
-      </div>
-      <div className="pt-4 flex flex-col flex-grow">
-          <h3 className="text-lg font-bold group-hover:text-yellow-400 transition-colors duration-300 flex-grow text-gray-900 dark:text-white">{article.headline}</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{article.summary}</p>
-          <span className="mt-4 inline-block text-yellow-500 font-semibold text-sm uppercase">{article.category}</span>
+    <div 
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col cursor-pointer"
+        onClick={() => onArticleClick(article)}
+    >
+      <img className="h-48 w-full object-cover" src={urlToImage} alt={title} onError={handleImageError} loading="lazy"/>
+      <div className="p-6 flex-grow flex flex-col">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 flex-grow">{title}</h3>
+        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-3">{description}</p>
+        <div className="mt-auto flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+          <span className="truncate pr-2">{source?.name || 'Unknown Source'}</span>
+          <span>{new Date(publishedAt).toLocaleDateString()}</span>
+        </div>
       </div>
     </div>
   );

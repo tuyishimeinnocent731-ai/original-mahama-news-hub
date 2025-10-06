@@ -1,79 +1,83 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
+import Footer from './components/Footer';
 import ArticleCard from './components/ArticleCard';
 import LoadingSpinner from './components/LoadingSpinner';
-import Footer from './components/Footer';
-import Aside from './components/Aside';
-import AuthModal from './components/AuthModal';
-import SettingsModal from './components/SettingsModal';
-import MobileMenu from './components/MobileMenu';
-import { getInitialNews, searchNews } from './services/newsService';
-import { Article, SearchResult } from './types';
-import { useSettings } from './hooks/useSettings';
+import { fetchNews } from './services/newsService';
+import { Article, GroundingChunk } from './types';
 import { useAuth } from './hooks/useAuth';
-import { NEWS_CATEGORIES } from './constants';
+import { useSettings } from './hooks/useSettings';
+import AuthModal from './components/AuthModal';
+import ArticleViewModal from './components/ArticleViewModal';
+import MobileMenu from './components/MobileMenu';
+import Aside from './components/Aside';
+import SettingsPage from './pages/SettingsPage';
+import PremiumModal from './components/PremiumModal';
 
 const App: React.FC = () => {
-  const [topStory, setTopStory] = useState<Article | null>(null);
-  const [secondaryStories, setSecondaryStories] = useState<Article[]>([]);
-  const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [sources, setSources] = useState<GroundingChunk[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isSearching, setIsSearching] = useState<boolean>(false);
+  
+  const { settings } = useSettings();
+  const [currentQuery, setCurrentQuery] = useState('latest world news');
+
+  const { user, login, logout, register, subscribe, plan } = useAuth();
+
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
-  const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [isArticleModalOpen, setArticleModalOpen] = useState(false);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isPremiumModalOpen, setPremiumModalOpen] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 
-  const { settings, setTheme, setPreferredCategories } = useSettings();
-  const { isLoggedIn, login, logout, register } = useAuth();
+  const [route, setRoute] = useState(window.location.hash);
 
-  const fetchInitialNews = useCallback(async (categories: string[] = NEWS_CATEGORIES) => {
-    setIsLoading(true);
+  useEffect(() => {
+    const handleHashChange = () => {
+      setRoute(window.location.hash);
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+  
+  const handleSearch = useCallback(async (query: string, categories?: string[]) => {
+    setLoading(true);
     setError(null);
-    setSearchResults(null);
-    setIsSearching(false);
+    setArticles([]);
+    setRoute('#');
+    window.location.hash = '#';
+
     try {
-      // Use preferred categories if they exist, otherwise fetch from all
-      const categoriesToFetch = categories.length > 0 ? categories : NEWS_CATEGORIES;
-      const news = await getInitialNews(categoriesToFetch);
-      setTopStory(news.topStory);
-      setSecondaryStories(news.secondaryStories);
+      const finalQuery = categories && categories.length > 0
+        ? `latest news on ${categories.join(', ')}`
+        : query;
+      const { articles: fetchedArticles, sources: fetchedSources } = await fetchNews(finalQuery);
+      setArticles(fetchedArticles);
+      setSources(fetchedSources);
     } catch (err) {
       setError('Failed to fetch news. Please try again later.');
-      console.error(err);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchInitialNews(settings.preferredCategories);
-  }, [settings.preferredCategories, fetchInitialNews]);
+    handleSearch('latest world news', settings.preferredCategories);
+  }, [settings.preferredCategories, handleSearch]);
 
-  const handleSearch = async (query: string) => {
-    if (!query.trim()) {
-      fetchInitialNews(settings.preferredCategories);
-      return;
-    }
-    setIsLoading(true);
-    setError(null);
-    setIsSearching(true);
-    try {
-      const results = await searchNews(query);
-      setSearchResults(results);
-    } catch (err)
-     {
-      setError('Failed to perform search. Please try again.');
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleNavClick = (category: string) => {
+    setCurrentQuery(`latest ${category} news`);
+    handleSearch(`latest ${category} news`);
+    setMobileMenuOpen(false);
   };
 
-  const handleLogoClick = () => {
-    fetchInitialNews(settings.preferredCategories);
-  }
-
+  const handleArticleClick = (article: Article) => {
+    setSelectedArticle(article);
+    setArticleModalOpen(true);
+  };
+  
   const handleLogin = (email: string) => {
     login(email);
     setAuthModalOpen(false);
@@ -83,92 +87,92 @@ const App: React.FC = () => {
     register(email);
     setAuthModalOpen(false);
   };
+  
+  const handleSubscribe = (newPlan: 'free' | 'standard' | 'premium') => {
+    subscribe(newPlan);
+    setPremiumModalOpen(false);
+  }
 
-  const renderContent = () => {
-    if (isLoading) {
-      return <div className="flex justify-center items-center h-96"><LoadingSpinner /></div>;
-    }
-
-    if (error) {
-      return <div className="text-center text-red-500 py-10">{error}</div>;
-    }
-
-    if (isSearching && searchResults) {
-      return (
-        <div className="p-4 md:p-8">
-          <h1 className="text-3xl font-bold mb-4 border-b-4 border-yellow-400 pb-2 text-gray-900 dark:text-white">Search Results</h1>
-          <p className="text-lg mb-6 text-gray-700 dark:text-gray-300">{searchResults.summary}</p>
-          {searchResults.sources && searchResults.sources.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Sources:</h2>
-              <ul className="list-disc list-inside space-y-1">
-                {searchResults.sources.map((source, index) => (
-                  <li key={index}>
-                    <a href={source.uri} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
-                      {source.title || source.uri}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    return (
-      <>
-        {topStory && (
-          <div className="p-4 md:p-8">
-            <ArticleCard article={topStory} isTopStory={true} />
-          </div>
-        )}
-        <div className="p-4 md:p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {secondaryStories.map((story, index) => (
-            <ArticleCard key={index} article={story} />
-          ))}
-        </div>
-      </>
-    );
-  };
+  const trendingTopics = ["AI", "Elections 2024", "Climate Change", "Stock Market", "Global Economy"];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
-      <Header 
-        onSearch={handleSearch} 
-        onLogoClick={handleLogoClick} 
-        theme={settings.theme} 
-        toggleTheme={setTheme}
-        isLoggedIn={isLoggedIn}
-        onLoginClick={() => setAuthModalOpen(true)}
-        onLogoutClick={logout}
-        onSettingsClick={() => setSettingsModalOpen(true)}
-        onMobileMenuClick={() => setMobileMenuOpen(prev => !prev)}
+    <div className={`flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans ${settings.theme}`}>
+      <Header
+        onSearch={handleSearch}
+        onNavClick={handleNavClick}
+        onAuthClick={() => setAuthModalOpen(true)}
+        onMobileMenuClick={() => setMobileMenuOpen(true)}
+        isLoggedIn={!!user}
+        onLogout={logout}
       />
-      <MobileMenu 
-        isOpen={isMobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-        onNavClick={handleLogoClick}
-      />
-      <div className="max-w-screen-xl mx-auto grid grid-cols-12 gap-8">
-        <main className="col-span-12 lg:col-span-9">
-          {renderContent()}
-        </main>
-        <Aside />
-      </div>
+      <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
+        {route === '#/settings' ? (
+          <SettingsPage />
+        ) : (
+          <div className="flex flex-col lg:flex-row gap-8">
+              <div className="w-full lg:flex-1">
+                   <h1 className="text-3xl font-bold mb-6 capitalize border-b-4 border-yellow-500 pb-2">{currentQuery}</h1>
+                  {loading && <LoadingSpinner />}
+                  {error && <p className="text-red-500 text-center">{error}</p>}
+                  {!loading && !error && (
+                  <div className={`grid grid-cols-1 gap-6 ${settings.layoutMode === 'compact' ? 'md:grid-cols-3 lg:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
+                      {articles.map((article) => (
+                      <ArticleCard key={article.id} article={article} onArticleClick={handleArticleClick} layoutMode={settings.layoutMode}/>
+                      ))}
+                  </div>
+                  )}
+                   {sources.length > 0 && (
+                      <div className="mt-8 p-4 bg-gray-200 dark:bg-gray-800 rounded-lg">
+                          <h3 className="font-semibold text-lg mb-2">Sources:</h3>
+                          <ul className="list-disc list-inside space-y-1">
+                              {/* FIX: Check for source.web.uri as it is now optional in the GroundingChunk type. */}
+                              {sources.map((source, index) => source.web && source.web.uri && (
+                                  <li key={index}>
+                                      <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-yellow-600 dark:text-yellow-400 hover:underline">
+                                          {source.web.title || source.web.uri}
+                                      </a>
+                                  </li>
+                              ))}
+                          </ul>
+                      </div>
+                  )}
+              </div>
+              <Aside 
+                  trendingTopics={trendingTopics}
+                  topStories={articles}
+                  onTopicClick={handleSearch}
+                  onArticleClick={handleArticleClick}
+                  onPremiumClick={() => setPremiumModalOpen(true)}
+                  isPremium={plan !== 'free'}
+              />
+          </div>
+        )}
+      </main>
       <Footer />
-      <AuthModal
-        isOpen={isAuthModalOpen}
+
+      {/* Modals */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
         onClose={() => setAuthModalOpen(false)}
         onLogin={handleLogin}
         onRegister={handleRegister}
       />
-      <SettingsModal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setSettingsModalOpen(false)}
-        settings={settings}
-        setTheme={setTheme}
-        setPreferredCategories={setPreferredCategories}
+      <PremiumModal
+        isOpen={isPremiumModalOpen}
+        onClose={() => setPremiumModalOpen(false)}
+        onSubscribe={handleSubscribe}
+        currentPlan={plan}
+      />
+      <ArticleViewModal
+        isOpen={isArticleModalOpen}
+        onClose={() => setArticleModalOpen(false)}
+        article={selectedArticle}
+        fontSize={settings.fontSize}
+      />
+      <MobileMenu
+        isOpen={isMobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        onNavClick={handleNavClick}
       />
     </div>
   );

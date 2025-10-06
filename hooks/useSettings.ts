@@ -1,66 +1,80 @@
 import { useState, useEffect, useCallback } from 'react';
+import { ALL_CATEGORIES } from '../constants';
 
-export type Theme = 'light' | 'dark' | 'system';
+type Theme = 'light' | 'dark' | 'system';
+type LayoutMode = 'normal' | 'compact';
+type FontSize = 'sm' | 'base' | 'lg';
 
 export interface Settings {
     theme: Theme;
+    notifications: boolean;
     preferredCategories: string[];
+    fontSize: FontSize;
+    layoutMode: LayoutMode;
+    region: string;
+    showSponsored: boolean;
 }
 
-const SETTINGS_KEY = 'appSettings';
-
-const getSystemTheme = (): 'light' | 'dark' => {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
+const defaultSettings: Settings = {
+    theme: 'system',
+    notifications: true,
+    preferredCategories: ['Technology', 'Business'],
+    fontSize: 'base',
+    layoutMode: 'normal',
+    region: 'us',
+    showSponsored: true,
+};
 
 export const useSettings = () => {
-  const [settings, setSettings] = useState<Settings>({
-    theme: 'system',
-    preferredCategories: []
-  });
+    const [settings, setSettings] = useState<Settings>(defaultSettings);
 
-  useEffect(() => {
-    try {
-        const storedSettings = localStorage.getItem(SETTINGS_KEY);
-        if (storedSettings) {
-            setSettings(JSON.parse(storedSettings));
-        }
-    } catch (error) {
-        console.error("Failed to parse settings from localStorage", error);
-    }
-  }, []);
+    const applyTheme = useCallback((theme: Theme) => {
+        const root = window.document.documentElement;
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        root.classList.remove('light', 'dark');
 
-  useEffect(() => {
-    const applyTheme = () => {
-        if (settings.theme === 'dark' || (settings.theme === 'system' && getSystemTheme() === 'dark')) {
-            document.documentElement.classList.add('dark');
+        if (theme === 'system') {
+            root.classList.add(systemPrefersDark ? 'dark' : 'light');
         } else {
-            document.documentElement.classList.remove('dark');
+            root.classList.add(theme);
         }
+    }, []);
+
+    useEffect(() => {
+        try {
+            const storedSettings = localStorage.getItem('settings');
+            const loadedSettings = storedSettings ? { ...defaultSettings, ...JSON.parse(storedSettings) } : defaultSettings;
+            setSettings(loadedSettings);
+            applyTheme(loadedSettings.theme);
+        } catch (error) {
+            console.error("Failed to parse settings from localStorage", error);
+            applyTheme(defaultSettings.theme);
+        }
+    }, [applyTheme]);
+    
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleChange = () => {
+            if (settings.theme === 'system') {
+                applyTheme('system');
+            }
+        };
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+    }, [settings.theme, applyTheme]);
+
+
+    const updateSettings = (newSettings: Partial<Settings>) => {
+        setSettings(prev => {
+            const updated = { ...prev, ...newSettings };
+            localStorage.setItem('settings', JSON.stringify(updated));
+            if (newSettings.theme) {
+                applyTheme(newSettings.theme);
+            }
+            return updated;
+        });
     };
-    applyTheme();
 
-    // Listen for system theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    mediaQuery.addEventListener('change', applyTheme);
-
-    return () => mediaQuery.removeEventListener('change', applyTheme);
-  }, [settings.theme]);
-
-  const updateSettings = (newSettings: Partial<Settings>) => {
-    const updated = { ...settings, ...newSettings };
-    setSettings(updated);
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
-  };
-
-  const setTheme = useCallback((theme: Theme) => {
-    updateSettings({ theme });
-  }, [settings]);
-
-  const setPreferredCategories = useCallback((categories: string[]) => {
-    updateSettings({ preferredCategories: categories });
-  }, [settings]);
-
-
-  return { settings, setTheme, setPreferredCategories };
+    return { settings, updateSettings, allCategories: ALL_CATEGORIES };
 };

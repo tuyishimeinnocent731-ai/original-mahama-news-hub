@@ -1,22 +1,34 @@
-
 export interface Article {
-  headline: string;
-  summary: string;
+  id: string;
+  title: string;
+  description: string;
+  body: string; // Changed from 'content' to 'body' for full article text
+  author: string;
+  publishedAt: string;
+  source: {
+    name: string;
+  };
+  url: string;
+  urlToImage: string;
   category: string;
-  imageUrl: string;
 }
 
 export interface GroundingChunk {
-  web: {
-    uri: string;
-    title: string;
+  web?: {
+    // FIX: Made uri and title optional to match the type from @google/genai SDK.
+    uri?: string;
+    title?: string;
   };
 }
 
-export interface SearchResult {
-  summary: string;
-  sources: {
-    uri: string;
-    title: string;
-  }[];
+export interface User {
+    email: string;
+}
+
+export type SubscriptionPlan = 'free' | 'standard' | 'premium';
+
+export interface NavLink {
+    name: string;
+    href: string;
+    sublinks?: NavLink[];
 }
