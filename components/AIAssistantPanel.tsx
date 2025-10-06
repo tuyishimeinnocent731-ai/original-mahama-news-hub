@@ -2,6 +2,7 @@ import React from 'react';
 import LoadingSpinner from './LoadingSpinner';
 import { CloseIcon } from './icons/CloseIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
+import { StarIcon } from './icons/StarIcon';
 
 interface AIAssistantPanelProps {
     isOpen: boolean;
@@ -12,6 +13,8 @@ interface AIAssistantPanelProps {
     isKeyPointsLoading: boolean;
     onGenerateSummary: () => void;
     onGenerateKeyPoints: () => void;
+    isPremium: boolean;
+    onUpgradeClick: () => void;
 }
 
 const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({
@@ -23,6 +26,8 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({
     isKeyPointsLoading,
     onGenerateSummary,
     onGenerateKeyPoints,
+    isPremium,
+    onUpgradeClick,
 }) => {
     return (
         <>
@@ -53,35 +58,50 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({
 
                     {/* Content */}
                     <div className="flex-grow p-6 overflow-y-auto space-y-6">
-                        <div className="space-y-4">
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Enhance your reading experience with AI-powered tools.</p>
-                            <button onClick={onGenerateSummary} disabled={isSummaryLoading} className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors duration-200 font-semibold">
-                                {isSummaryLoading ? 'Generating Summary...' : 'Summarize Article'}
-                            </button>
-                            <button onClick={onGenerateKeyPoints} disabled={isKeyPointsLoading} className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors duration-200 font-semibold">
-                                {isKeyPointsLoading ? 'Extracting Key Points...' : 'Get Key Points'}
-                            </button>
-                        </div>
-
-                        {(isSummaryLoading || isKeyPointsLoading) && <div className="py-6 flex justify-center"><LoadingSpinner /></div>}
-
-                        {summary && (
-                            <div className="pt-4 animate-fade-in">
-                                <h3 className="font-semibold mb-2 text-lg">Summary:</h3>
-                                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap prose dark:prose-invert max-w-none">{summary}</p>
-                                </div>
+                        {!isPremium ? (
+                            <div className="text-center p-6 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                                <StarIcon className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
+                                <h3 className="text-lg font-semibold mb-2">Upgrade for AI Features</h3>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                    Unlock article summaries and key points by upgrading your plan.
+                                </p>
+                                <button onClick={onUpgradeClick} className="w-full px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 font-semibold">
+                                    Upgrade Now
+                                </button>
                             </div>
-                        )}
-                        {keyPoints.length > 0 && (
-                            <div className="pt-4 animate-fade-in">
-                                <h3 className="font-semibold mb-2 text-lg">Key Points:</h3>
-                                 <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                    <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-2 prose dark:prose-invert max-w-none">
-                                        {keyPoints.map((point, index) => <li key={index}>{point}</li>)}
-                                    </ul>
+                        ) : (
+                            <>
+                                <div className="space-y-4">
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Enhance your reading experience with AI-powered tools.</p>
+                                    <button onClick={onGenerateSummary} disabled={isSummaryLoading} className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors duration-200 font-semibold">
+                                        {isSummaryLoading ? 'Generating Summary...' : 'Summarize Article'}
+                                    </button>
+                                    <button onClick={onGenerateKeyPoints} disabled={isKeyPointsLoading} className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors duration-200 font-semibold">
+                                        {isKeyPointsLoading ? 'Extracting Key Points...' : 'Get Key Points'}
+                                    </button>
                                 </div>
-                            </div>
+
+                                {(isSummaryLoading || isKeyPointsLoading) && <div className="py-6 flex justify-center"><LoadingSpinner /></div>}
+
+                                {summary && (
+                                    <div className="pt-4 animate-fade-in">
+                                        <h3 className="font-semibold mb-2 text-lg">Summary:</h3>
+                                        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap prose dark:prose-invert max-w-none">{summary}</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {keyPoints.length > 0 && (
+                                    <div className="pt-4 animate-fade-in">
+                                        <h3 className="font-semibold mb-2 text-lg">Key Points:</h3>
+                                        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                            <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-2 prose dark:prose-invert max-w-none">
+                                                {keyPoints.map((point, index) => <li key={index}>{point}</li>)}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

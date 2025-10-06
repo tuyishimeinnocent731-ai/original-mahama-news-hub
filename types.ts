@@ -1,3 +1,6 @@
+
+// Fix: Removed self-import of NavLink which caused a conflict with its local declaration.
+
 export interface Article {
   id: string;
   title: string;
@@ -23,6 +26,10 @@ export interface GroundingChunk {
 
 export interface User {
     email: string;
+    name: string;
+    avatar: string;
+    subscription: SubscriptionPlan;
+    savedArticles: Article[];
 }
 
 export type SubscriptionPlan = 'free' | 'standard' | 'premium';

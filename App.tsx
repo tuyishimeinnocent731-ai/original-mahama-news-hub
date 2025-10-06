@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -5,12 +6,13 @@ import ArticleCard from './components/ArticleCard';
 import ArticleCardSkeleton from './components/ArticleCardSkeleton';
 import Aside from './components/Aside';
 import ArticleView from './components/ArticleView';
-import SettingsModal from './components/SettingsModal';
 import AuthModal from './components/AuthModal';
 import PremiumModal from './components/PremiumModal';
 import SearchOverlay from './components/SearchOverlay';
 import CommandPalette from './components/CommandPalette';
 import BackToTopButton from './components/BackToTopButton';
+import SavedArticlesPage from './pages/SavedArticlesPage';
+import SettingsPage from './pages/SettingsPage';
 import { Article, GroundingChunk } from './types';
 import * as newsService from './services/newsService';
 import { useSettings } from './hooks/useSettings';
@@ -18,8 +20,8 @@ import { useAuth } from './hooks/useAuth';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 
 const AppContent: React.FC = () => {
-    const { settings } = useSettings();
-    const { user, login, logout, register, isLoggedIn } = useAuth();
+    const { settings, updateSettings } = useSettings();
+    const { user, login, logout, register, isLoggedIn, updateSubscription, saveArticle, unsaveArticle, isArticleSaved, updateProfile } = useAuth();
     const { addToast } = useToast();
 
     const [articles, setArticles] = useState<Article[]>([]);
@@ -31,8 +33,8 @@ const AppContent: React.FC = () => {
     const [searchSources, setSearchSources] = useState<GroundingChunk[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
+    const [currentView, setCurrentView] = useState('home'); // 'home', 'saved', 'settings'
 
-    const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
     const [isAuthModalOpen, setAuthModalOpen] = useState(false);
     const [isPremiumModalOpen, setPremiumModalOpen] = useState(false);
     const [isSearchOverlayOpen, setSearchOverlayOpen] = useState(false);
@@ -41,6 +43,7 @@ const AppContent: React.FC = () => {
     const fetchArticles = useCallback(async (category: string) => {
         setIsLoading(true);
         setSelectedArticle(null);
+        setCurrentView('home');
         try {
             const fetchedArticles = await newsService.getArticlesByCategory(category);
             setArticles(fetchedArticles);
@@ -53,7 +56,6 @@ const AppContent: React.FC = () => {
     }, [addToast]);
 
     useEffect(() => {
-        // Fetch top stories once on initial load
         newsService.getTopStories()
             .then(setTopStories)
             .catch(error => {
@@ -63,8 +65,10 @@ const AppContent: React.FC = () => {
     }, [addToast]);
 
     useEffect(() => {
-        fetchArticles(selectedCategory);
-    }, [selectedCategory, fetchArticles]);
+        if (currentView === 'home' && !selectedArticle) {
+            fetchArticles(selectedCategory);
+        }
+    }, [selectedCategory, fetchArticles, currentView, selectedArticle]);
 
     useEffect(() => {
         if (selectedArticle) {
@@ -82,6 +86,20 @@ const AppContent: React.FC = () => {
 
     const handleArticleClick = (article: Article) => {
         setSelectedArticle(article);
+        setCurrentView('home');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    
+    const handleHomeClick = () => {
+        setSelectedArticle(null);
+        setCurrentView('home');
+        setSelectedCategory('all');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    const handleSettingsClick = () => {
+        setSelectedArticle(null);
+        setCurrentView('settings');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -89,7 +107,7 @@ const AppContent: React.FC = () => {
         setSearchQuery('');
         setSearchSources([]);
         setSelectedCategory(category.toLowerCase());
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        handleHomeClick();
     };
 
     const handleSearch = async (query: string) => {
@@ -97,7 +115,8 @@ const AppContent: React.FC = () => {
         setSearchOverlayOpen(false);
         setSearchQuery(`Search results for: "${query}"`);
         setSelectedArticle(null);
-        setSelectedCategory(''); // Clear category selection on search
+        setCurrentView('home');
+        setSelectedCategory('');
         try {
             const { articles: searchedArticles, sources } = await newsService.searchArticles(query);
             setArticles(searchedArticles);
@@ -116,13 +135,13 @@ const AppContent: React.FC = () => {
     const handleLogin = (email: string) => {
         login(email);
         setAuthModalOpen(false);
-        addToast(`Welcome back, ${email}!`, 'success');
+        addToast(`Welcome back!`, 'success');
     };
 
     const handleRegister = (email: string) => {
         register(email);
         setAuthModalOpen(false);
-        addToast(`Successfully registered, ${email}!`, 'success');
+        addToast(`Successfully registered!`, 'success');
     };
     
     const handleLogout = () => {
@@ -130,91 +149,147 @@ const AppContent: React.FC = () => {
         addToast('You have been logged out.', 'info');
     };
 
-    const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+    const handleUpdateSubscription = (plan: 'free' | 'standard' | 'premium') => {
+        updateSubscription(plan);
+        setPremiumModalOpen(false);
+        addToast(`You've successfully subscribed to the ${plan} plan!`, 'success');
+    };
 
-    const pageTitle = searchQuery || (selectedCategory ? `${capitalize(selectedCategory)} News` : 'Latest News');
+    const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+    
+    const renderMainContent = () => {
+        if (currentView === 'settings' && user) {
+            return (
+                 <SettingsPage 
+                    user={user} 
+                    settings={settings} 
+                    onUpdateProfile={updateProfile}
+                    onUpdateSettings={updateSettings}
+                    onUpdateSubscription={handleUpdateSubscription}
+                    addToast={addToast}
+                />
+            );
+        }
+        
+        if (selectedArticle) {
+            return (
+                <ArticleView
+                    article={selectedArticle}
+                    isPremium={user?.subscription !== 'free'}
+                    onUpgradeClick={() => setPremiumModalOpen(true)}
+                    isLoggedIn={isLoggedIn}
+                    isSaved={isArticleSaved(selectedArticle.id)}
+                    onSaveToggle={() => {
+                        if (isArticleSaved(selectedArticle.id)) {
+                            unsaveArticle(selectedArticle.id);
+                            addToast('Article removed from your list.', 'info');
+                        } else {
+                            saveArticle(selectedArticle);
+                            addToast('Article saved for offline reading!', 'success');
+                        }
+                    }}
+                />
+            );
+        }
+
+        if (currentView === 'saved') {
+            return <SavedArticlesPage savedArticles={user?.savedArticles || []} onArticleClick={handleArticleClick} />;
+        }
+
+        const pageTitle = searchQuery || (selectedCategory ? `${capitalize(selectedCategory)} News` : 'Latest News');
+        return (
+            <>
+                <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500">{pageTitle}</h1>
+                {searchSources.length > 0 && (
+                    <div className="mb-6 p-4 bg-gray-200 dark:bg-gray-800 rounded-lg">
+                        <h3 className="font-semibold mb-2">Sources from Google Search:</h3>
+                        <ul className="list-disc list-inside text-sm">
+                            {searchSources.map((source, index) => (
+                                source.web?.uri && <li key={index}><a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{source.web.title || source.web.uri}</a></li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+                <div className={`grid grid-cols-1 md:grid-cols-2 ${settings.layoutMode === 'normal' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6`}>
+                    {isLoading ? (
+                        Array.from({ length: 9 }).map((_, index) => <ArticleCardSkeleton key={index} layoutMode={settings.layoutMode} />)
+                    ) : (
+                        articles.map(article => (
+                            <ArticleCard key={article.id} article={article} onArticleClick={handleArticleClick} layoutMode={settings.layoutMode} />
+                        ))
+                    )}
+                </div>
+            </>
+        );
+    }
+
 
     return (
         <div className={`font-sans bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col ${settings.fontSize}`}>
             <Header
                 onSearchClick={() => setSearchOverlayOpen(true)}
-                onSettingsClick={() => setSettingsModalOpen(true)}
+                onSettingsClick={handleSettingsClick}
                 onLoginClick={() => setAuthModalOpen(true)}
                 onCommandPaletteClick={() => setCommandPaletteOpen(true)}
                 isLoggedIn={isLoggedIn}
-                userEmail={user?.email || null}
+                user={user}
                 onLogout={handleLogout}
                 onCategorySelect={handleCategorySelect}
                 onArticleClick={handleArticleClick}
+                onHomeClick={handleHomeClick}
+                onSavedClick={() => {
+                    setSelectedArticle(null);
+                    setCurrentView('saved');
+                }}
+                onPremiumClick={() => setPremiumModalOpen(true)}
             />
 
             <main className="flex-grow container mx-auto p-4 lg:p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                    <div className="lg:col-span-3">
-                        {selectedArticle ? (
-                            <ArticleView
-                                article={selectedArticle}
-                                isPremium={false}
-                                onUpgradeClick={() => setPremiumModalOpen(true)}
-                            />
-                        ) : (
-                            <>
-                                <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500">{pageTitle}</h1>
-                                {searchSources.length > 0 && (
-                                    <div className="mb-6 p-4 bg-gray-200 dark:bg-gray-800 rounded-lg">
-                                        <h3 className="font-semibold mb-2">Sources from Google Search:</h3>
-                                        <ul className="list-disc list-inside text-sm">
-                                            {searchSources.map((source, index) => (
-                                                source.web?.uri && <li key={index}><a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{source.web.title || source.web.uri}</a></li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                                <div className={`grid grid-cols-1 md:grid-cols-2 ${settings.layoutMode === 'normal' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6`}>
-                                    {isLoading ? (
-                                        Array.from({ length: 9 }).map((_, index) => <ArticleCardSkeleton key={index} layoutMode={settings.layoutMode} />)
-                                    ) : (
-                                        articles.map(article => (
-                                            <ArticleCard key={article.id} article={article} onArticleClick={handleArticleClick} layoutMode={settings.layoutMode} />
-                                        ))
-                                    )}
-                                </div>
-                            </>
-                        )}
+                 {currentView === 'settings' ? (
+                    renderMainContent()
+                 ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                        <div className="lg:col-span-3">
+                            {renderMainContent()}
+                        </div>
+                        <div className="lg:col-span-1">
+                            {selectedArticle ? (
+                                <Aside
+                                    title="Related Stories"
+                                    articles={relatedArticles}
+                                    onArticleClick={handleArticleClick}
+                                    isLoading={isRelatedLoading}
+                                />
+                            ) : (
+                                <Aside 
+                                    title="Top Stories" 
+                                    articles={topStories} 
+                                    onArticleClick={handleArticleClick} 
+                                    isLoading={topStories.length === 0}
+                                />
+                            )}
+                        </div>
                     </div>
-                    <div className="lg:col-span-1">
-                         {selectedArticle ? (
-                            <Aside
-                                title="Related Stories"
-                                articles={relatedArticles}
-                                onArticleClick={handleArticleClick}
-                                isLoading={isRelatedLoading}
-                            />
-                        ) : (
-                            <Aside 
-                                title="Top Stories" 
-                                articles={topStories} 
-                                onArticleClick={handleArticleClick} 
-                                isLoading={topStories.length === 0}
-                            />
-                        )}
-                    </div>
-                </div>
+                 )}
             </main>
 
             <Footer />
             <BackToTopButton />
 
-            <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setSettingsModalOpen(false)} />
             <AuthModal isOpen={isAuthModalOpen} onClose={() => setAuthModalOpen(false)} onLogin={handleLogin} onRegister={handleRegister} />
-            <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setPremiumModalOpen(false)} />
+            <PremiumModal 
+                isOpen={isPremiumModalOpen} 
+                onClose={() => setPremiumModalOpen(false)} 
+                onSubscribe={handleUpdateSubscription}
+                currentPlan={user?.subscription || 'free'}
+            />
             <SearchOverlay isOpen={isSearchOverlayOpen} onClose={() => setSearchOverlayOpen(false)} onSearch={handleSearch} />
             <CommandPalette 
                 isOpen={isCommandPaletteOpen} 
                 onClose={() => setCommandPaletteOpen(false)}
-                setSettingsOpen={setSettingsModalOpen}
-                setPremiumOpen={setPremiumModalOpen}
-                setSearchOpen={setSearchOverlayOpen}
+                onOpenSettings={handleSettingsClick}
+                onOpenPremium={() => setPremiumModalOpen(true)}
+                onOpenSearch={() => setSearchOverlayOpen(true)}
             />
         </div>
     );

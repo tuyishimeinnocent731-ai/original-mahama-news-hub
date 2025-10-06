@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { ALL_CATEGORIES } from '../constants';
 
@@ -7,17 +8,25 @@ type FontSize = 'sm' | 'base' | 'lg';
 
 export interface Settings {
     theme: Theme;
-    notifications: boolean;
     preferredCategories: string[];
     fontSize: FontSize;
     layoutMode: LayoutMode;
     region: string;
     showSponsored: boolean;
+    notifications: {
+        email: boolean;
+        push: boolean;
+        breakingNews: boolean;
+    };
 }
 
 const defaultSettings: Settings = {
     theme: 'system',
-    notifications: true,
+    notifications: {
+        email: true,
+        push: false,
+        breakingNews: true,
+    },
     preferredCategories: ['Technology', 'Business'],
     fontSize: 'base',
     layoutMode: 'normal',

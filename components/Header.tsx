@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NAV_LINKS } from '../constants';
-import { NavLink as NavLinkType, Article } from '../types';
+import { NavLink as NavLinkType, Article, User } from '../types';
 import * as newsService from '../services/newsService';
 import { SearchIcon } from './icons/SearchIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
@@ -21,9 +21,12 @@ interface HeaderProps {
     onCommandPaletteClick: () => void;
     onCategorySelect: (category: string) => void;
     isLoggedIn: boolean;
-    userEmail: string | null;
+    user: User | null;
     onLogout: () => void;
     onArticleClick: (article: Article) => void;
+    onHomeClick: () => void;
+    onSavedClick: () => void;
+    onPremiumClick: () => void;
 }
 
 const NavLink: React.FC<{ link: NavLinkType, onCategorySelect: (category: string) => void, onArticleClick: (article: Article) => void }> = ({ link, onCategorySelect, onArticleClick }) => {
@@ -69,9 +72,12 @@ const Header: React.FC<HeaderProps> = ({
     onCommandPaletteClick,
     onCategorySelect,
     isLoggedIn,
-    userEmail,
+    user,
     onLogout,
-    onArticleClick
+    onArticleClick,
+    onHomeClick,
+    onSavedClick,
+    onPremiumClick
 }) => {
     const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [currentDate, setCurrentDate] = useState('');
@@ -84,10 +90,6 @@ const Header: React.FC<HeaderProps> = ({
             day: 'numeric'
         }));
     }, []);
-
-    const handleHomeClick = () => {
-        onCategorySelect('all');
-    }
 
     return (
         <header className="bg-blue-800 dark:bg-gray-900 shadow-md sticky top-0 z-40">
@@ -111,7 +113,7 @@ const Header: React.FC<HeaderProps> = ({
                         <button className="lg:hidden text-white mr-4" onClick={() => setMobileMenuOpen(true)} aria-label="Open menu">
                             <MenuIcon />
                         </button>
-                        <button onClick={handleHomeClick} className="text-2xl font-bold text-yellow-400">Mahama News Hub</button>
+                        <button onClick={onHomeClick} className="text-2xl font-bold text-yellow-400">Mahama News Hub</button>
                     </div>
                     <nav className="hidden lg:flex items-center space-x-1 h-full">
                         {NAV_LINKS.map(link => <NavLink key={link.name} link={link} onCategorySelect={onCategorySelect} onArticleClick={onArticleClick} />)}
@@ -123,11 +125,13 @@ const Header: React.FC<HeaderProps> = ({
                         
                         <div className="w-px h-6 bg-blue-700 dark:bg-gray-700 hidden sm:block"></div>
 
-                        {isLoggedIn && userEmail ? (
+                        {isLoggedIn && user ? (
                             <UserMenu 
-                                userEmail={userEmail}
+                                user={user}
                                 onLogout={onLogout}
                                 onSettingsClick={onSettingsClick}
+                                onSavedClick={onSavedClick}
+                                onPremiumClick={onPremiumClick}
                             />
                         ) : (
                              <button onClick={onLoginClick} className="flex items-center space-x-2 text-white hover:text-yellow-300" aria-label="Login">

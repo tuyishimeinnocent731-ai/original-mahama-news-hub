@@ -1,6 +1,7 @@
 import React from 'react';
 import { Article } from '../types';
 import RelatedArticleCard from './RelatedArticleCard';
+import Advertisement from './Advertisement';
 
 interface AsideProps {
   title: string;
@@ -44,10 +45,7 @@ const Aside: React.FC<AsideProps> = ({ title, articles, onArticleClick, isLoadin
       </div>
       
       <div>
-         <h2 className="text-xl font-bold mb-4 pb-2 border-b-2 border-yellow-500">Advertisement</h2>
-         <div className="bg-gray-200 dark:bg-gray-700 rounded-lg h-64 flex items-center justify-center">
-            <span className="text-gray-500">Ad Space</span>
-         </div>
+         <Advertisement />
       </div>
     </aside>
   );

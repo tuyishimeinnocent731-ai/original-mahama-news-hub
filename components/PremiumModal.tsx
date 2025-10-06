@@ -1,13 +1,16 @@
 import React from 'react';
 import Modal from './Modal';
 import { SUBSCRIPTION_PLANS } from '../constants';
+import { SubscriptionPlan } from '../types';
 
 interface PremiumModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onSubscribe: (plan: SubscriptionPlan) => void;
+    currentPlan: SubscriptionPlan;
 }
 
-const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose }) => {
+const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose, onSubscribe, currentPlan }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Upgrade to Premium">
         <div className="p-6">
@@ -30,8 +33,18 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose }) => {
                                 </li>
                             ))}
                         </ul>
-                        <button className={`w-full py-2 rounded-lg font-semibold ${plan.id === 'standard' ? 'bg-yellow-500 text-white hover:bg-yellow-600' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>
-                            {plan.id === 'free' ? 'Current Plan' : 'Choose Plan'}
+                        <button 
+                            onClick={() => onSubscribe(plan.id)}
+                            disabled={currentPlan === plan.id}
+                            className={`w-full py-2 rounded-lg font-semibold ${
+                                currentPlan === plan.id 
+                                ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed' 
+                                : plan.id === 'standard' 
+                                    ? 'bg-yellow-500 text-white hover:bg-yellow-600' 
+                                    : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+                            }`}
+                        >
+                            {currentPlan === plan.id ? 'Current Plan' : 'Choose Plan'}
                         </button>
                     </div>
                 ))}

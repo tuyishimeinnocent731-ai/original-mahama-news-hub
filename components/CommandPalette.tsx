@@ -1,8 +1,10 @@
 
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useKeyPress } from '../hooks/useKeyPress';
 import { SearchIcon } from './icons/SearchIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
+import { StarIcon } from './icons/StarIcon';
 
 interface Command {
     id: string;
@@ -15,12 +17,12 @@ interface Command {
 interface CommandPaletteProps {
     isOpen: boolean;
     onClose: () => void;
-    setSettingsOpen: (open: boolean) => void;
-    setPremiumOpen: (open: boolean) => void;
-    setSearchOpen: (open: boolean) => void;
+    onOpenSettings: () => void;
+    onOpenPremium: () => void;
+    onOpenSearch: () => void;
 }
 
-const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, setSettingsOpen, setPremiumOpen, setSearchOpen }) => {
+const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onOpenSettings, onOpenPremium, onOpenSearch }) => {
     const [query, setQuery] = useState('');
     const [selectedIndex, setSelectedIndex] = useState(0);
     const cmdKPressed = useKeyPress('k', { metaKey: true });
@@ -31,7 +33,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, setSet
             name: 'Search Articles',
             action: () => {
                 onClose();
-                setSearchOpen(true);
+                onOpenSearch();
             },
             icon: <SearchIcon />,
             keywords: ['find', 'topic']
@@ -41,22 +43,22 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, setSet
             name: 'Open Settings',
             action: () => {
                 onClose();
-                setSettingsOpen(true);
+                onOpenSettings();
             },
             icon: <SettingsIcon />,
-            keywords: ['preferences', 'theme', 'account']
+            keywords: ['preferences', 'theme', 'account', 'profile']
         },
         {
             id: 'upgrade',
             name: 'Upgrade Plan',
             action: () => {
                 onClose();
-                setPremiumOpen(true);
+                onOpenPremium();
             },
-            icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h8V3a1 1 0 112 0v1h1a2 2 0 012 2v11a2 2 0 01-2 2H3a2 2 0 01-2-2V5a2 2 0 012-2h1V3a1 1 0 011-1zm1 10a1 1 0 100-2 1 1 0 000 2zm3 0a1 1 0 100-2 1 1 0 000 2zm3 0a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" /></svg>,
+            icon: <StarIcon />,
             keywords: ['premium', 'subscribe', 'pro']
         }
-    ], [onClose, setSettingsOpen, setPremiumOpen, setSearchOpen]);
+    ], [onClose, onOpenSettings, onOpenPremium, onOpenSearch]);
 
     const filteredCommands = useMemo(() => {
         if (!query) return commands;
@@ -105,7 +107,8 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, setSet
                 onClick={e => e.stopPropagation()}
                 onKeyDown={handleKeyDown}
             >
-                <div className="p-2 border-b dark:border-gray-700">
+                <div className="p-2 border-b dark:border-gray-700 flex items-center space-x-2">
+                    <SearchIcon/>
                     <input 
                         type="text"
                         placeholder="Type a command or search..."
@@ -121,7 +124,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, setSet
                             key={cmd.id}
                             onClick={cmd.action}
                             onMouseEnter={() => setSelectedIndex(index)}
-                            className={`flex items-center space-x-3 px-4 py-2 cursor-pointer ${selectedIndex === index ? 'bg-yellow-100 dark:bg-gray-700' : ''}`}
+                            className={`flex items-center space-x-3 px-4 py-3 cursor-pointer ${selectedIndex === index ? 'bg-yellow-100 dark:bg-gray-700' : ''}`}
                         >
                             <span className="text-gray-500 dark:text-gray-400">{cmd.icon}</span>
                             <span>{cmd.name}</span>

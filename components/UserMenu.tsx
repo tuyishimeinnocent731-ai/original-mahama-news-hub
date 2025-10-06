@@ -1,15 +1,21 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { UserIcon } from './icons/UserIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
 import { LogoutIcon } from './icons/LogoutIcon';
+import { NewspaperIcon } from './icons/NewspaperIcon';
+import { StarIcon } from './icons/StarIcon';
+import { User } from '../types';
 
 interface UserMenuProps {
-    userEmail: string;
+    user: User;
     onLogout: () => void;
     onSettingsClick: () => void;
+    onSavedClick: () => void;
+    onPremiumClick: () => void;
 }
 
-const UserMenu: React.FC<UserMenuProps> = ({ userEmail, onLogout, onSettingsClick }) => {
+const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onSettingsClick, onSavedClick, onPremiumClick }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -26,15 +32,10 @@ const UserMenu: React.FC<UserMenuProps> = ({ userEmail, onLogout, onSettingsClic
         };
     }, []);
 
-    const handleSettings = () => {
-        onSettingsClick();
+    const handleAction = (action: () => void) => {
+        action();
         setIsOpen(false);
-    };
-
-    const handleLogout = () => {
-        onLogout();
-        setIsOpen(false);
-    };
+    }
     
     return (
         <div className="relative" ref={dropdownRef}>
@@ -44,20 +45,29 @@ const UserMenu: React.FC<UserMenuProps> = ({ userEmail, onLogout, onSettingsClic
                 aria-label="User menu"
                 aria-haspopup="true"
             >
-                <UserIcon className="h-6 w-6" />
+                <img src={user.avatar} alt="User avatar" className="h-10 w-10 rounded-full" />
             </button>
             {isOpen && (
-                <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-20" role="menu" aria-orientation="vertical">
+                <div className="origin-top-right absolute right-0 mt-2 w-64 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-20" role="menu" aria-orientation="vertical">
                     <div className="py-1" role="none">
-                        <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                             <p className="text-sm text-gray-700 dark:text-gray-300">Signed in as</p>
-                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{userEmail}</p>
+                        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.name}</p>
+                             <p className="text-sm text-gray-700 dark:text-gray-300 truncate">{user.email}</p>
                         </div>
-                        <button onClick={handleSettings} className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
-                            <SettingsIcon />
-                            <span className="ml-3">Settings</span>
+                        <button onClick={() => handleAction(onSavedClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                            <NewspaperIcon />
+                            <span className="ml-3">My Articles ({user.savedArticles.length})</span>
                         </button>
-                        <button onClick={handleLogout} className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                        <button onClick={() => handleAction(onPremiumClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                            <StarIcon />
+                            <span className="ml-3">Subscription: <span className="font-semibold capitalize">{user.subscription}</span></span>
+                        </button>
+                        <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                        <button onClick={() => handleAction(onSettingsClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                            <SettingsIcon />
+                            <span className="ml-3">Profile & Settings</span>
+                        </button>
+                        <button onClick={() => handleAction(onLogout)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
                             <LogoutIcon />
                             <span className="ml-3">Logout</span>
                         </button>

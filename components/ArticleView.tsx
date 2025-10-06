@@ -12,10 +12,13 @@ import * as newsService from '../services/newsService';
 interface ArticleViewProps {
     article: Article;
     isPremium: boolean;
+    isLoggedIn: boolean;
+    isSaved: boolean;
+    onSaveToggle: () => void;
     onUpgradeClick: () => void;
 }
 
-const ArticleView: React.FC<ArticleViewProps> = ({ article, isPremium, onUpgradeClick }) => {
+const ArticleView: React.FC<ArticleViewProps> = ({ article, isPremium, isLoggedIn, isSaved, onSaveToggle, onUpgradeClick }) => {
     const [summary, setSummary] = useState<string>('');
     const [keyPoints, setKeyPoints] = useState<string[]>([]);
     const [isSummaryLoading, setSummaryLoading] = useState(false);
@@ -70,6 +73,15 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, isPremium, onUpgrade
             speak(textToSpeak);
         }
     };
+
+    const handleSaveClick = () => {
+        if(isLoggedIn) {
+            onSaveToggle();
+        } else {
+            // Optionally, trigger login modal
+            alert('Please log in to save articles.');
+        }
+    }
     
     return (
         <div className="relative">
@@ -85,7 +97,9 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, isPremium, onUpgrade
                 </header>
 
                 <div className="flex items-center space-x-6 my-6 py-4 border-y dark:border-gray-700">
-                    <button className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-yellow-500 transition-colors duration-200"><BookmarkIcon className="h-5 w-5"/><span>Save</span></button>
+                    <button onClick={handleSaveClick} className={`flex items-center space-x-2  hover:text-yellow-500 transition-colors duration-200 ${isSaved ? 'text-yellow-500' : 'text-gray-600 dark:text-gray-300'}`}>
+                        <BookmarkIcon className="h-5 w-5"/><span>{isSaved ? 'Saved' : 'Save'}</span>
+                    </button>
                     <button className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-yellow-500 transition-colors duration-200"><ShareIcon className="h-5 w-5"/><span>Share</span></button>
                     {isSupported && (
                         <button onClick={handlePlayAudio} className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-yellow-500 transition-colors duration-200">
@@ -122,6 +136,8 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, isPremium, onUpgrade
                 isKeyPointsLoading={isKeyPointsLoading}
                 onGenerateSummary={handleGenerateSummary}
                 onGenerateKeyPoints={handleGenerateKeyPoints}
+                isPremium={isPremium}
+                onUpgradeClick={onUpgradeClick}
             />
         </div>
     );

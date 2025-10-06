@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Modal from './Modal';
 
@@ -24,7 +25,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onRegis
       onRegister(email);
     }
   };
-
+  
   const socialLogins = [
       { name: 'Google', icon: 'M4.75 6.5h14.5c.41 0 .75.34.75.75v9.5c0 .41-.34.75-.75.75H4.75a.75.75 0 01-.75-.75v-9.5c0-.41.34-.75.75-.75zm.5 1.5v8h13v-8h-13z M12 12a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z' },
       { name: 'Facebook', icon: 'M13.5 8.5H11V7c0-.55.45-1 1-1h1V4h-2.5C9.12 4 8 5.12 8 6.5v2H6.5v2.5h1.5V16h3v-5h1.5l.5-2.5z' },
@@ -32,47 +33,65 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onRegis
   ]
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="">
-        <div className="flex border-b border-gray-200 dark:border-gray-700">
-            <button onClick={() => setMode('login')} className={`w-1/2 py-4 text-center font-medium ${mode === 'login' ? 'border-b-2 border-yellow-500 text-yellow-500' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
-                Login
-            </button>
-            <button onClick={() => setMode('register')} className={`w-1/2 py-4 text-center font-medium ${mode === 'register' ? 'border-b-2 border-yellow-500 text-yellow-500' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
-                Register
-            </button>
-        </div>
-      <div className="pt-6">
-        <h3 className="text-xl font-semibold text-center text-gray-900 dark:text-white mb-4">
-            {mode === 'login' ? 'Welcome Back' : 'Create an Account'}
-        </h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-            <label htmlFor="email-auth" className="sr-only">Email</label>
-            <input type="email" name="email" id="email-auth" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-yellow-500 focus:border-yellow-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" placeholder="name@company.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+    <Modal isOpen={isOpen} onClose={onClose}>
+        <div className="flex flex-col md:flex-row md:min-h-[500px] w-full">
+             {/* Left Panel (Branding) */}
+            <div className="hidden md:flex w-2/5 bg-blue-800 p-8 text-white rounded-l-lg flex-col justify-center">
+                <h2 className="text-3xl font-bold text-yellow-400 mb-2">Mahama News Hub</h2>
+                <p>Your daily source of reliable news, now personalized for you.</p>
+                <p className="mt-4 text-sm text-blue-200">Join our community to save articles, customize your feed, and access exclusive features.</p>
             </div>
-            <div>
-            <label htmlFor="password-auth" className="sr-only">Password</label>
-            <input type="password" name="password" id="password-auth" placeholder="••••••••" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-yellow-500 focus:border-yellow-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" required value={password} onChange={(e) => setPassword(e.target.value)} />
-            </div>
-            {mode === 'register' && (
-                <div>
-                    <label htmlFor="confirm-password-auth" className="sr-only">Confirm Password</label>
-                    <input type="password" name="confirm-password" id="confirm-password-auth" placeholder="Confirm Password" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-yellow-500 focus:border-yellow-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+
+            {/* Right Panel (Form) */}
+            <div className="w-full md:w-3/5 p-8 flex flex-col justify-center bg-white dark:bg-gray-800 rounded-r-lg">
+                <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
+                    <button onClick={() => setMode('login')} className={`w-1/2 pb-3 text-center font-semibold transition-colors ${mode === 'login' ? 'border-b-2 border-yellow-500 text-yellow-500' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+                        Login
+                    </button>
+                    <button onClick={() => setMode('register')} className={`w-1/2 pb-3 text-center font-semibold transition-colors ${mode === 'register' ? 'border-b-2 border-yellow-500 text-yellow-500' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+                        Register
+                    </button>
                 </div>
-            )}
-            <button type="submit" className="w-full text-white bg-yellow-500 hover:bg-yellow-600 focus:ring-4 focus:outline-none focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-3 text-center">
-                {mode === 'login' ? 'Login' : 'Create Account'}
-            </button>
-        </form>
-        <div className="text-center my-4 text-gray-500 dark:text-gray-400 text-sm">OR</div>
-        <div className="flex items-center justify-center space-x-2">
-            {socialLogins.map(s => (
-                <button key={s.name} aria-label={`Login with ${s.name}`} className="p-3 border border-gray-200 dark:border-gray-600 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-                    <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" viewBox="0 0 24 24" fill="currentColor"><path d={s.icon}></path></svg>
-                </button>
-            ))}
+                
+                <h3 className="text-xl font-semibold text-center text-gray-900 dark:text-white mb-4">
+                    {mode === 'login' ? 'Welcome Back' : 'Create an Account'}
+                </h3>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label htmlFor="email-auth" className="sr-only">Email</label>
+                        <input type="email" name="email" id="email-auth" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-yellow-500 focus:border-yellow-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" placeholder="name@company.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                    </div>
+                    <div>
+                        <label htmlFor="password-auth" className="sr-only">Password</label>
+                        <input type="password" name="password" id="password-auth" placeholder="••••••••" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-yellow-500 focus:border-yellow-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                    </div>
+                    {mode === 'register' && (
+                        <div>
+                            <label htmlFor="confirm-password-auth" className="sr-only">Confirm Password</label>
+                            <input type="password" name="confirm-password" id="confirm-password-auth" placeholder="Confirm Password" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-yellow-500 focus:border-yellow-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                        </div>
+                    )}
+                    <button type="submit" className="w-full text-white bg-yellow-500 hover:bg-yellow-600 focus:ring-4 focus:outline-none focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-3 text-center transition-colors">
+                        {mode === 'login' ? 'Login' : 'Create Account'}
+                    </button>
+                </form>
+                <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">OR</span>
+                    </div>
+                </div>
+                <div className="flex items-center justify-center space-x-3">
+                    {socialLogins.map(s => (
+                        <button key={s.name} aria-label={`Login with ${s.name}`} className="p-3 border border-gray-200 dark:border-gray-600 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" viewBox="0 0 24 24" fill="currentColor"><path d={s.icon}></path></svg>
+                        </button>
+                    ))}
+                </div>
+            </div>
         </div>
-      </div>
     </Modal>
   );
 };
