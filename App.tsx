@@ -1,221 +1,176 @@
-
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ArticleCard from './components/ArticleCard';
+import ArticleCardSkeleton from './components/ArticleCardSkeleton';
 import Aside from './components/Aside';
 import ArticleViewModal from './components/ArticleViewModal';
-import { getTopHeadlines, searchArticles, summarizeArticleWithGemini, searchNewsWithGrounding } from './services/newsService';
-import { Article, GroundingChunk } from './types';
-import LoadingSpinner from './components/LoadingSpinner';
-import { useAuth } from './hooks/useAuth';
-import AuthModal from './components/AuthModal';
 import SettingsModal from './components/SettingsModal';
+import AuthModal from './components/AuthModal';
 import PremiumModal from './components/PremiumModal';
-import { useSettings } from './hooks/useSettings';
 import SearchOverlay from './components/SearchOverlay';
-import ArticleCardSkeleton from './components/ArticleCardSkeleton';
-import BackToTopButton from './components/BackToTopButton';
-import { ToastProvider, useToast } from './contexts/ToastContext';
 import CommandPalette from './components/CommandPalette';
+import BackToTopButton from './components/BackToTopButton';
+import { Article, GroundingChunk } from './types';
+import * as newsService from './services/newsService';
+import { useSettings } from './hooks/useSettings';
+import { useAuth } from './hooks/useAuth';
+import { ToastProvider, useToast } from './contexts/ToastContext';
 
 const AppContent: React.FC = () => {
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [topStories, setTopStories] = useState<Article[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSummarizing, setIsSummarizing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+    const { settings } = useSettings();
+    const { user, login, logout, register, isLoggedIn } = useAuth();
+    const { addToast } = useToast();
 
-  const [isArticleModalOpen, setIsArticleModalOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
-  const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+    const [articles, setArticles] = useState<Article[]>([]);
+    const [topStories, setTopStories] = useState<Article[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+    const [searchSources, setSearchSources] = useState<GroundingChunk[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
 
-  const [searchResult, setSearchResult] = useState<{ text: string; chunks: GroundingChunk[] } | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
+    const [isArticleModalOpen, setArticleModalOpen] = useState(false);
+    const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
+    const [isAuthModalOpen, setAuthModalOpen] = useState(false);
+    const [isPremiumModalOpen, setPremiumModalOpen] = useState(false);
+    const [isSearchOverlayOpen, setSearchOverlayOpen] = useState(false);
+    const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
-
-  const { user, login, logout, register, subscriptionPlan, setSubscriptionPlan } = useAuth();
-  const { settings } = useSettings();
-  const { addToast } = useToast();
-
-  const isPremium = useMemo(() => subscriptionPlan === 'premium' || subscriptionPlan === 'standard', [subscriptionPlan]);
-
-  const fetchNews = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const topHeadlines = await getTopHeadlines();
-      setArticles(topHeadlines.slice(5));
-      setTopStories(topHeadlines.slice(0, 5));
-    } catch (err) {
-      setError('Failed to fetch news articles.');
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchNews();
-  }, [fetchNews]);
-
-  const handleArticleClick = useCallback(async (article: Article) => {
-    setSelectedArticle(article);
-    setIsArticleModalOpen(true);
-
-    if (!article.keyPoints && (subscriptionPlan === 'standard' || subscriptionPlan === 'premium')) {
-      setIsSummarizing(true);
-      try {
-        const keyPoints = await summarizeArticleWithGemini(article);
-        setSelectedArticle(prev => prev ? { ...prev, keyPoints } : null);
-        addToast("Summary generated successfully!", "success");
-      } catch (e) {
-        console.error("Failed to generate summary", e);
-        addToast("Could not generate summary.", "error");
-      } finally {
-        setIsSummarizing(false);
-      }
-    }
-  }, [subscriptionPlan, addToast]);
-
-  const handleSearch = async (query: string) => {
-    setIsSearchOverlayOpen(false);
-    setIsLoading(true);
-    setSearchResult(null);
-    setArticles([]);
-    setError(null);
-    try {
-        if(query.toLowerCase().includes('latest') || query.toLowerCase().includes('recent') || query.toLowerCase().includes('who won')) {
-            setIsSearching(true);
-            const result = await searchNewsWithGrounding(query);
-            setSearchResult(result);
-        } else {
-            const results = await searchArticles(query);
-            setArticles(results);
+    const fetchInitialData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const [fetchedArticles, fetchedTopStories] = await Promise.all([
+                newsService.getArticlesByCategory('all'),
+                newsService.getTopStories(),
+            ]);
+            setArticles(fetchedArticles);
+            setTopStories(fetchedTopStories);
+        } catch (error) {
+            console.error('Failed to fetch initial data:', error);
+            addToast('Failed to load news. Please try again later.', 'error');
+        } finally {
+            setIsLoading(false);
         }
-    } catch (err) {
-        setError(`Failed to search for "${query}".`);
-        console.error(err);
-    } finally {
-        setIsLoading(false);
-        setIsSearching(false);
-    }
-  };
+    }, [addToast]);
 
-  const closeModal = () => {
-    setSelectedArticle(null);
-    setIsArticleModalOpen(false);
-  };
+    useEffect(() => {
+        fetchInitialData();
+    }, [fetchInitialData]);
 
-  return (
-    <div className={`bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans text-${settings.fontSize}`}>
-      <Header
-        user={user}
-        onLoginClick={() => setIsAuthModalOpen(true)}
-        onLogoutClick={logout}
-        onSettingsClick={() => setIsSettingsModalOpen(true)}
-        onUpgradeClick={() => setIsPremiumModalOpen(true)}
-        onSearchClick={() => setIsSearchOverlayOpen(true)}
-        onCommandPaletteClick={() => setIsCommandPaletteOpen(true)}
-        subscriptionPlan={subscriptionPlan}
-      />
-      
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-3">
-            {isSearching && (
-                 <div className="mb-8">
-                    <h2 className="text-2xl font-bold mb-4">Search Results</h2>
-                    <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                        <LoadingSpinner />
-                        <p className="text-center mt-2">Searching with Google... this may take a moment.</p>
-                    </div>
-                 </div>
-            )}
-            {searchResult && (
-                 <div className="mb-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                    <h2 className="text-2xl font-bold mb-4">Search Result</h2>
-                    <p className="whitespace-pre-wrap mb-4">{searchResult.text}</p>
-                    {searchResult.chunks.length > 0 && (
-                        <div>
-                            <h3 className="text-lg font-semibold mb-2">Sources:</h3>
-                            <ul className="list-disc list-inside space-y-1 text-sm">
-                                {searchResult.chunks.map((chunk, index) => (
-                                    chunk.web?.uri && <li key={index}><a href={chunk.web.uri} target="_blank" rel="noopener noreferrer" className="text-yellow-500 hover:underline">{chunk.web.title || chunk.web.uri}</a></li>
-                                ))}
-                            </ul>
+    const handleArticleClick = (article: Article) => {
+        setSelectedArticle(article);
+        setArticleModalOpen(true);
+    };
+
+    const handleSearch = async (query: string) => {
+        setIsLoading(true);
+        setSearchOverlayOpen(false);
+        setSearchQuery(`Search results for: "${query}"`);
+        try {
+            const { articles: searchedArticles, sources } = await newsService.searchArticles(query);
+            setArticles(searchedArticles);
+            setSearchSources(sources);
+            if (searchedArticles.length === 0) {
+                addToast('No articles found for your search.', 'info');
+            }
+        } catch (error) {
+            console.error('Failed to search articles:', error);
+            addToast('Search failed. Please try again.', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    const handleLogin = (email: string) => {
+        login(email);
+        setAuthModalOpen(false);
+        addToast(`Welcome back, ${email}!`, 'success');
+    };
+
+    const handleRegister = (email: string) => {
+        register(email);
+        setAuthModalOpen(false);
+        addToast(`Successfully registered, ${email}!`, 'success');
+    };
+    
+    const handleLogout = () => {
+        logout();
+        addToast('You have been logged out.', 'info');
+    };
+
+    return (
+        <div className={`font-sans bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col ${settings.fontSize}`}>
+            <Header
+                onSearchClick={() => setSearchOverlayOpen(true)}
+                onSettingsClick={() => setSettingsModalOpen(true)}
+                onLoginClick={() => setAuthModalOpen(true)}
+                onCommandPaletteClick={() => setCommandPaletteOpen(true)}
+                isLoggedIn={isLoggedIn}
+                userEmail={user?.email || null}
+                onLogout={handleLogout}
+            />
+
+            <main className="flex-grow container mx-auto p-4 lg:p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    <div className="lg:col-span-3">
+                        <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500">{searchQuery || 'Latest News'}</h1>
+                        {searchSources.length > 0 && (
+                            <div className="mb-6 p-4 bg-gray-200 dark:bg-gray-800 rounded-lg">
+                                <h3 className="font-semibold mb-2">Sources from Google Search:</h3>
+                                <ul className="list-disc list-inside text-sm">
+                                    {searchSources.map((source, index) => (
+                                        source.web?.uri && <li key={index}><a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{source.web.title || source.web.uri}</a></li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                        <div className={`grid grid-cols-1 md:grid-cols-2 ${settings.layoutMode === 'normal' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-6`}>
+                            {isLoading ? (
+                                Array.from({ length: 9 }).map((_, index) => <ArticleCardSkeleton key={index} layoutMode={settings.layoutMode} />)
+                            ) : (
+                                articles.map(article => (
+                                    <ArticleCard key={article.id} article={article} onArticleClick={handleArticleClick} layoutMode={settings.layoutMode} />
+                                ))
+                            )}
                         </div>
-                    )}
-                 </div>
-            )}
-            <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500">
-                {searchResult ? 'Related Articles' : 'Latest News'}
-            </h1>
-            {isLoading && !isSearching ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {Array.from({ length: 6 }).map((_, i) => <ArticleCardSkeleton key={i} layoutMode={settings.layoutMode} />)}
-              </div>
-            ) : error ? (
-              <div className="text-center py-10">
-                <p className="text-red-500">{error}</p>
-                <button onClick={fetchNews} className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">Try Again</button>
-              </div>
-            ) : articles.length > 0 ? (
-              <div className={`grid gap-6 ${settings.layoutMode === 'compact' ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-2'}`}>
-                {articles.map(article => (
-                  <ArticleCard key={article.id} article={article} onArticleClick={handleArticleClick} layoutMode={settings.layoutMode}/>
-                ))}
-              </div>
-            ) : !searchResult ? (
-                 <div className="text-center py-10"><p>No articles found.</p></div>
-            ) : null}
-          </div>
-          <div className="lg:col-span-1">
-            {topStories.length > 0 && <Aside topStories={topStories} onArticleClick={handleArticleClick} />}
-          </div>
+                    </div>
+                    <div className="lg:col-span-1">
+                        {isLoading ? <div></div> : <Aside topStories={topStories} onArticleClick={handleArticleClick} />}
+                    </div>
+                </div>
+            </main>
+
+            <Footer />
+            <BackToTopButton />
+
+            <ArticleViewModal
+                article={selectedArticle}
+                isOpen={isArticleModalOpen}
+                onClose={() => setArticleModalOpen(false)}
+                isPremium={false} // Replace with actual subscription status
+                onUpgradeClick={() => setPremiumModalOpen(true)}
+            />
+            <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setSettingsModalOpen(false)} />
+            <AuthModal isOpen={isAuthModalOpen} onClose={() => setAuthModalOpen(false)} onLogin={handleLogin} onRegister={handleRegister} />
+            <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setPremiumModalOpen(false)} />
+            <SearchOverlay isOpen={isSearchOverlayOpen} onClose={() => setSearchOverlayOpen(false)} onSearch={handleSearch} />
+            <CommandPalette 
+                isOpen={isCommandPaletteOpen} 
+                onClose={() => setCommandPaletteOpen(false)}
+                setSettingsOpen={setSettingsModalOpen}
+                setPremiumOpen={setPremiumModalOpen}
+                setSearchOpen={setSearchOverlayOpen}
+            />
         </div>
-      </main>
-
-      <Footer />
-
-      <ArticleViewModal
-        article={selectedArticle}
-        isOpen={isArticleModalOpen}
-        onClose={closeModal}
-        isPremium={isPremium}
-      />
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onLogin={(email) => { login(email, 'password'); setIsAuthModalOpen(false); addToast("Logged in successfully!", "success"); }}
-        onRegister={(email) => { register(email, 'password'); setIsAuthModalOpen(false); addToast("Registered successfully!", "success"); }}
-      />
-      <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
-      <PremiumModal 
-        isOpen={isPremiumModalOpen}
-        onClose={() => setIsPremiumModalOpen(false)}
-        currentPlan={subscriptionPlan}
-        onSubscribe={(plan) => {
-            setSubscriptionPlan(plan);
-            setIsPremiumModalOpen(false);
-            addToast(`Successfully subscribed to ${plan} plan!`, 'success');
-        }}
-      />
-      <SearchOverlay isOpen={isSearchOverlayOpen} onClose={() => setIsSearchOverlayOpen(false)} onSearch={handleSearch}/>
-      <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} setSettingsOpen={setIsSettingsModalOpen} setPremiumOpen={setIsPremiumModalOpen} setSearchOpen={setIsSearchOverlayOpen} />
-      <BackToTopButton />
-    </div>
-  );
+    );
 };
 
+
 const App: React.FC = () => (
-  <ToastProvider>
-    <AppContent />
-  </ToastProvider>
+    <ToastProvider>
+        <AppContent />
+    </ToastProvider>
 );
+
 
 export default App;
