@@ -88,19 +88,21 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onUpgr
                         </div>
                     </header>
                     
-                     <div className="my-6 py-4 border-y dark:border-gray-700 flex flex-wrap items-center gap-4 sm:gap-6">
-                        <button onClick={() => onToggleSave(article)} className={`flex items-center space-x-2 transition-colors ${saved ? 'text-yellow-500' : 'text-gray-600 dark:text-gray-300 hover:text-yellow-500'}`}>
-                            <BookmarkIcon className={`h-5 w-5 ${saved ? 'fill-current' : ''}`}/><span>{saved ? 'Saved' : 'Save'}</span>
-                        </button>
-                        <button className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-yellow-500"><ShareIcon className="h-5 w-5"/><span>Share</span></button>
-                        {isSupported && (
-                             <button onClick={handlePlayAudio} disabled={!isPremium} className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed">
-                               {isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
-                               <span>{isPlaying ? 'Pause' : 'Listen'}</span>
-                               {!isPremium && <span className="text-xs text-yellow-500 ml-1">(Premium)</span>}
+                     <div className="my-6 py-4 border-y dark:border-gray-700 flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
+                        <div className="flex items-center flex-wrap gap-4 sm:gap-6">
+                            <button onClick={() => onToggleSave(article)} className={`flex items-center space-x-2 transition-colors ${saved ? 'text-yellow-500' : 'text-gray-600 dark:text-gray-300 hover:text-yellow-500'}`}>
+                                <BookmarkIcon className={`h-5 w-5 ${saved ? 'fill-current' : ''}`}/><span>{saved ? 'Saved' : 'Save'}</span>
                             </button>
-                        )}
-                        <button onClick={() => setAIPanelOpen(true)} className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold ml-auto">
+                            <button className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-yellow-500"><ShareIcon className="h-5 w-5"/><span>Share</span></button>
+                            {isSupported && (
+                                <button onClick={handlePlayAudio} disabled={!isPremium} className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                                {isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
+                                <span>{isPlaying ? 'Pause' : 'Listen'}</span>
+                                {!isPremium && <span className="text-xs text-yellow-500 ml-1">(Premium)</span>}
+                                </button>
+                            )}
+                        </div>
+                        <button onClick={() => setAIPanelOpen(true)} className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold w-full sm:w-auto justify-start sm:justify-center">
                             <SparklesIcon className="h-5 w-5" />
                             <span>AI Companion</span>
                         </button>
