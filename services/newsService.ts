@@ -1,241 +1,160 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import { Article, GroundingChunk } from '../types';
 
-// Fix: Initialize the Gemini AI client according to guidelines.
+import { GoogleGenAI } from "@google/genai";
+import { Article } from '../types';
+
+// FIX: Initializing Gemini AI Client according to guidelines
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const mockArticles: Article[] = [
   {
-    id: 'tech-1',
-    title: 'Future of AI: What to Expect in the Next Decade',
-    description: 'Experts weigh in on the transformative potential of artificial intelligence, from autonomous vehicles to personalized medicine.',
-    body: 'The field of Artificial Intelligence is evolving at an unprecedented pace. In the coming decade, we can expect AI to become even more integrated into our daily lives. Advancements in machine learning, natural language processing, and computer vision will drive innovation across various sectors. Self-driving cars will become more common, healthcare will be revolutionized by AI-powered diagnostics, and our homes will become smarter and more intuitive. However, with great power comes great responsibility. Ethical considerations, job displacement, and data privacy are challenges that must be addressed as we move forward.',
-    author: 'Alex Johnson',
-    publishedAt: '2024-07-20T10:00:00Z',
-    source: { name: 'Tech Today' },
+    id: '1',
+    title: 'Global Tech Summit 2024 Highlights Future of AI',
+    description: 'Leaders from around the world gathered to discuss advancements in artificial intelligence and its impact on society.',
+    body: 'The Global Tech Summit 2024 concluded yesterday, leaving attendees with a sense of awe and excitement for the future. Keynote speakers emphasized the responsible development of AI, highlighting potential breakthroughs in medicine, climate change, and education. A major theme was the collaboration between public and private sectors to ensure AI benefits all of humanity. Several startups showcased groundbreaking applications, from autonomous drones for agriculture to AI-powered diagnostic tools that can detect diseases earlier than ever before.',
+    author: 'Jane Doe',
+    publishedAt: '2024-07-15T10:00:00Z',
+    source: { name: 'Tech Chronicle' },
     url: '#',
-    urlToImage: 'https://images.unsplash.com/photo-1677756119517-756a1b9d2b2c?q=80&w=2070&auto=format&fit=crop',
+    urlToImage: 'https://images.unsplash.com/photo-1620712943543-95fc6961452f?q=80&w=1200',
     category: 'Technology'
   },
   {
-    id: 'business-1',
-    title: 'Global Markets React to New Economic Policies',
-    description: 'Investors are closely watching as new trade agreements and fiscal policies are implemented, causing ripples across the global economy.',
-    body: 'Recent economic policies have sent shockwaves through global markets. A new set of trade agreements has been signed, aiming to foster international cooperation but also introducing new tariffs that have some industries concerned. Central banks are adjusting their interest rates in response to inflationary pressures. Analysts are divided on the long-term impact, with some predicting a period of growth and others warning of potential volatility. Companies are re-evaluating their supply chains and investment strategies to navigate this changing landscape.',
-    author: 'Maria Garcia',
-    publishedAt: '2024-07-19T14:30:00Z',
-    source: { name: 'Financial Times' },
+    id: '2',
+    title: 'Market Hits Record High Amidst Economic Optimism',
+    description: 'The stock market surged to an all-time high as new economic data suggests strong growth and waning inflation.',
+    body: 'Investors cheered as the S&P 500 index closed at a record high on Tuesday. The rally was fueled by a government report showing stronger-than-expected job growth and a surprising dip in the consumer price index. Analysts believe this combination could give the Federal Reserve more flexibility in its monetary policy. The technology and financial sectors led the gains, with several blue-chip companies reporting robust quarterly earnings. While some experts caution about potential volatility ahead, the overall market sentiment remains bullish.',
+    author: 'John Smith',
+    publishedAt: '2024-07-14T14:30:00Z',
+    source: { name: 'Business Today' },
     url: '#',
-    urlToImage: 'https://images.unsplash.com/photo-1665686306574-1ace09918530?q=80&w=1974&auto=format&fit=crop',
+    urlToImage: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=1200',
     category: 'Business'
   },
   {
-    id: 'world-1',
-    title: 'Diplomatic Talks Aim to Resolve International Tensions',
-    description: 'Leaders from several nations have gathered for a high-stakes summit, hoping to find common ground and de-escalate recent conflicts.',
-    body: 'A critical summit is underway as world leaders convene to address rising international tensions. The agenda is packed with complex issues, from territorial disputes to climate change commitments. The primary goal is to foster dialogue and prevent conflicts from escalating further. Behind closed doors, negotiators are working tirelessly to draft resolutions that are acceptable to all parties. The outcome of this summit could have a lasting impact on global stability and cooperation for years to come.',
-    author: 'David Chen',
-    publishedAt: '2024-07-21T08:00:00Z',
-    source: { name: 'Global News Network' },
+      id: '3',
+      title: 'Breakthrough in Renewable Energy Storage',
+      description: 'Scientists announce a new battery technology that could revolutionize how we store and use energy from renewable sources.',
+      body: 'A research team at a leading university has developed a new type of battery that is cheaper, more efficient, and has a significantly longer lifespan than current lithium-ion technology. The innovation, based on a novel sodium-ion chemistry, could solve one of the biggest challenges for renewable energy: intermittency. By providing a cost-effective way to store solar and wind power, this technology could accelerate the global transition to clean energy. The team has already partnered with a major manufacturer to begin pilot production.',
+      author: 'Emily Chen',
+      publishedAt: '2024-07-13T09:00:00Z',
+      source: { name: 'Science Daily' },
+      url: '#',
+      urlToImage: 'https://images.unsplash.com/photo-1509390232658-9243345244a3?q=80&w=1200',
+      category: 'Technology'
+  },
+  {
+    id: '4',
+    title: 'World Leaders Convene for Climate Change Summit',
+    description: 'A critical summit is underway as nations attempt to negotiate new binding targets for carbon emission reductions.',
+    body: 'Delegates from nearly 200 countries have gathered for a high-stakes climate summit. The talks are focused on creating more aggressive and legally binding targets to limit global warming. Tensions are high as developing nations call for more financial support from wealthier countries to aid in their green transitions. Activists are staging large-scale protests outside the venue, urging leaders to take decisive action. The outcome of this summit could determine the course of global climate policy for the next decade.',
+    author: 'David Wallace',
+    publishedAt: '2024-07-12T18:00:00Z',
+    source: { name: 'Global Affairs' },
     url: '#',
-    urlToImage: 'https://images.unsplash.com/photo-1555848962-6e79363ec58f?q=80&w=2070&auto=format&fit=crop',
+    urlToImage: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?q=80&w=1200',
     category: 'World'
   },
   {
-      id: 'sport-1',
-      title: 'Underdogs Triumph in Championship Final',
-      description: 'In a stunning upset, the city\'s local team clinched the championship title in a nail-biting final match.',
-      body: 'It was a victory for the ages. The local team, considered the underdogs throughout the tournament, defied all odds to win the championship. The final match was an edge-of-your-seat thriller, going into overtime before a dramatic last-minute goal sealed the win. Fans erupted in celebration, flooding the streets in a sea of team colors. The team\'s captain credited their success to teamwork, perseverance, and the unwavering support of their fans.',
-      author: 'Ben Carter',
-      publishedAt: '2024-07-20T18:45:00Z',
-      source: { name: 'Sports Weekly' },
-      url: '#',
-      urlToImage: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1935&auto=format&fit=crop',
-      category: 'Sport'
-  },
-  {
-      id: 'ai-1',
-      title: 'New AI Model Can Write Code Like a Human',
-      description: 'A breakthrough in generative AI could revolutionize software development, with a new model capable of writing complex and efficient code.',
-      body: 'Researchers have unveiled a new AI model that can understand natural language prompts and generate high-quality code in various programming languages. This could significantly speed up the software development process, allowing developers to focus on high-level design and problem-solving. The model was trained on a massive dataset of open-source code and can handle a wide range of tasks, from creating simple scripts to building entire applications. While it\'s not meant to replace human developers, it promises to be a powerful tool that will augment their capabilities.',
-      author: 'Samantha Lee',
-      publishedAt: '2024-07-22T11:20:00Z',
-      source: { name: 'AI Insider' },
-      url: '#',
-      urlToImage: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=2070&auto=format&fit=crop',
-      category: 'AI'
-  },
-  {
-      id: 'economy-1',
-      title: 'Inflation Concerns Grow as Prices Continue to Rise',
-      description: 'Economists are raising alarms about inflation as consumer prices have seen their steepest increase in over a year.',
-      body: 'The latest consumer price index report has shown a significant jump in the cost of goods and services, fueling concerns about inflation. Rising energy costs, supply chain disruptions, and increased consumer demand are all contributing factors. The central bank is now under pressure to take action, with many expecting an interest rate hike in the near future. How this will affect the average consumer\'s wallet and the broader economic recovery remains a key question.',
-      author: 'John Miller',
-      publishedAt: '2024-07-18T09:00:00Z',
-      source: { name: 'The Economist' },
-      url: '#',
-      urlToImage: 'https://images.unsplash.com/photo-1559526324-c1f275fbfa32?q=80&w=2070&auto=format&fit=crop',
-      category: 'Economy'
-  },
-   {
-    id: 'politics-1',
-    title: 'Parliament Passes Landmark Climate Bill',
-    description: 'After months of debate, a new bill aimed at tackling climate change has been passed, setting ambitious targets for carbon emission reductions.',
-    body: 'In a historic vote, parliament has passed a comprehensive climate bill that sets some of the most ambitious environmental targets in the world. The bill mandates a significant reduction in carbon emissions over the next decade and invests heavily in renewable energy sources. The legislation was met with both praise from environmental groups and criticism from some industries concerned about the economic impact. The government has promised support for businesses to transition to greener technologies.',
-    author: 'Emily Davis',
-    publishedAt: '2024-07-21T16:00:00Z',
-    source: { name: 'The Political Reporter' },
+    id: '5',
+    title: 'The Rise of AI in Modern Politics',
+    description: 'Political campaigns are increasingly leveraging AI for everything from voter targeting to policy analysis.',
+    body: 'Artificial intelligence is no longer just a buzzword in the political arena; it\'s a powerful tool being deployed in modern campaigns. AI algorithms are used to analyze vast amounts of voter data to create highly personalized outreach messages. They also help in sentiment analysis of social media to gauge public opinion in real-time. While proponents argue it makes campaigning more efficient, critics raise concerns about privacy, manipulation, and the potential for AI-generated misinformation to influence elections.',
+    author: 'Sophia Rodriguez',
+    publishedAt: '2024-07-11T11:45:00Z',
+    source: { name: 'Political Insight' },
     url: '#',
-    urlToImage: 'https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?q=80&w=1974&auto=format&fit=crop',
+    urlToImage: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1200',
     category: 'Politics'
   },
   {
-    id: 'history-1',
-    title: 'Ancient Shipwreck Discovered Off the Coast',
-    description: 'Marine archaeologists have discovered a remarkably well-preserved shipwreck dating back over 2,000 years, offering new insights into ancient trade routes.',
-    body: 'A team of marine archaeologists has made a stunning discovery: a shipwreck from the classical era, lying in deep water off the coast. The ship\'s cargo, including pottery and other artifacts, is remarkably intact, preserved by the cold, dark depths. This find is expected to provide invaluable information about ancient maritime trade and the cultures that thrived along these routes. Researchers are now planning a careful excavation to recover and study the artifacts.',
-    author: 'Dr. Eleanor Vance',
-    publishedAt: '2024-07-17T12:00:00Z',
-    source: { name: 'Archaeology Journal' },
+    id: '6',
+    title: 'European Union Agrees on New Tech Regulation Package',
+    description: 'The EU has passed a landmark set of regulations aimed at curbing the power of big tech companies.',
+    body: 'After months of intense negotiations, European Union lawmakers have agreed on a comprehensive package of new rules for the digital economy. The regulations will impose stricter controls on how large technology companies operate, with new obligations related to content moderation, data privacy, and interoperability. Companies that fail to comply could face massive fines. The move is seen as one of the most significant attempts by a government body to regulate the tech industry and is expected to have a global impact.',
+    author: 'Pierre Dubois',
+    publishedAt: '2024-07-10T16:20:00Z',
+    source: { name: 'EuroNews' },
     url: '#',
-    urlToImage: 'https://images.unsplash.com/photo-1578889587088-999311f79b6c?q=80&w=1974&auto=format&fit=crop',
-    category: 'History'
+    urlToImage: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1200',
+    category: 'Europe'
   },
+  {
+    id: '7',
+    title: 'How Innovation is Reshaping the Global Economy',
+    description: 'From fintech to biotech, technological innovation is the primary driver of economic growth and disruption in the 21st century.',
+    body: 'The global economy is in a state of constant flux, driven by rapid technological innovation. Industries that have existed for centuries are being upended by nimble startups leveraging new technologies. This wave of disruption is creating new markets and opportunities but also presents challenges, such as job displacement and increasing inequality. Economists argue that for countries to remain competitive, they must invest heavily in education, research, and development to foster a culture of continuous innovation.',
+    author: 'Michael Chan',
+    publishedAt: '2024-07-09T08:00:00Z',
+    source: { name: 'Economic Times' },
+    url: '#',
+    urlToImage: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1200',
+    category: 'Economy'
+  }
 ];
 
-// Shuffle array to make article order seem more dynamic
-const shuffleArray = (array: Article[]) => {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-};
-
-// Simulate network delay
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-
-
-export const getArticlesByCategory = async (category: string): Promise<Article[]> => {
-    await delay(500);
-    if (category.toLowerCase() === 'all') {
-        return shuffleArray([...mockArticles]).slice(0, 9);
-    }
-    const filtered = mockArticles.filter(article => article.category.toLowerCase() === category.toLowerCase());
-    return shuffleArray([...filtered]);
-};
-
-export const getTopStories = async (): Promise<Article[]> => {
-    await delay(300);
-    // Return a few consistently "top" stories
-    return [...mockArticles].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)).slice(0, 4);
-};
-
-export const getRelatedArticles = async (category: string, currentArticleId: string): Promise<Article[]> => {
-    await delay(400);
-    return mockArticles.filter(article => 
-        article.category.toLowerCase() === category.toLowerCase() && article.id !== currentArticleId
-    ).slice(0, 3);
+export const getArticles = async (category: string = 'World'): Promise<Article[]> => {
+    console.log(`Fetching articles for category: ${category}`);
+    const lowerCategory = category.toLowerCase();
+    const filtered = mockArticles.filter(article => {
+        if (lowerCategory === 'world') return ['world', 'europe', 'asia', 'americas', 'africa'].includes(article.category.toLowerCase());
+        if (lowerCategory === 'business') return ['business', 'markets', 'companies', 'economy'].includes(article.category.toLowerCase());
+        if (lowerCategory === 'technology') return ['technology', 'ai', 'gadgets', 'innovation'].includes(article.category.toLowerCase());
+        return article.category.toLowerCase() === lowerCategory;
+    });
+    return Promise.resolve(filtered.length > 0 ? filtered : mockArticles.slice(0, 5));
 };
 
 export const getFeaturedArticleForCategory = (category: string): Article | null => {
-    return mockArticles.find(article => article.category.toLowerCase() === category.toLowerCase()) || null;
+    return mockArticles.find(a => a.category.toLowerCase() === category.toLowerCase()) || mockArticles[0] || null;
 };
 
 export const summarizeArticle = async (body: string, title: string): Promise<string> => {
+    const prompt = `Summarize the following news article in 3-4 concise sentences, focusing on the main points.
+    Title: ${title}
+    Article: ${body}`;
+    
     try {
-        const prompt = `Provide a concise, professional summary of the following news article. The summary should be one to two paragraphs long.
-        
-        Title: "${title}"
-        
-        Article Body:
-        ${body}`;
-
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
         });
+        // FIX: Using .text property to get the response text, as per guidelines
         return response.text;
     } catch (error) {
-        console.error('Error summarizing article:', error);
-        throw new Error('Failed to generate summary.');
+        console.error("Error summarizing article:", error);
+        return "Sorry, we couldn't generate a summary at this time.";
     }
 };
 
 export const getKeyPoints = async (body: string): Promise<string[]> => {
+    const prompt = `Extract the 3 to 5 most important key points from the following article. Present them as a list. Do not use markdown like '*' or '-'. Each point should be a separate line.
+    Article: ${body}`;
+
     try {
-        const prompt = `Extract the most important key points from this article. Return them as a JSON object with a single key "keyPoints" which is an array of strings. Each string should be a single, complete sentence.
-
-        Article Body:
-        ${body}`;
-
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
-            config: {
-                responseMimeType: 'application/json',
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        keyPoints: {
-                            type: Type.ARRAY,
-                            description: 'A list of key points from the article.',
-                            items: {
-                                type: Type.STRING,
-                                description: 'A single key point sentence.'
-                            }
-                        }
-                    },
-                    required: ['keyPoints']
-                }
-            }
         });
-
-        const result = JSON.parse(response.text);
-        return result.keyPoints || [];
+        // FIX: Using .text property to get the response text and parsing it, as per guidelines
+        const text = response.text;
+        return text.split('\n').map(p => p.trim()).filter(p => p.length > 0);
     } catch (error) {
-        console.error('Error getting key points:', error);
-        throw new Error('Failed to extract key points.');
+        console.error("Error getting key points:", error);
+        return ["Could not extract key points at this time."];
     }
 };
 
-export const searchArticles = async (query: string): Promise<{ articles: Article[], sources: GroundingChunk[] }> => {
-    try {
-        const prompt = `Based on the latest information from Google Search, write a neutral, informative news report about "${query}". The report should be well-structured, starting with an introduction, followed by key details, and a concluding paragraph.`;
-        
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                tools: [{ googleSearch: {} }],
-            },
-        });
-
-        const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
-        const sources: GroundingChunk[] = groundingMetadata?.groundingChunks || [];
-        
-        const articleText = response.text;
-        
-        if (!articleText) {
-             return { articles: [], sources };
-        }
-        
-        const article: Article = {
-            id: `search-${query.replace(/\s/g, '-')}-${Date.now()}`,
-            title: `A Report on: ${query}`,
-            description: articleText.substring(0, 150).replace(/\n/g, ' ') + '...',
-            body: articleText,
-            author: 'Gemini News Assistant',
-            source: { name: 'Web Search' },
-            publishedAt: new Date().toISOString(),
-            url: sources[0]?.web?.uri || '#',
-            urlToImage: `https://source.unsplash.com/random/800x400?query=${encodeURIComponent(query)}`,
-            category: 'Search',
-        };
-
-        return { articles: [article], sources };
-    } catch (error) {
-        console.error('Error searching articles:', error);
-        throw new Error('Search failed. Please try again.');
-    }
+export const searchArticles = async (query: string): Promise<Article[]> => {
+    console.log(`Searching for: ${query}`);
+    if (!query) return [];
+    const lowercasedQuery = query.toLowerCase();
+    return Promise.resolve(mockArticles.filter(a => 
+        a.title.toLowerCase().includes(lowercasedQuery) || 
+        a.description.toLowerCase().includes(lowercasedQuery) ||
+        a.body.toLowerCase().includes(lowercasedQuery)
+    ));
 };
+
+export const getRelatedArticles = async (currentArticleId: string): Promise<Article[]> => {
+    return Promise.resolve(mockArticles.filter(a => a.id !== currentArticleId).slice(0, 4));
+}

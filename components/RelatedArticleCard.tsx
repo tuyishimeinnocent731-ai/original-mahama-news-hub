@@ -1,35 +1,24 @@
+
 import React from 'react';
 import { Article } from '../types';
 
 interface RelatedArticleCardProps {
     article: Article;
-    onArticleClick: () => void;
+    onArticleClick: (article: Article) => void;
 }
 
 const RelatedArticleCard: React.FC<RelatedArticleCardProps> = ({ article, onArticleClick }) => {
-
-    const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-        e.currentTarget.src = 'https://via.placeholder.com/300x300?text=News';
-    };
-
     return (
-        <div 
-            className="flex items-center space-x-4 cursor-pointer group"
-            onClick={onArticleClick}
-        >
-            <div className="flex-shrink-0 w-24 h-24 overflow-hidden rounded-lg">
-                <img 
-                    src={article.urlToImage} 
-                    alt={article.title} 
-                    onError={handleImageError}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                />
+        <div onClick={() => onArticleClick(article)} className="flex space-x-4 cursor-pointer group">
+            <div className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg">
+                <img src={article.urlToImage} alt={article.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
             </div>
-            <div>
-                <p className="text-xs font-semibold text-yellow-600 dark:text-yellow-400 uppercase tracking-wider mb-1">{article.category}</p>
-                <h3 className="text-md font-semibold text-gray-800 dark:text-gray-200 group-hover:text-yellow-500 transition-colors duration-200 line-clamp-3">
+            <div className="flex-1">
+                <span className="text-xs font-semibold text-yellow-600 dark:text-yellow-400 uppercase">{article.category}</span>
+                <h4 className="text-sm font-semibold line-clamp-3 text-gray-800 dark:text-gray-200 group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors">
                     {article.title}
-                </h3>
+                </h4>
+                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{new Date(article.publishedAt).toLocaleDateString()}</p>
             </div>
         </div>
     );
