@@ -78,7 +78,7 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onUpgr
             <article className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
                  <img src={article.urlToImage} alt={article.title} className="w-full h-auto max-h-[500px] object-cover" />
                  
-                 <div className="p-6 sm:p-8">
+                 <div className="p-4 sm:p-8">
                     <header className="mb-6">
                          <span className="text-sm font-semibold text-yellow-600 dark:text-yellow-400 uppercase">{article.category}</span>
                          <h1 className="text-3xl md:text-4xl font-bold mt-2 text-gray-900 dark:text-white leading-tight">{article.title}</h1>
@@ -88,7 +88,7 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onUpgr
                         </div>
                     </header>
                     
-                     <div className="my-6 py-4 border-y dark:border-gray-700 flex flex-wrap items-center gap-4 sm:space-x-6">
+                     <div className="my-6 py-4 border-y dark:border-gray-700 flex flex-wrap items-center gap-4 sm:gap-6">
                         <button onClick={() => onToggleSave(article)} className={`flex items-center space-x-2 transition-colors ${saved ? 'text-yellow-500' : 'text-gray-600 dark:text-gray-300 hover:text-yellow-500'}`}>
                             <BookmarkIcon className={`h-5 w-5 ${saved ? 'fill-current' : ''}`}/><span>{saved ? 'Saved' : 'Save'}</span>
                         </button>
@@ -100,7 +100,7 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onUpgr
                                {!isPremium && <span className="text-xs text-yellow-500 ml-1">(Premium)</span>}
                             </button>
                         )}
-                        <button onClick={() => setAIPanelOpen(true)} className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold sm:ml-auto">
+                        <button onClick={() => setAIPanelOpen(true)} className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold ml-auto">
                             <SparklesIcon className="h-5 w-5" />
                             <span>AI Companion</span>
                         </button>

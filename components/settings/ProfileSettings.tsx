@@ -22,7 +22,7 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ user, updateProfile, 
             <h3 className="text-2xl font-bold mb-2">Profile Information</h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6">Update your account's profile information and email address.</p>
             <form onSubmit={handleProfileSubmit} className="space-y-6">
-                <div className="flex items-center space-x-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
                     <img src={user.avatar} alt="User Avatar" className="h-24 w-24 rounded-full" />
                     <div>
                         <label htmlFor="avatar-upload" className="cursor-pointer px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700">

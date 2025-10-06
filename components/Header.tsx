@@ -159,7 +159,7 @@ const Header: React.FC<HeaderProps> = ({
                                 ) : (
                                     <button onClick={onLoginClick} className="flex items-center space-x-2 text-white hover:text-yellow-300" aria-label="Login">
                                         <LoginIcon />
-                                        <span className="hidden lg:inline text-sm font-medium">Login</span>
+                                        <span className="hidden md:inline text-sm font-medium">Login</span>
                                     </button>
                                 )}
                             </>

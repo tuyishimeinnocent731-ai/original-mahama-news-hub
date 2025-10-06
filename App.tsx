@@ -155,8 +155,8 @@ function App() {
     switch (view) {
       case 'article':
         return selectedArticle ? (
-          <div className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
+          <div className="container mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="md:col-span-2">
               <ArticleView
                 article={selectedArticle}
                 user={user}
@@ -168,7 +168,7 @@ function App() {
                 onArticleClick={handleArticleClick}
               />
             </div>
-            <div className="lg:col-span-1">
+            <div className="md:col-span-1">
               <Aside title="Related Stories" articles={relatedArticles} onArticleClick={handleArticleClick} />
             </div>
           </div>
@@ -191,8 +191,8 @@ function App() {
       case 'home':
       default:
         return (
-          <div className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
+          <div className="container mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="md:col-span-2">
               <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500 capitalize">{currentCategory}</h1>
               {isLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -209,7 +209,7 @@ function App() {
                 </div>
               )}
             </div>
-             <div className="lg:col-span-1">
+             <div className="md:col-span-1">
                 <Aside title="Top Stories" articles={asideArticles} onArticleClick={handleArticleClick} isLoading={isLoading}/>
             </div>
           </div>
