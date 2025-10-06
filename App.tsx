@@ -145,6 +145,7 @@ const AppContent: React.FC = () => {
                 userEmail={user?.email || null}
                 onLogout={handleLogout}
                 onCategorySelect={handleCategorySelect}
+                onArticleClick={handleArticleClick}
             />
 
             <main className="flex-grow container mx-auto p-4 lg:p-6">
