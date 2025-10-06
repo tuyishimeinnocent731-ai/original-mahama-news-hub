@@ -5,7 +5,7 @@ import ArticleCard from './components/ArticleCard';
 import ArticleView from './components/ArticleView';
 import Aside from './components/Aside';
 import SearchOverlay from './components/SearchOverlay';
-import SettingsModal from './components/SettingsModal';
+import SettingsPage from './pages/SettingsPage';
 import CommandPalette from './components/CommandPalette';
 import AuthModal from './components/AuthModal';
 import PremiumModal from './components/PremiumModal';
@@ -23,7 +23,7 @@ import { useKeyPress } from './hooks/useKeyPress';
 
 import { Article } from './types';
 
-type View = 'home' | 'article' | 'search' | 'saved' | 'premium' | 'settings';
+type View = 'home' | 'article' | 'search' | 'saved' | 'settings';
 
 function App() {
   const [view, setView] = useState<View>('home');
@@ -34,12 +34,11 @@ function App() {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSearchOpen, setSearchOpen] = useState(false);
-  const [isSettingsOpen, setSettingsOpen] = useState(false);
   const [isLoginOpen, setLoginOpen] = useState(false);
   const [isPremiumOpen, setPremiumOpen] = useState(false);
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
   
-  const { user, login, logout, register, loading: authLoading, isLoggedIn, updateSubscription, saveArticle, unsaveArticle, isArticleSaved } = useAuth();
+  const { user, login, logout, register, loading: authLoading, isLoggedIn, updateSubscription, saveArticle, unsaveArticle, isArticleSaved, updateProfile } = useAuth();
   const { settings } = useSettings();
   const { addToast } = useToast();
 
@@ -180,6 +179,15 @@ function App() {
             <SavedArticlesPage savedArticles={user?.savedArticles || []} onArticleClick={handleArticleClick} />
           </div>
         );
+      case 'settings':
+        return (
+          <SettingsPage 
+            user={user}
+            onBack={() => setView('home')}
+            updateProfile={updateProfile}
+            onUpgradeClick={() => setPremiumOpen(true)}
+          />
+        );
       case 'home':
       default:
         return (
@@ -207,14 +215,14 @@ function App() {
           </div>
         );
     }
-  }, [view, selectedArticle, user, isArticleSaved, handleToggleSaveArticle, relatedArticles, handleArticleClick, articles, asideArticles, currentCategory, isLoading, settings.layoutMode, isLoggedIn]);
+  }, [view, selectedArticle, user, isArticleSaved, handleToggleSaveArticle, relatedArticles, handleArticleClick, articles, asideArticles, currentCategory, isLoading, settings.layoutMode, isLoggedIn, updateProfile]);
   
   return (
     <div className={`bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans text-base`}>
       <ReadingProgressBar />
       <Header
         onSearchClick={() => setSearchOpen(true)}
-        onSettingsClick={() => setSettingsOpen(true)}
+        onSettingsClick={() => setView('settings')}
         onLoginClick={() => setLoginOpen(true)}
         onCommandPaletteClick={() => setCommandPaletteOpen(true)}
         onCategorySelect={handleCategorySelect}
@@ -232,25 +240,16 @@ function App() {
         {mainContent}
       </main>
 
-      <Footer />
+      {view !== 'settings' && <Footer />}
       <BackToTopButton />
 
       <SearchOverlay isOpen={isSearchOpen} onClose={() => setSearchOpen(false)} onSearch={handleSearch} />
-      <SettingsModal 
-        isOpen={isSettingsOpen} 
-        onClose={() => setSettingsOpen(false)} 
-        user={user}
-        onUpgradeClick={() => {
-            setSettingsOpen(false);
-            setPremiumOpen(true);
-        }}
-      />
       <AuthModal isOpen={isLoginOpen} onClose={() => setLoginOpen(false)} onLogin={handleLogin} onRegister={handleRegister} />
       {<PremiumModal isOpen={isPremiumOpen} onClose={() => setPremiumOpen(false)} onSubscribe={handleSubscribe} currentPlan={user?.subscription || 'free'} />}
       <CommandPalette 
         isOpen={isCommandPaletteOpen} 
         onClose={() => setCommandPaletteOpen(false)}
-        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenSettings={() => setView('settings')}
         onOpenPremium={() => setPremiumOpen(true)}
         onOpenSearch={() => setSearchOpen(true)}
       />

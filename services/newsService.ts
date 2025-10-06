@@ -88,6 +88,66 @@ const mockArticles: Article[] = [
     url: '#',
     urlToImage: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1200',
     category: 'Economy'
+  },
+  {
+    id: '8',
+    title: 'Historic Peace Accord Signed in the Americas',
+    description: 'After decades of conflict, two neighboring nations have signed a landmark peace treaty, brokered by international diplomats.',
+    body: 'A wave of optimism has swept across the continent as a historic peace accord was signed, formally ending a long and bitter conflict. The signing ceremony was attended by leaders from across the Americas and the world, who praised the courage and commitment of both nations. The treaty includes provisions for demilitarization of the border, economic cooperation, and a truth and reconciliation commission. This monumental achievement is being hailed as a new dawn for regional stability and a testament to the power of diplomacy.',
+    author: 'Isabella Cruz',
+    publishedAt: '2024-07-16T15:00:00Z',
+    source: { name: 'Americas Herald' },
+    url: '#',
+    urlToImage: 'https://images.unsplash.com/photo-1541829076-248997I_F-YI?q=80&w=1200',
+    category: 'Americas'
+  },
+  {
+    id: '9',
+    title: 'African Nations Launch Joint Space Program',
+    description: 'A consortium of African countries has announced an ambitious joint space program aimed at fostering scientific research and technological independence.',
+    body: 'In a bold move, several African nations have pooled their resources to launch a continental space agency. The program will focus on satellite technology for telecommunications, weather forecasting, and natural resource management. The first satellite, designed and built entirely in Africa, is scheduled for launch next year. Leaders hope this initiative will inspire a new generation of scientists and engineers and position Africa as a key player in the global space industry, reducing its reliance on foreign technology.',
+    author: 'Chidi Okoro',
+    publishedAt: '2024-07-15T12:30:00Z',
+    source: { name: 'Pan-African News' },
+    url: '#',
+    urlToImage: 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?q=80&w=1200',
+    category: 'Africa'
+  },
+  {
+    id: '10',
+    title: 'Cultural Renaissance in Southeast Asia\'s Art Scene',
+    description: 'A new generation of artists is making waves, blending traditional techniques with contemporary themes to international acclaim.',
+    body: 'The art scene in Southeast Asia is experiencing a vibrant renaissance. Young artists are gaining global recognition for their innovative work that explores complex themes of identity, history, and globalization. Major art fairs and biennials in the region are attracting collectors and critics from around the world. This cultural boom is supported by a growing network of independent galleries and government initiatives aimed at promoting local talent on the international stage.',
+    author: 'Anya Sharma',
+    publishedAt: '2024-07-14T09:15:00Z',
+    source: { name: 'Asia Arts Review' },
+    url: '#',
+    urlToImage: 'https://images.unsplash.com/photo-1547891654-e66ed711b999?q=80&w=1200',
+    category: 'Asia'
+  },
+  {
+    id: '11',
+    title: 'Champion\'s League Final Delivers a Thrilling Spectacle',
+    description: 'In a match for the ages, the underdog team clinched the victory with a stunning goal in the final minutes of extra time.',
+    body: 'Football fans were treated to an unforgettable Champion\'s League final that had everything: drama, skill, and a fairy-tale ending. The favored team dominated possession, but their opponents defended resolutely and were lethal on the counter-attack. The match was deadlocked until a moment of individual brilliance in the 118th minute sealed the historic win. The victory parade is expected to draw millions of ecstatic fans to the city streets.',
+    author: 'Marcus Rashford',
+    publishedAt: '2024-07-13T21:00:00Z',
+    source: { name: 'Sporting Life' },
+    url: '#',
+    urlToImage: 'https://images.unsplash.com/photo-1553772413-726550a63d5c?q=80&w=1200',
+    category: 'Sport'
+  },
+  {
+    id: '12',
+    title: 'Archaeologists Uncover Lost City in the Desert',
+    description: 'A recent excavation has revealed the ruins of a sprawling ancient city that was thought to be a myth.',
+    body: 'Using satellite imagery and ground-penetrating radar, archaeologists have made a discovery that could rewrite history books. The ruins of a previously unknown civilization, complete with a grand temple, residential areas, and a complex irrigation system, have been unearthed. Initial findings suggest the city was a major trading hub that flourished for centuries before being mysteriously abandoned. The discovery opens a new chapter in our understanding of the region\'s ancient history.',
+    author: 'Dr. Eleanor Vance',
+    publishedAt: '2024-07-12T07:30:00Z',
+    source: { name: 'History Unearthed' },
+    url: '#',
+    urlToImage: 'https://images.unsplash.com/photo-1614631336124-f773347f9f38?q=80&w=1200',
+    category: 'History'
   }
 ];
 

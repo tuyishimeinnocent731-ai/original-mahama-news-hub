@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useKeyPress } from '../hooks/useKeyPress';
 import { SearchIcon } from './icons/SearchIcon';

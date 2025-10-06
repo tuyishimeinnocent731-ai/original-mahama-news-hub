@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { User, Article, SubscriptionPlan } from '../types';
 
@@ -7,6 +6,7 @@ const USER_STORAGE_KEY = 'mahama_news_hub_user';
 const defaultUser: Omit<User, 'email' | 'name' | 'avatar'> = {
     subscription: 'free',
     savedArticles: [],
+    bio: '',
 };
 
 export const useAuth = () => {
@@ -18,7 +18,7 @@ export const useAuth = () => {
             const storedUser = localStorage.getItem(USER_STORAGE_KEY);
             if (storedUser) {
                 const parsedUser = JSON.parse(storedUser);
-                // Backwards compatibility for users without name/avatar
+                // Backwards compatibility for users without name/avatar/bio
                 const name = parsedUser.name || parsedUser.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase());
                 const avatar = parsedUser.avatar || `https://i.pravatar.cc/150?u=${parsedUser.email}`;
                 setUser({ ...defaultUser, ...parsedUser, name, avatar });
@@ -43,7 +43,7 @@ export const useAuth = () => {
     const login = useCallback((email: string) => {
         const name = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase());
         const avatar = `https://i.pravatar.cc/150?u=${email}`;
-        const userData: User = { email, name, avatar, subscription: 'free', savedArticles: [] };
+        const userData: User = { email, name, avatar, subscription: 'free', savedArticles: [], bio: '' };
         updateUserStorage(userData);
     }, []);
 
@@ -85,7 +85,7 @@ export const useAuth = () => {
         return user?.savedArticles.some(a => a.id === articleId) || false;
     }, [user]);
     
-    const updateProfile = useCallback((profileData: Partial<Pick<User, 'name' | 'avatar'>>) => {
+    const updateProfile = useCallback((profileData: Partial<Pick<User, 'name' | 'avatar' | 'bio'>>) => {
         if (user) {
             const updatedUser = { ...user, ...profileData };
             updateUserStorage(updatedUser);

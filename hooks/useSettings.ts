@@ -13,6 +13,11 @@ export interface Settings {
     highContrast: boolean;
     dyslexiaFont: boolean;
     reduceMotion: boolean;
+    notifications: {
+        breakingNews: boolean;
+        weeklyDigest: boolean;
+        specialOffers: boolean;
+    };
 }
 
 const SETTINGS_STORAGE_KEY = 'mahama_news_hub_settings';
@@ -25,6 +30,11 @@ const defaultSettings: Settings = {
     highContrast: false,
     dyslexiaFont: false,
     reduceMotion: false,
+    notifications: {
+        breakingNews: true,
+        weeklyDigest: true,
+        specialOffers: false,
+    },
 };
 
 const applyAllSettings = (settings: Settings) => {
@@ -79,7 +89,15 @@ export const useSettings = () => {
 
     const updateSettings = useCallback((newSettings: Partial<Settings>) => {
         setSettings(prevSettings => {
-            const updatedSettings = { ...prevSettings, ...newSettings };
+            // A simple merge for nested objects
+            const updatedSettings = { 
+                ...prevSettings, 
+                ...newSettings,
+                notifications: {
+                    ...prevSettings.notifications,
+                    ...(newSettings.notifications || {}),
+                }
+            };
             
             try {
                 localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updatedSettings));

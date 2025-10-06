@@ -1,4 +1,3 @@
-
 export interface Article {
   id: string;
   title: string;
@@ -14,6 +13,7 @@ export interface Article {
   category: string;
 }
 
+// FIX: Defined NavLink interface to remove circular dependency and fix type errors.
 export interface NavLink {
   name: string;
   href: string;
@@ -28,4 +28,5 @@ export interface User {
   avatar: string;
   subscription: SubscriptionPlan;
   savedArticles: Article[];
+  bio?: string;
 }
