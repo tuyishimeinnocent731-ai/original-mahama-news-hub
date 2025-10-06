@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User } from '../types';
+import { User, IntegrationId } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../contexts/ToastContext';
 import ProfileSettings from '../components/settings/ProfileSettings';
@@ -10,6 +10,7 @@ import NotificationSettings from '../components/settings/NotificationSettings';
 import SubscriptionSettings from '../components/settings/SubscriptionSettings';
 import SecuritySettings from '../components/settings/SecuritySettings';
 import PreferencesSettings from '../components/settings/PreferencesSettings';
+import IntegrationsSettings from '../components/settings/IntegrationsSettings';
 
 import { UserCircleIcon } from '../components/icons/UserCircleIcon';
 import { PaletteIcon } from '../components/icons/PaletteIcon';
@@ -19,9 +20,10 @@ import { BellIcon } from '../components/icons/BellIcon';
 import { StarIcon } from '../components/icons/StarIcon';
 import { ListBulletIcon } from '../components/icons/ListBulletIcon';
 import { ShieldExclamationIcon } from '../components/icons/ShieldExclamationIcon';
+import { LinkIcon } from '../components/icons/LinkIcon';
 
 
-type SettingsTab = 'profile' | 'appearance' | 'accessibility' | 'preferences' | 'notifications' | 'subscription' | 'privacy' | 'security';
+type SettingsTab = 'profile' | 'appearance' | 'accessibility' | 'preferences' | 'notifications' | 'subscription' | 'privacy' | 'security' | 'integrations';
 
 interface SettingsPageProps {
     user: User | null;
@@ -30,9 +32,10 @@ interface SettingsPageProps {
     toggleTwoFactor: (enabled: boolean) => void;
     validatePassword: (password: string) => Promise<boolean>;
     changePassword: (newPassword: string) => Promise<boolean>;
+    toggleIntegration: (integrationId: IntegrationId) => void;
 }
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpgradeClick, clearSearchHistory, toggleTwoFactor, validatePassword, changePassword }) => {
+const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpgradeClick, clearSearchHistory, toggleTwoFactor, validatePassword, changePassword, toggleIntegration }) => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
     const { updateProfile } = useAuth();
     const { addToast } = useToast();
@@ -50,6 +53,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpgradeClick, clear
         { id: 'subscription', label: 'Subscription', icon: <StarIcon className="w-5 h-5" /> },
         { id: 'privacy', label: 'Privacy', icon: <ShieldCheckIcon className="w-5 h-5" /> },
         { id: 'security', label: 'Security', icon: <ShieldExclamationIcon className="w-5 h-5" /> },
+        { id: 'integrations', label: 'Integrations', icon: <LinkIcon className="w-5 h-5" /> },
     ];
 
     const renderContent = () => {
@@ -70,6 +74,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onUpgradeClick, clear
                 return <PrivacySettings user={user} clearSearchHistory={clearSearchHistory} addToast={addToast} />;
             case 'security':
                 return <SecuritySettings user={user} toggleTwoFactor={toggleTwoFactor} addToast={addToast} validatePassword={validatePassword} changePassword={changePassword} />;
+            case 'integrations':
+                return <IntegrationsSettings user={user} toggleIntegration={toggleIntegration} addToast={addToast} />;
             default:
                 return null;
         }

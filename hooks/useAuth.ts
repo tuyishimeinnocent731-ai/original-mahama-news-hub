@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { User, SubscriptionPlan, Ad, Article } from '../types';
+import { User, SubscriptionPlan, Ad, Article, IntegrationId } from '../types';
 
 const MOCK_USER: User = {
     id: 'user-123',
@@ -12,6 +12,11 @@ const MOCK_USER: User = {
     userAds: [],
     searchHistory: ['AI', 'Global Economy'],
     twoFactorEnabled: true,
+    integrations: {
+        slack: false,
+        'google-calendar': true,
+        notion: false,
+    },
 };
 
 // Simulate a stored password hash for the mock user
@@ -37,8 +42,15 @@ export const useAuth = () => {
             const storedUser = localStorage.getItem('auth-user');
             if (storedUser) {
                 const parsedUser = JSON.parse(storedUser);
-                // Ensure all default keys are present
-                const mergedUser = { ...MOCK_USER, ...parsedUser };
+                // Ensure all default keys are present, especially new ones like integrations
+                const mergedUser = { 
+                    ...MOCK_USER, 
+                    ...parsedUser,
+                    integrations: {
+                        ...MOCK_USER.integrations,
+                        ...(parsedUser.integrations || {})
+                    }
+                };
                 setUser(mergedUser);
                 setIsLoggedIn(true);
             }
@@ -141,6 +153,19 @@ export const useAuth = () => {
             return updatedUser;
         });
     }, []);
+    
+    const toggleIntegration = useCallback((integrationId: IntegrationId) => {
+        setUser(currentUser => {
+            if (!currentUser) return null;
+            const updatedIntegrations = {
+                ...currentUser.integrations,
+                [integrationId]: !currentUser.integrations[integrationId],
+            };
+            const updatedUser = { ...currentUser, integrations: updatedIntegrations };
+            updateUserState(updatedUser);
+            return updatedUser;
+        });
+    }, []);
 
     const validatePassword = async (password: string): Promise<boolean> => {
         // Simulate an API call
@@ -177,6 +202,7 @@ export const useAuth = () => {
         clearSearchHistory,
         toggleTwoFactor,
         validatePassword,
-        changePassword
+        changePassword,
+        toggleIntegration,
     };
 };

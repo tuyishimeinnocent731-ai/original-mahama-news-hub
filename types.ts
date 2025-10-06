@@ -26,6 +26,8 @@ export interface Ad {
   isUserAd?: boolean;
 }
 
+export type IntegrationId = 'slack' | 'google-calendar' | 'notion';
+
 export interface User {
   id: string;
   name: string;
@@ -37,6 +39,7 @@ export interface User {
   userAds: Ad[];
   searchHistory: string[];
   twoFactorEnabled: boolean;
+  integrations: Record<IntegrationId, boolean>;
 }
 
 export interface NavLink {

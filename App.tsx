@@ -5,7 +5,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import LoadingSpinner from './components/LoadingSpinner';
 import * as newsService from './services/newsService';
-import { Article, Ad } from './types';
+import { Article, Ad, IntegrationId } from './types';
 import { useAuth } from './hooks/useAuth';
 import { useSettings } from './hooks/useSettings';
 import AuthModal from './components/AuthModal';
@@ -30,7 +30,7 @@ const App: React.FC = () => {
         user, isLoggedIn, authLoading, login, logout, subscribe, 
         updateProfile, createAd, isArticleSaved, toggleSaveArticle,
         addSearchToHistory, clearSearchHistory, toggleTwoFactor,
-        validatePassword, changePassword
+        validatePassword, changePassword, toggleIntegration
     } = useAuth();
     const { settings } = useSettings();
     const { addToast } = useToast();
@@ -183,7 +183,7 @@ const App: React.FC = () => {
                     </div>
                 );
             case 'settings':
-                return <SettingsPage user={user} onUpgradeClick={() => setPremiumModalOpen(true)} clearSearchHistory={clearSearchHistory} toggleTwoFactor={toggleTwoFactor} validatePassword={validatePassword} changePassword={changePassword} />;
+                return <SettingsPage user={user} onUpgradeClick={() => setPremiumModalOpen(true)} clearSearchHistory={clearSearchHistory} toggleTwoFactor={toggleTwoFactor} validatePassword={validatePassword} changePassword={changePassword} toggleIntegration={toggleIntegration} />;
             case 'saved-articles':
                 const savedArticlesFull = user?.savedArticles.map(id => articles.find(a => a.id === id)).filter(Boolean) as Article[] || [];
                 return <SavedArticlesPage savedArticles={savedArticlesFull} onArticleClick={handleArticleClick} />;
@@ -207,7 +207,6 @@ const App: React.FC = () => {
         }
     };
     
-    const isArticleView = view === 'article';
     const showSidebar = ['home', 'article', 'search-results'].includes(view);
 
     return (
@@ -230,8 +229,11 @@ const App: React.FC = () => {
             />
             <main className="container mx-auto px-4 py-8 flex-grow">
                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {showSidebar && (
-                        <div className={`hidden lg:block lg:col-span-4 ${!isArticleView ? 'lg:order-last' : ''}`}>
+                    <div className={showSidebar ? "lg:col-span-8" : "col-span-full"}>
+                        {renderMainContent()}
+                    </div>
+                     {showSidebar && (
+                        <div className="hidden lg:block lg:col-span-4">
                             <Aside
                                 title="Top Stories"
                                 articles={topStories}
@@ -241,9 +243,6 @@ const App: React.FC = () => {
                             />
                         </div>
                     )}
-                    <div className={showSidebar ? "lg:col-span-8" : "col-span-full"}>
-                        {renderMainContent()}
-                    </div>
                 </div>
             </main>
             <Footer />
