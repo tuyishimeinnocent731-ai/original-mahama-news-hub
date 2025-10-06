@@ -8,6 +8,7 @@ import AccessibilitySettings from '../components/settings/AccessibilitySettings'
 import PrivacySettings from '../components/settings/PrivacySettings';
 import NotificationSettings from '../components/settings/NotificationSettings';
 import SubscriptionSettings from '../components/settings/SubscriptionSettings';
+import PreferencesSettings from '../components/settings/PreferencesSettings';
 import { ArrowLeftIcon } from '../components/icons/ArrowLeftIcon';
 import { UserCircleIcon } from '../components/icons/UserCircleIcon';
 import { PaletteIcon } from '../components/icons/PaletteIcon';
@@ -15,17 +16,19 @@ import { AccessibilityIcon } from '../components/icons/AccessibilityIcon';
 import { BellIcon } from '../components/icons/BellIcon';
 import { ShieldCheckIcon } from '../components/icons/ShieldCheckIcon';
 import { StarIcon } from '../components/icons/StarIcon';
+import { ListBulletIcon } from '../components/icons/ListBulletIcon';
 
 interface SettingsPageProps {
     user: User | null;
     onBack: () => void;
     updateProfile: (profileData: Partial<Pick<User, 'name' | 'avatar' | 'bio'>>) => void;
     onUpgradeClick: () => void;
+    clearOfflineArticles: () => void;
 }
 
-type SettingsTab = 'profile' | 'appearance' | 'accessibility' | 'notifications' | 'privacy' | 'subscription';
+type SettingsTab = 'profile' | 'appearance' | 'preferences' | 'accessibility' | 'notifications' | 'privacy' | 'subscription';
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ user, onBack, updateProfile, onUpgradeClick }) => {
+const SettingsPage: React.FC<SettingsPageProps> = ({ user, onBack, updateProfile, onUpgradeClick, clearOfflineArticles }) => {
     const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
     const { addToast } = useToast();
 
@@ -41,6 +44,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onBack, updateProfile
     const navItems = [
         { id: 'profile', label: 'Profile', icon: <UserCircleIcon className="w-5 h-5" /> },
         { id: 'appearance', label: 'Appearance', icon: <PaletteIcon className="w-5 h-5" /> },
+        { id: 'preferences', label: 'Preferences', icon: <ListBulletIcon className="w-5 h-5" /> },
         { id: 'accessibility', label: 'Accessibility', icon: <AccessibilityIcon className="w-5 h-5" /> },
         { id: 'notifications', label: 'Notifications', icon: <BellIcon className="w-5 h-5" /> },
         { id: 'privacy', label: 'Privacy', icon: <ShieldCheckIcon className="w-5 h-5" /> },
@@ -53,12 +57,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ user, onBack, updateProfile
                 return <ProfileSettings user={user} updateProfile={updateProfile} addToast={addToast} />;
             case 'appearance':
                 return <AppearanceSettings />;
+            case 'preferences':
+                return <PreferencesSettings />;
             case 'accessibility':
                 return <AccessibilitySettings user={user} onUpgradeClick={onUpgradeClick} />;
             case 'notifications':
                 return <NotificationSettings />;
             case 'privacy':
-                return <PrivacySettings addToast={addToast} />;
+                return <PrivacySettings addToast={addToast} clearOfflineArticles={clearOfflineArticles} />;
             case 'subscription':
                 return <SubscriptionSettings user={user} onUpgradeClick={onUpgradeClick} />;
             default:

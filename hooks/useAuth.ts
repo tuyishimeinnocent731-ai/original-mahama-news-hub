@@ -138,6 +138,21 @@ export const useAuth = () => {
         }
     }, [user]);
 
+    const clearOfflineArticles = useCallback(() => {
+        if (!user) return;
+        
+        user.savedArticles.forEach(article => {
+            localStorage.removeItem(`${OFFLINE_ARTICLES_KEY_PREFIX}${article.id}`);
+        });
+
+        const updatedArticles = user.savedArticles.map(a => ({...a, isOffline: false }));
+        const updatedUser = { ...user, savedArticles: updatedArticles };
+        // We only update the state here, but don't re-save to local storage,
+        // as the offline articles are gone. The main user object will still list them as saved, just not available offline.
+        setUser(updatedUser);
+        
+    }, [user]);
+
     return { 
         user, 
         login, 
@@ -151,5 +166,6 @@ export const useAuth = () => {
         isArticleSaved,
         updateProfile,
         createAd,
+        clearOfflineArticles,
     };
 };

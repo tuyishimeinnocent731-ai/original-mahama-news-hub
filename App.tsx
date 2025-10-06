@@ -39,7 +39,7 @@ function App() {
   const [isPremiumOpen, setPremiumOpen] = useState(false);
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
   
-  const { user, login, logout, register, loading: authLoading, isLoggedIn, updateSubscription, saveArticle, unsaveArticle, isArticleSaved, updateProfile, createAd } = useAuth();
+  const { user, login, logout, register, loading: authLoading, isLoggedIn, updateSubscription, saveArticle, unsaveArticle, isArticleSaved, updateProfile, createAd, clearOfflineArticles } = useAuth();
   const { settings } = useSettings();
   const { addToast } = useToast();
 
@@ -156,6 +156,20 @@ function App() {
     setCurrentCategory('World');
     setSelectedArticle(null);
   }
+  
+  const displayedArticles = useMemo(() => {
+    if (settings.preferredCategories.length === 0) {
+      return articles;
+    }
+    const preferred = new Set(settings.preferredCategories.map(c => c.toLowerCase()));
+    return [...articles].sort((a, b) => {
+        const aIsPreferred = preferred.has(a.category.toLowerCase());
+        const bIsPreferred = preferred.has(b.category.toLowerCase());
+        if (aIsPreferred && !bIsPreferred) return -1;
+        if (!aIsPreferred && bIsPreferred) return 1;
+        return 0;
+    });
+  }, [articles, settings.preferredCategories]);
 
   const mainContent = useMemo(() => {
     switch (view) {
@@ -192,6 +206,7 @@ function App() {
             onBack={() => setView('home')}
             updateProfile={updateProfile}
             onUpgradeClick={() => setPremiumOpen(true)}
+            clearOfflineArticles={clearOfflineArticles}
           />
         );
       case 'my-ads':
@@ -217,7 +232,7 @@ function App() {
                 </div>
               ) : (
                 <div className={`grid grid-cols-1 ${settings.layoutMode === 'compact' ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2'} gap-6`}>
-                  {articles.map((article, index) => (
+                  {displayedArticles.map((article, index) => (
                     <React.Fragment key={article.id}>
                       <ArticleCard article={article} onArticleClick={handleArticleClick} layoutMode={settings.layoutMode} />
                       {index === 2 && !isLoggedIn && <InFeedAd />}
@@ -232,7 +247,7 @@ function App() {
           </div>
         );
     }
-  }, [view, selectedArticle, user, isArticleSaved, handleToggleSaveArticle, relatedArticles, handleArticleClick, articles, asideArticles, currentCategory, isLoading, settings.layoutMode, isLoggedIn, updateProfile, createAd, addToast]);
+  }, [view, selectedArticle, user, isArticleSaved, handleToggleSaveArticle, relatedArticles, handleArticleClick, articles, displayedArticles, asideArticles, currentCategory, isLoading, settings.layoutMode, isLoggedIn, updateProfile, createAd, addToast, clearOfflineArticles]);
   
   return (
     <div className={`bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans text-base flex flex-col`}>

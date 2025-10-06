@@ -3,10 +3,11 @@ import { useToast } from '../../contexts/ToastContext';
 
 interface PrivacySettingsProps {
     addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
+    clearOfflineArticles: () => void;
 }
 
 
-const PrivacySettings: React.FC<PrivacySettingsProps> = ({ addToast }) => {
+const PrivacySettings: React.FC<PrivacySettingsProps> = ({ addToast, clearOfflineArticles }) => {
 
     const handleDownloadData = () => {
         addToast("We've received your request. Your data will be sent to your email shortly.", "info");
@@ -19,9 +20,16 @@ const PrivacySettings: React.FC<PrivacySettingsProps> = ({ addToast }) => {
         }
     };
     
+    const handleClearOfflineData = () => {
+        if (window.confirm("Are you sure you want to remove all saved article data from this device? You will still see your saved articles, but will need an internet connection to read them.")) {
+            clearOfflineArticles();
+            addToast("Offline article data has been cleared.", "success");
+        }
+    }
+    
     return (
         <div>
-            <h3 className="text-2xl font-bold mb-2">Privacy</h3>
+            <h3 className="text-2xl font-bold mb-2">Privacy & Data</h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6">Manage your data and account privacy settings.</p>
             <div className="space-y-6">
                 <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
@@ -31,6 +39,15 @@ const PrivacySettings: React.FC<PrivacySettingsProps> = ({ addToast }) => {
                     </p>
                     <button onClick={handleDownloadData} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
                         Request Data Export
+                    </button>
+                </div>
+                 <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <h4 className="font-semibold text-lg mb-2">Clear Offline Data</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        Remove all saved article content from this device to free up space. Your list of saved articles will remain.
+                    </p>
+                    <button onClick={handleClearOfflineData} className="px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700">
+                        Clear Offline Data
                     </button>
                 </div>
                 <div className="p-4 border border-red-300 dark:border-red-500/50 rounded-lg">
