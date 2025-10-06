@@ -107,23 +107,23 @@ const SettingsPage: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-        <div className="flex flex-col md:flex-row">
-            <aside className="md:w-64 p-4 border-r dark:border-gray-700">
-                <h2 className="text-2xl font-bold mb-4 px-2">Settings</h2>
-                <nav className="flex flex-col space-y-1">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div className="flex flex-col md:flex-row min-h-[60vh]">
+            <aside className="md:w-64 p-4 border-b md:border-r dark:border-gray-700">
+                <h2 className="text-2xl font-bold mb-4 px-2 hidden md:block">Settings</h2>
+                <nav className="flex flex-row md:flex-col md:space-y-1 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 pb-2 md:pb-0 whitespace-nowrap">
                     {tabs.map(tab => (
                         <button 
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium ${activeTab === tab.id ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                            className={`flex-shrink-0 w-full text-left px-3 py-2 rounded-md text-sm font-medium mr-2 md:mr-0 ${activeTab === tab.id ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                         >
                             {tab.label}
                         </button>
                     ))}
                 </nav>
             </aside>
-            <main className="flex-1 p-8">
+            <main className="flex-1 p-6 md:p-8">
                  <h1 className="text-3xl font-bold mb-6 capitalize">{activeTab} Settings</h1>
                  {renderContent()}
             </main>

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import SearchBar from './SearchBar';
 import { SettingsIcon } from './icons/SettingsIcon';
 import { LoginIcon } from './icons/LoginIcon';
 import { LogoutIcon } from './icons/LogoutIcon';
 import { MenuIcon } from './icons/MenuIcon';
 import { NAV_LINKS } from '../constants';
 import { NavLink as NavLinkType } from '../types';
+import { SearchIcon } from './icons/SearchIcon';
+import { TranslateIcon } from './icons/TranslateIcon';
+import SearchOverlay from './SearchOverlay';
 
 interface HeaderProps {
   onSearch: (query: string) => void;
@@ -56,8 +58,15 @@ const NavLink: React.FC<{ link: NavLinkType, onNavClick: (category: string) => v
 };
 
 const Header: React.FC<HeaderProps> = ({ onSearch, onNavClick, onAuthClick, onMobileMenuClick, isLoggedIn, onLogout }) => {
+  const [isSearchOpen, setSearchOpen] = useState(false);
+  
+  const handleSearchSubmit = (query: string) => {
+    onSearch(query);
+    setSearchOpen(false);
+  };
 
   return (
+    <>
     <header className="bg-blue-900 dark:bg-gray-900 shadow-lg sticky top-0 z-40">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -73,23 +82,26 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onNavClick, onAuthClick, onMo
               </div>
             </nav>
           </div>
-          <div className="flex items-center">
-            <div className="hidden md:block">
-               <SearchBar onSearch={onSearch} />
-            </div>
-             <a href="#/settings" aria-label="Open settings" className="p-2 rounded-full text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white ml-2">
+          <div className="flex items-center space-x-2">
+            <button onClick={() => setSearchOpen(true)} aria-label="Open search" className="p-2 rounded-full text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
+                <SearchIcon />
+            </button>
+             <button onClick={() => alert('Translation feature coming soon!')} aria-label="Select language" className="p-2 rounded-full text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
+                <TranslateIcon />
+            </button>
+             <a href="#/settings" aria-label="Open settings" className="p-2 rounded-full text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
                 <SettingsIcon />
             </a>
             {isLoggedIn ? (
-                <button onClick={onLogout} aria-label="Logout" className="p-2 rounded-full text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white ml-2">
+                <button onClick={onLogout} aria-label="Logout" className="p-2 rounded-full text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
                     <LogoutIcon />
                 </button>
             ) : (
-                <button onClick={onAuthClick} aria-label="Login" className="p-2 rounded-full text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white ml-2">
+                <button onClick={onAuthClick} aria-label="Login" className="p-2 rounded-full text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
                     <LoginIcon />
                 </button>
             )}
-             <div className="md:hidden ml-2">
+             <div className="md:hidden">
                 <button onClick={onMobileMenuClick} aria-label="Open menu" className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none">
                     <MenuIcon />
                 </button>
@@ -98,6 +110,12 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onNavClick, onAuthClick, onMo
         </div>
       </div>
     </header>
+    <SearchOverlay 
+        isOpen={isSearchOpen}
+        onClose={() => setSearchOpen(false)}
+        onSearch={handleSearchSubmit}
+    />
+    </>
   );
 };
 

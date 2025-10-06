@@ -21,15 +21,16 @@ const parseArticlesFromResponse = (text: string, groundingChunks: GroundingChunk
             id: article.title + index,
             title: article.title || "No title",
             description: article.description || "No description",
-            body: article.body || article.content || "Full content not available.", // Prioritize 'body'
+            body: article.body || article.content || "Full content not available.",
             author: article.author || "Unknown",
             publishedAt: article.publishedAt || new Date().toISOString(),
             source: {
                 name: article.source?.name || "Unknown Source"
             },
             url: article.url || groundingChunks?.[index]?.web?.uri || "#",
-            urlToImage: article.urlToImage || `https://picsum.photos/seed/${encodeURIComponent(article.title || index)}/400/200`,
-            category: 'search'
+            urlToImage: article.urlToImage || `https://picsum.photos/seed/${encodeURIComponent(article.title || index)}/800/400`,
+            category: 'search',
+            keyPoints: article.keyPoints || [],
         }));
     } catch (error) {
         console.error("Error parsing articles from AI response:", error);
@@ -43,23 +44,25 @@ const parseArticlesFromResponse = (text: string, groundingChunks: GroundingChunk
             publishedAt: new Date().toISOString(),
             source: { name: "Google Search" },
             url: groundingChunks?.[0]?.web?.uri || "#",
-            urlToImage: `https://picsum.photos/seed/fallback/400/200`,
-            category: 'search'
+            urlToImage: `https://picsum.photos/seed/fallback/800/400`,
+            category: 'search',
+            keyPoints: ["The AI returned a non-JSON response.", "This content is a fallback representation."],
         }];
     }
 };
 
-export const fetchNews = async (query: string): Promise<{articles: Article[], sources: GroundingChunk[]}> => {
+export const fetchNews = async (query: string): Promise<{articles: Article[]}> => {
   try {
     const prompt = `Fetch the latest top 10 news articles about "${query}". For each article, provide:
     1. title
     2. description (a concise summary)
     3. body (a full, multi-paragraph article body, at least 3-4 paragraphs long)
-    4. author
-    5. source name
-    6. publication date
-    7. URL
-    8. image URL.
+    4. keyPoints (an array of 3-4 short, bulleted strings summarizing the key takeaways)
+    5. author
+    6. source name
+    7. publication date
+    8. URL
+    9. image URL.
     Format the output as a JSON object with a single key "articles" which is an array of article objects.`;
     
     const response = await ai.models.generateContent({
@@ -74,9 +77,9 @@ export const fetchNews = async (query: string): Promise<{articles: Article[], so
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
     const articles = parseArticlesFromResponse(text, groundingChunks);
 
-    return { articles, sources: groundingChunks || [] };
+    return { articles };
   } catch (error) {
     console.error("Error fetching news from Gemini API:", error);
-    return { articles: [], sources: [] };
+    return { articles: [] };
   }
 };

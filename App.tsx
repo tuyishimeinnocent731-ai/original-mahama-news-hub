@@ -5,7 +5,7 @@ import Footer from './components/Footer';
 import ArticleCard from './components/ArticleCard';
 import LoadingSpinner from './components/LoadingSpinner';
 import { fetchNews } from './services/newsService';
-import { Article, GroundingChunk } from './types';
+import { Article } from './types';
 import { useAuth } from './hooks/useAuth';
 import { useSettings } from './hooks/useSettings';
 import AuthModal from './components/AuthModal';
@@ -17,7 +17,6 @@ import PremiumModal from './components/PremiumModal';
 
 const App: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
-  const [sources, setSources] = useState<GroundingChunk[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -53,9 +52,10 @@ const App: React.FC = () => {
       const finalQuery = categories && categories.length > 0
         ? `latest news on ${categories.join(', ')}`
         : query;
-      const { articles: fetchedArticles, sources: fetchedSources } = await fetchNews(finalQuery);
+      const { articles: fetchedArticles } = await fetchNews(finalQuery);
       setArticles(fetchedArticles);
-      setSources(fetchedSources);
+      setCurrentQuery(query);
+    // FIX: Corrected syntax for the try-catch block.
     } catch (err) {
       setError('Failed to fetch news. Please try again later.');
     } finally {
@@ -68,8 +68,8 @@ const App: React.FC = () => {
   }, [settings.preferredCategories, handleSearch]);
 
   const handleNavClick = (category: string) => {
-    setCurrentQuery(`latest ${category} news`);
-    handleSearch(`latest ${category} news`);
+    const query = category === 'home' ? 'latest world news' : `latest ${category} news`;
+    handleSearch(query);
     setMobileMenuOpen(false);
   };
 
@@ -121,21 +121,6 @@ const App: React.FC = () => {
                       ))}
                   </div>
                   )}
-                   {sources.length > 0 && (
-                      <div className="mt-8 p-4 bg-gray-200 dark:bg-gray-800 rounded-lg">
-                          <h3 className="font-semibold text-lg mb-2">Sources:</h3>
-                          <ul className="list-disc list-inside space-y-1">
-                              {/* FIX: Check for source.web.uri as it is now optional in the GroundingChunk type. */}
-                              {sources.map((source, index) => source.web && source.web.uri && (
-                                  <li key={index}>
-                                      <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-yellow-600 dark:text-yellow-400 hover:underline">
-                                          {source.web.title || source.web.uri}
-                                      </a>
-                                  </li>
-                              ))}
-                          </ul>
-                      </div>
-                  )}
               </div>
               <Aside 
                   trendingTopics={trendingTopics}
@@ -168,6 +153,8 @@ const App: React.FC = () => {
         onClose={() => setArticleModalOpen(false)}
         article={selectedArticle}
         fontSize={settings.fontSize}
+        allArticles={articles}
+        onSelectArticle={setSelectedArticle}
       />
       <MobileMenu
         isOpen={isMobileMenuOpen}

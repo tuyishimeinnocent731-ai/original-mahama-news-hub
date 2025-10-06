@@ -2,7 +2,7 @@ export interface Article {
   id: string;
   title: string;
   description: string;
-  body: string; // Changed from 'content' to 'body' for full article text
+  body: string; 
   author: string;
   publishedAt: string;
   source: {
@@ -11,11 +11,11 @@ export interface Article {
   url: string;
   urlToImage: string;
   category: string;
+  keyPoints?: string[];
 }
 
 export interface GroundingChunk {
   web?: {
-    // FIX: Made uri and title optional to match the type from @google/genai SDK.
     uri?: string;
     title?: string;
   };
