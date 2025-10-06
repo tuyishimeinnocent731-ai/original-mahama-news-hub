@@ -15,11 +15,12 @@ const articleSchema = {
     required: ['headline', 'summary', 'category', 'imageUrl']
 };
 
-export const getInitialNews = async (): Promise<{ topStory: Article; secondaryStories: Article[] }> => {
+export const getInitialNews = async (categories: string[] = NEWS_CATEGORIES): Promise<{ topStory: Article; secondaryStories: Article[] }> => {
     try {
+        const categoriesToFetch = categories.length > 0 ? categories : NEWS_CATEGORIES;
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: `Generate a set of diverse, realistic news articles in the style of a major international news outlet. Provide one top story and 8 secondary stories covering these categories: ${NEWS_CATEGORIES.join(', ')}. Ensure all image URLs are from picsum.photos with size 800/600.`,
+            contents: `Generate a set of diverse, realistic news articles in the style of a major international news outlet. Provide one top story and 8 secondary stories covering these categories: ${categoriesToFetch.join(', ')}. Ensure all image URLs are from picsum.photos with size 800/600.`,
             config: {
                 responseMimeType: 'application/json',
                 responseSchema: {

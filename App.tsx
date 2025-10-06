@@ -4,12 +4,14 @@ import ArticleCard from './components/ArticleCard';
 import LoadingSpinner from './components/LoadingSpinner';
 import Footer from './components/Footer';
 import Aside from './components/Aside';
-import LoginModal from './components/LoginModal';
+import AuthModal from './components/AuthModal';
 import SettingsModal from './components/SettingsModal';
+import MobileMenu from './components/MobileMenu';
 import { getInitialNews, searchNews } from './services/newsService';
 import { Article, SearchResult } from './types';
-import { useTheme } from './hooks/useTheme';
+import { useSettings } from './hooks/useSettings';
 import { useAuth } from './hooks/useAuth';
+import { NEWS_CATEGORIES } from './constants';
 
 const App: React.FC = () => {
   const [topStory, setTopStory] = useState<Article | null>(null);
@@ -18,19 +20,22 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [isLoginModalOpen, setLoginModalOpen] = useState(false);
+  const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [isSettingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const { theme, toggleTheme } = useTheme();
-  const { isLoggedIn, login, logout } = useAuth();
+  const { settings, setTheme, setPreferredCategories } = useSettings();
+  const { isLoggedIn, login, logout, register } = useAuth();
 
-  const fetchInitialNews = useCallback(async () => {
+  const fetchInitialNews = useCallback(async (categories: string[] = NEWS_CATEGORIES) => {
     setIsLoading(true);
     setError(null);
     setSearchResults(null);
     setIsSearching(false);
     try {
-      const news = await getInitialNews();
+      // Use preferred categories if they exist, otherwise fetch from all
+      const categoriesToFetch = categories.length > 0 ? categories : NEWS_CATEGORIES;
+      const news = await getInitialNews(categoriesToFetch);
       setTopStory(news.topStory);
       setSecondaryStories(news.secondaryStories);
     } catch (err) {
@@ -42,13 +47,12 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchInitialNews();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    fetchInitialNews(settings.preferredCategories);
+  }, [settings.preferredCategories, fetchInitialNews]);
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) {
-      fetchInitialNews();
+      fetchInitialNews(settings.preferredCategories);
       return;
     }
     setIsLoading(true);
@@ -67,14 +71,18 @@ const App: React.FC = () => {
   };
 
   const handleLogoClick = () => {
-    fetchInitialNews();
+    fetchInitialNews(settings.preferredCategories);
   }
 
   const handleLogin = (email: string) => {
     login(email);
-    setLoginModalOpen(false);
+    setAuthModalOpen(false);
   };
 
+  const handleRegister = (email: string) => {
+    register(email);
+    setAuthModalOpen(false);
+  };
 
   const renderContent = () => {
     if (isLoading) {
@@ -129,12 +137,18 @@ const App: React.FC = () => {
       <Header 
         onSearch={handleSearch} 
         onLogoClick={handleLogoClick} 
-        theme={theme} 
-        toggleTheme={toggleTheme}
+        theme={settings.theme} 
+        toggleTheme={setTheme}
         isLoggedIn={isLoggedIn}
-        onLoginClick={() => setLoginModalOpen(true)}
+        onLoginClick={() => setAuthModalOpen(true)}
         onLogoutClick={logout}
         onSettingsClick={() => setSettingsModalOpen(true)}
+        onMobileMenuClick={() => setMobileMenuOpen(prev => !prev)}
+      />
+      <MobileMenu 
+        isOpen={isMobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        onNavClick={handleLogoClick}
       />
       <div className="max-w-screen-xl mx-auto grid grid-cols-12 gap-8">
         <main className="col-span-12 lg:col-span-9">
@@ -143,14 +157,18 @@ const App: React.FC = () => {
         <Aside />
       </div>
       <Footer />
-      <LoginModal 
-        isOpen={isLoginModalOpen} 
-        onClose={() => setLoginModalOpen(false)}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setAuthModalOpen(false)}
         onLogin={handleLogin}
+        onRegister={handleRegister}
       />
-      <SettingsModal 
+      <SettingsModal
         isOpen={isSettingsModalOpen}
         onClose={() => setSettingsModalOpen(false)}
+        settings={settings}
+        setTheme={setTheme}
+        setPreferredCategories={setPreferredCategories}
       />
     </div>
   );

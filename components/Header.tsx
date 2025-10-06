@@ -5,19 +5,22 @@ import { SunIcon } from './icons/SunIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
 import { LoginIcon } from './icons/LoginIcon';
 import { LogoutIcon } from './icons/LogoutIcon';
+import { MenuIcon } from './icons/MenuIcon';
+import { Theme } from '../hooks/useSettings';
 
 interface HeaderProps {
     onSearch: (query: string) => void;
     onLogoClick: () => void;
-    theme: 'light' | 'dark';
-    toggleTheme: () => void;
+    theme: Theme;
+    toggleTheme: (theme: Theme) => void;
     isLoggedIn: boolean;
     onLoginClick: () => void;
     onLogoutClick: () => void;
     onSettingsClick: () => void;
+    onMobileMenuClick: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onSearch, onLogoClick, theme, toggleTheme, isLoggedIn, onLoginClick, onLogoutClick, onSettingsClick }) => {
+const Header: React.FC<HeaderProps> = ({ onSearch, onLogoClick, theme, toggleTheme, isLoggedIn, onLoginClick, onLogoutClick, onSettingsClick, onMobileMenuClick }) => {
     return (
         <header className="bg-gray-900 text-white sticky top-0 z-50">
             <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -35,11 +38,11 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onLogoClick, theme, toggleThe
                            </div>
                         </button>
                     </div>
-                    <div className="flex-1 flex justify-center px-2 lg:ml-6 lg:justify-end">
+                    <div className="hidden md:flex flex-1 justify-center px-2 lg:ml-6 lg:justify-end">
                         <SearchBar onSearch={onSearch} />
                     </div>
-                     <div className="flex items-center space-x-4 ml-4">
-                        <button onClick={toggleTheme} aria-label="Toggle dark mode" className="p-2 rounded-full hover:bg-gray-700">
+                     <div className="flex items-center space-x-2 sm:space-x-4 ml-4">
+                        <button onClick={() => toggleTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle dark mode" className="p-2 rounded-full hover:bg-gray-700">
                             {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
                         </button>
                         <button onClick={onSettingsClick} aria-label="Settings" className="p-2 rounded-full hover:bg-gray-700">
@@ -54,9 +57,14 @@ const Header: React.FC<HeaderProps> = ({ onSearch, onLogoClick, theme, toggleThe
                                 <LoginIcon />
                             </button>
                          )}
+                         <div className="md:hidden">
+                            <button onClick={onMobileMenuClick} aria-label="Open menu" className="p-2 rounded-full hover:bg-gray-700">
+                                <MenuIcon />
+                            </button>
+                         </div>
                     </div>
                 </div>
-                <nav className="bg-gray-800 -mx-4 sm:-mx-6 lg:-mx-8">
+                <nav className="hidden md:block bg-gray-800 -mx-4 sm:-mx-6 lg:-mx-8">
                     <div className="max-w-screen-xl mx-auto px-2 sm:px-6 lg:px-8">
                         <div className="relative flex items-center justify-between h-10">
                             <div className="flex items-center space-x-1 sm:space-x-4 overflow-x-auto">

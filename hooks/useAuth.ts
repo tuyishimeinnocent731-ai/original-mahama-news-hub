@@ -18,11 +18,18 @@ export const useAuth = () => {
     localStorage.setItem(AUTH_TOKEN_KEY, mockToken);
     setIsLoggedIn(true);
   }, []);
+  
+  const register = useCallback((email: string) => {
+    // Simulate user creation and login
+    const mockToken = `mock-token-for-new-user-${email}`;
+    localStorage.setItem(AUTH_TOKEN_KEY, mockToken);
+    setIsLoggedIn(true);
+  }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     setIsLoggedIn(false);
   }, []);
 
-  return { isLoggedIn, login, logout };
+  return { isLoggedIn, login, register, logout };
 };
