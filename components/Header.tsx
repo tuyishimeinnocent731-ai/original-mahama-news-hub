@@ -68,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({
                         <button className="lg:hidden text-white mr-4" onClick={() => setMobileMenuOpen(true)} aria-label="Open menu">
                             <MenuIcon />
                         </button>
-                        <a href="/" className="text-2xl font-bold text-yellow-400">NewsHub</a>
+                        <a href="/" className="text-2xl font-bold text-yellow-400">Mahama News Hub</a>
                     </div>
                     <nav className="hidden lg:flex items-center space-x-2">
                         {NAV_LINKS.map(link => <NavLink key={link.name} link={link} />)}

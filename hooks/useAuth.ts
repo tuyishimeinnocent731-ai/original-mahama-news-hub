@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { User } from '../types';
 
-const USER_STORAGE_KEY = 'news_hub_user';
+const USER_STORAGE_KEY = 'mahama_news_hub_user';
 
 export const useAuth = () => {
     const [user, setUser] = useState<User | null>(null);

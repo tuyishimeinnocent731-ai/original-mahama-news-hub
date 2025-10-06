@@ -8,7 +8,7 @@ const Footer: React.FC = () => {
       <div className="container mx-auto py-8 px-6">
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
           <div className="col-span-2 lg:col-span-1">
-            <h2 className="text-2xl font-bold text-yellow-400 mb-2">NewsHub</h2>
+            <h2 className="text-2xl font-bold text-yellow-400 mb-2">Mahama News Hub</h2>
             <p className="text-sm text-gray-300">Your daily source of reliable news.</p>
           </div>
           {NAV_LINKS.slice(0, 3).map((link) => (
@@ -32,7 +32,7 @@ const Footer: React.FC = () => {
             </div>
         </div>
         <div className="mt-8 pt-6 border-t border-blue-700 dark:border-gray-700 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-sm text-gray-400">&copy; {new Date().getFullYear()} NewsHub. All Rights Reserved.</p>
+          <p className="text-sm text-gray-400">&copy; {new Date().getFullYear()} Mahama News Hub. All Rights Reserved.</p>
           <div className="flex space-x-4 mt-4 md:mt-0">
             <a href="#" className="text-gray-400 hover:text-white" aria-label="Facebook"><FacebookIcon /></a>
             <a href="#" className="text-gray-400 hover:text-white" aria-label="Twitter"><TwitterIcon /></a>
