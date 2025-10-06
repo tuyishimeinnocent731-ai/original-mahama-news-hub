@@ -1,42 +1,66 @@
+
 import React from 'react';
-import { FacebookIcon, TwitterIcon, InstagramIcon } from './icons/SocialIcons';
+import { NAV_LINKS } from '../constants';
+import { FacebookIcon, InstagramIcon, TwitterIcon } from './icons/SocialIcons';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-blue-900 dark:bg-gray-900 text-white mt-auto">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-1">
-                 <h3 className="text-xl font-bold mb-2">Mahama News TV</h3>
-                 <p className="text-sm text-gray-400">Your trusted source for unbiased news.</p>
-                 <div className="flex space-x-4 mt-4">
-                    <a href="#" aria-label="Facebook" className="text-gray-400 hover:text-white"><FacebookIcon /></a>
-                    <a href="#" aria-label="Twitter" className="text-gray-400 hover:text-white"><TwitterIcon /></a>
-                    <a href="#" aria-label="Instagram" className="text-gray-400 hover:text-white"><InstagramIcon /></a>
-                 </div>
-            </div>
-            <div>
-                 <h3 className="text-lg font-semibold mb-4">Newsletter</h3>
-                 <p className="text-gray-400 mb-4 text-sm">Stay updated with the latest news by subscribing to our newsletter.</p>
-                 <form onSubmit={(e) => {e.preventDefault(); alert('Thank you for subscribing!'); }}>
-                    <div className="flex">
-                        <input type="email" placeholder="Enter your email" className="w-full px-4 py-2 rounded-l-md text-gray-900 focus:outline-none" required/>
-                        <button type="submit" className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold px-4 py-2 rounded-r-md">Subscribe</button>
-                    </div>
-                 </form>
-            </div>
-             <div>
-                <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-                <ul className="space-y-2 text-sm">
-                    <li><a href="#" className="text-gray-400 hover:text-white">About Us</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-white">Contact</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-white">Privacy Policy</a></li>
-                    <li><a href="#" className="text-gray-400 hover:text-white">Terms of Service</a></li>
-                </ul>
-            </div>
+    <footer className="bg-blue-900 dark:bg-gray-900 text-gray-300">
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+          
+          {/* Logo and About */}
+          <div className="col-span-2 lg:col-span-1">
+            <h2 className="text-2xl font-bold text-yellow-400 mb-4">Gemini News</h2>
+            <p className="text-sm text-gray-400">Your daily source for insightful news, powered by AI.</p>
+          </div>
+          
+          {/* Navigation Links */}
+          <div className="col-span-1">
+            <h3 className="font-bold text-white mb-4 uppercase tracking-wider">Sections</h3>
+            <ul className="space-y-2">
+              {NAV_LINKS.slice(0, 5).map(link => (
+                <li key={link.name}><a href={link.href} className="hover:text-yellow-300 transition-colors text-sm">{link.name}</a></li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Company Links */}
+           <div className="col-span-1">
+            <h3 className="font-bold text-white mb-4 uppercase tracking-wider">Company</h3>
+            <ul className="space-y-2">
+              <li><a href="#" className="hover:text-yellow-300 transition-colors text-sm">About Us</a></li>
+              <li><a href="#" className="hover:text-yellow-300 transition-colors text-sm">Contact</a></li>
+              <li><a href="#" className="hover:text-yellow-300 transition-colors text-sm">Careers</a></li>
+              <li><a href="#" className="hover:text-yellow-300 transition-colors text-sm">Privacy Policy</a></li>
+            </ul>
+          </div>
+          
+          {/* Social and Newsletter */}
+          <div className="col-span-2 lg:col-span-2">
+             <h3 className="font-bold text-white mb-4 uppercase tracking-wider">Subscribe to our Newsletter</h3>
+             <form className="flex flex-col sm:flex-row gap-2">
+                 <input 
+                    type="email" 
+                    placeholder="Enter your email" 
+                    className="flex-grow bg-blue-800 dark:bg-gray-800 border border-blue-700 dark:border-gray-700 rounded-md py-2 px-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                 />
+                 <button type="submit" className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-md transition-colors">Subscribe</button>
+             </form>
+             <div className="mt-6">
+                <h3 className="font-bold text-white mb-3 uppercase tracking-wider">Follow Us</h3>
+                <div className="flex space-x-4">
+                    <a href="#" aria-label="Facebook" className="hover:text-yellow-300 transition-colors"><FacebookIcon/></a>
+                    <a href="#" aria-label="Twitter" className="hover:text-yellow-300 transition-colors"><TwitterIcon/></a>
+                    <a href="#" aria-label="Instagram" className="hover:text-yellow-300 transition-colors"><InstagramIcon/></a>
+                </div>
+             </div>
+          </div>
+
         </div>
-        <div className="mt-8 border-t border-gray-700 pt-6 text-center">
-            <p className="text-sm text-gray-400">&copy; {new Date().getFullYear()} Mahama News TV. All rights reserved.</p>
+
+        <div className="mt-8 pt-6 border-t border-blue-800 dark:border-gray-700 text-center text-sm text-gray-400">
+          <p>&copy; {new Date().getFullYear()} Gemini News. All Rights Reserved.</p>
         </div>
       </div>
     </footer>

@@ -1,94 +1,124 @@
+
 import React, { useState } from 'react';
-import { useSettings } from '../hooks/useSettings';
-import { User } from '../types';
 import { NAV_LINKS } from '../constants';
-import { SunIcon } from './icons/SunIcon';
+import { User, SubscriptionPlan, NavLink } from '../types';
+import { useSettings } from '../hooks/useSettings';
 import { MoonIcon } from './icons/MoonIcon';
-import { SearchIcon } from './icons/SearchIcon';
+import { SunIcon } from './icons/SunIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
 import { LoginIcon } from './icons/LoginIcon';
 import { LogoutIcon } from './icons/LogoutIcon';
+import { SearchIcon } from './icons/SearchIcon';
 import { MenuIcon } from './icons/MenuIcon';
+import { CommandIcon } from './icons/CommandIcon';
 import MobileMenu from './MobileMenu';
 
 interface HeaderProps {
-    onSearchClick: () => void;
-    onLoginClick: () => void;
-    onSettingsClick: () => void;
-    onPremiumClick: () => void;
-    user: User | null;
-    logout: () => void;
+  user: User | null;
+  subscriptionPlan: SubscriptionPlan;
+  onLoginClick: () => void;
+  onLogoutClick: () => void;
+  onSettingsClick: () => void;
+  onUpgradeClick: () => void;
+  onSearchClick: () => void;
+  onCommandPaletteClick: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, onSettingsClick, onPremiumClick, user, logout }) => {
-    const { settings, updateSettings } = useSettings();
-    const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+const Header: React.FC<HeaderProps> = ({ user, subscriptionPlan, onLoginClick, onLogoutClick, onSettingsClick, onUpgradeClick, onSearchClick, onCommandPaletteClick }) => {
+  const { settings, updateSettings } = useSettings();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-    const toggleTheme = () => {
-        // Simple toggle between light and dark for the button click
-        const currentThemeIsDark = document.documentElement.classList.contains('dark');
-        updateSettings({ theme: currentThemeIsDark ? 'light' : 'dark' });
-    };
+  const toggleTheme = () => {
+    const newTheme = settings.theme === 'dark' ? 'light' : 'dark';
+    updateSettings({ theme: newTheme });
+  };
+  
+  const NavItem: React.FC<{link: NavLink}> = ({ link }) => {
+    const [isOpen, setIsOpen] = useState(false);
 
-    return (
-        <header className="bg-blue-800 dark:bg-gray-900 text-white shadow-md sticky top-0 z-40">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-20">
-                    {/* Logo */}
-                    <div className="flex-shrink-0">
-                        <a href="/" className="text-2xl font-bold text-yellow-400">Mahama News TV</a>
-                    </div>
-
-                    {/* Desktop Navigation */}
-                    <nav className="hidden lg:flex lg:space-x-8">
-                        {NAV_LINKS.map(link => (
-                            <a key={link.name} href={link.href} className="text-base font-medium hover:text-yellow-300 transition-colors">
-                                {link.name}
-                            </a>
+    if (link.sublinks) {
+        return (
+            <div className="relative" onMouseEnter={() => setIsOpen(true)} onMouseLeave={() => setIsOpen(false)}>
+                <button className="text-white hover:text-yellow-300 transition-colors duration-200 flex items-center">
+                    {link.name}
+                    <svg className={`w-4 h-4 ml-1 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                {isOpen && (
+                    <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-20">
+                        {link.sublinks.map(sublink => (
+                            <a key={sublink.name} href={sublink.href} className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">{sublink.name}</a>
                         ))}
-                    </nav>
+                    </div>
+                )}
+            </div>
+        )
+    }
 
-                    {/* Right side icons */}
-                    <div className="flex items-center space-x-2 sm:space-x-4">
-                        <button onClick={toggleTheme} aria-label="Toggle theme" className="p-2 rounded-full hover:bg-blue-700 dark:hover:bg-gray-700">
-                             {document.documentElement.classList.contains('dark') ? <SunIcon /> : <MoonIcon />}
+    return <a href={link.href} className="text-white hover:text-yellow-300 transition-colors duration-200">{link.name}</a>
+  }
+
+  return (
+    <header className="bg-blue-800 dark:bg-gray-900 shadow-md sticky top-0 z-40">
+      <div className="container mx-auto px-4">
+        {/* Top bar */}
+        <div className="flex justify-between items-center py-2 border-b border-blue-700 dark:border-gray-700">
+            <h1 className="text-2xl font-bold text-yellow-400">
+                <a href="/">Gemini News</a>
+            </h1>
+            <div className="flex items-center space-x-3">
+                <button onClick={onSearchClick} className="text-white hover:text-yellow-300" aria-label="Search">
+                    <SearchIcon />
+                </button>
+                 <button onClick={onCommandPaletteClick} className="text-white hover:text-yellow-300 hidden md:block" aria-label="Open command palette">
+                    <CommandIcon />
+                </button>
+                <button onClick={toggleTheme} className="text-white hover:text-yellow-300" aria-label="Toggle theme">
+                    {settings.theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+                </button>
+                {user ? (
+                    <div className="relative group">
+                        <button className="flex items-center space-x-2 text-white hover:text-yellow-300">
+                            <span className="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center font-bold">{user.email.charAt(0).toUpperCase()}</span>
+                            <span className="hidden md:inline">{user.email}</span>
                         </button>
-                        <button onClick={onSearchClick} aria-label="Search" className="p-2 rounded-full hover:bg-blue-700 dark:hover:bg-gray-700">
-                            <SearchIcon />
-                        </button>
-                        <button onClick={onSettingsClick} aria-label="Settings" className="hidden sm:block p-2 rounded-full hover:bg-blue-700 dark:hover:bg-gray-700">
-                            <SettingsIcon />
-                        </button>
-                         {user ? (
-                            <div className="flex items-center space-x-2">
-                                <span className="hidden sm:block text-sm">{user.email}</span>
-                                <button onClick={logout} aria-label="Logout" className="p-2 rounded-full hover:bg-blue-700 dark:hover:bg-gray-700">
-                                    <LogoutIcon />
-                                </button>
-                            </div>
-                        ) : (
-                            <button onClick={onLoginClick} aria-label="Login" className="p-2 rounded-full hover:bg-blue-700 dark:hover:bg-gray-700">
-                                <LoginIcon />
+                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-20 hidden group-hover:block">
+                            <button onClick={onSettingsClick} className="w-full text-left flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <SettingsIcon /> <span>Settings</span>
                             </button>
-                        )}
-                        <button onClick={onPremiumClick} className="hidden sm:block bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-md transition-colors">
-                            Go Premium
-                        </button>
-
-                        {/* Mobile Menu Button */}
-                        <div className="lg:hidden">
-                            <button onClick={() => setMobileMenuOpen(!isMobileMenuOpen)} aria-label="Open menu" className="p-2 rounded-md hover:bg-blue-700 dark:hover:bg-gray-700">
-                                <MenuIcon />
+                            <button onClick={onLogoutClick} className="w-full text-left flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <LogoutIcon /> <span>Logout</span>
                             </button>
                         </div>
                     </div>
+                ) : (
+                    <button onClick={onLoginClick} className="text-white hover:text-yellow-300 flex items-center space-x-2" aria-label="Login">
+                        <LoginIcon />
+                        <span className="hidden md:inline">Login</span>
+                    </button>
+                )}
+                 <div className="lg:hidden">
+                    <button onClick={() => setIsMobileMenuOpen(true)} className="text-white hover:text-yellow-300" aria-label="Open menu">
+                        <MenuIcon />
+                    </button>
                 </div>
             </div>
-
-            {/* Mobile Menu */}
-            <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
-        </header>
-    );
+        </div>
+        
+        {/* Bottom bar with navigation */}
+        <div className="hidden lg:flex justify-between items-center py-3">
+            <nav className="flex space-x-6 font-semibold">
+                {NAV_LINKS.map(link => <NavItem key={link.name} link={link} />)}
+            </nav>
+            {subscriptionPlan === 'free' && (
+                <button onClick={onUpgradeClick} className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                    Upgrade to Premium
+                </button>
+            )}
+        </div>
+      </div>
+      <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
+    </header>
+  );
 };
 
 export default Header;
