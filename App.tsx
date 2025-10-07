@@ -19,14 +19,26 @@ import ArticleCardSkeleton from './components/ArticleCardSkeleton';
 import AdminPage from './pages/AdminPage';
 import Aside from './components/Aside';
 import { NewspaperIcon } from './components/icons/NewspaperIcon';
+import PaymentModal from './components/PaymentModal';
 
 import * as newsService from './services/newsService';
 import { useAuth } from './hooks/useAuth';
 import { useSettings } from './hooks/useSettings';
 import { useToast } from './contexts/ToastContext';
-import { Article, Ad } from './types';
+import { Article, Ad, SubscriptionPlan, PaymentRecord } from './types';
 
 type View = 'home' | 'article' | 'settings' | 'saved' | 'admin';
+
+interface SiteSettings {
+  siteName: string;
+  maintenanceMode: boolean;
+}
+
+const MaintenanceBanner = () => (
+    <div className="bg-red-600 text-center p-2 text-white font-semibold text-sm animate-pulse">
+        Site is currently in maintenance mode. Some features may be unavailable for non-admin users.
+    </div>
+);
 
 const App: React.FC = () => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -46,10 +58,34 @@ const App: React.FC = () => {
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [isPremiumModalOpen, setPremiumModalOpen] = useState(false);
   const [isTopStoriesDrawerOpen, setTopStoriesDrawerOpen] = useState(false);
+  const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{plan: SubscriptionPlan, price: string} | null>(null);
+
+
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>({
+      siteName: 'Mahama News Hub',
+      maintenanceMode: false
+  });
 
   const auth = useAuth();
   useSettings(); // Initialize settings hook
   const { addToast } = useToast();
+
+  const updateSiteSettings = (newSettings: Partial<SiteSettings>) => {
+      const updatedSettings = { ...siteSettings, ...newSettings };
+      setSiteSettings(updatedSettings);
+      localStorage.setItem('site-settings', JSON.stringify(updatedSettings));
+      addToast('Site settings updated!', 'success');
+  };
+
+  useEffect(() => {
+      try {
+        const storedSettings = localStorage.getItem('site-settings');
+        if (storedSettings) {
+            setSiteSettings(JSON.parse(storedSettings));
+        }
+      } catch(e) { console.error("Could not load site settings", e)}
+  }, []);
 
   const fetchArticles = useCallback(async (category: string, isSearch: boolean = false) => {
     setIsLoading(true);
@@ -128,11 +164,37 @@ const App: React.FC = () => {
       fetchArticles(category);
   }
 
+  const handleOpenPaymentModal = (plan: SubscriptionPlan, price: string) => {
+    if (!auth.user) {
+        setAuthModalOpen(true);
+        addToast('Please log in to subscribe.', 'info');
+        return;
+    }
+    setSelectedPlan({ plan, price });
+    setPremiumModalOpen(false);
+    setPaymentModalOpen(true);
+  };
+
+  const handleSubscriptionUpgrade = (method: PaymentRecord['method']) => {
+    if (selectedPlan) {
+        auth.upgradeSubscription(selectedPlan.plan, selectedPlan.price, method);
+        setPaymentModalOpen(false);
+        setSelectedPlan(null);
+    }
+  };
+
+  // --- Admin Handlers ---
   const handleAddArticle = (articleData: Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>) => {
     newsService.addArticle(articleData);
     fetchAllContent();
     addToast('Article uploaded successfully!', 'success');
   };
+
+  const handleUpdateArticle = (articleId: string, articleData: Partial<Omit<Article, 'id'>>) => {
+      newsService.updateArticle(articleId, articleData);
+      fetchAllContent();
+      addToast('Article updated successfully!', 'success');
+  }
 
   const handleDeleteArticle = (articleId: string) => {
     newsService.deleteArticle(articleId);
@@ -145,11 +207,21 @@ const App: React.FC = () => {
     fetchAllContent();
     addToast('Advertisement created successfully!', 'success');
   };
+  
+  const handleUpdateAd = (adId: string, adData: Partial<Omit<Ad, 'id'>>) => {
+      newsService.updateAd(adId, adData);
+      fetchAllContent();
+      addToast('Advertisement updated successfully!', 'success');
+  };
 
   const handleDeleteAd = (adId: string) => {
     newsService.deleteAd(adId);
     fetchAllContent();
     addToast('Advertisement deleted successfully.', 'success');
+  };
+
+  const handleDeleteUser = (email: string): boolean => {
+      return auth.deleteUser(email);
   };
 
   const inFeedAd = allAds.length > 0
@@ -158,6 +230,18 @@ const App: React.FC = () => {
 
 
   const renderMainContent = () => {
+    if (siteSettings.maintenanceMode && auth.user?.role !== 'admin') {
+         return (
+            <div className="text-center py-20 bg-gray-50 dark:bg-gray-800/50 rounded-lg col-span-full">
+                <NewspaperIcon className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
+                <h2 className="text-xl font-semibold">Under Maintenance</h2>
+                <p className="text-gray-500 dark:text-gray-400 mt-2">
+                    We are currently performing maintenance. Please check back later.
+                </p>
+            </div>
+        );
+    }
+
     switch(view) {
       case 'article':
         return currentArticle && (
@@ -177,17 +261,22 @@ const App: React.FC = () => {
         const savedArticles = allArticles.filter(a => auth.isArticleSaved(a.id));
         return <SavedArticlesPage savedArticles={savedArticles} onArticleClick={handleArticleClick} />;
       case 'admin':
-        return auth.user?.role === 'admin' && (
+        return (auth.user?.role === 'admin' || auth.user?.role === 'sub-admin') && (
             <AdminPage 
                 user={auth.user}
                 allArticles={allArticles}
                 allAds={allAds}
                 onAddArticle={handleAddArticle}
+                onUpdateArticle={handleUpdateArticle}
                 onDeleteArticle={handleDeleteArticle}
                 onAddAd={handleAddAd}
+                onUpdateAd={handleUpdateAd}
                 onDeleteAd={handleDeleteAd}
                 getAllUsers={auth.getAllUsers}
-                toggleAdminRole={auth.toggleAdminRole}
+                updateUserRole={auth.updateUserRole}
+                deleteUser={handleDeleteUser}
+                siteSettings={siteSettings}
+                onUpdateSiteSettings={updateSiteSettings}
             />
         );
       case 'home':
@@ -235,15 +324,17 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-gray-100 dark:bg-gray-900 min-h-screen font-sans text-gray-900 dark:text-gray-100">
+        {siteSettings.maintenanceMode && <MaintenanceBanner />}
         <TopStoriesBanner articles={topStories} onArticleClick={handleArticleClick} />
         <Header 
+            siteName={siteSettings.siteName}
             user={auth.user}
             isLoggedIn={auth.isLoggedIn}
             onLoginClick={() => setAuthModalOpen(true)}
             onLogout={auth.logout}
             onSearchClick={() => setSearchOpen(true)}
             onCommandPaletteClick={() => setCommandPaletteOpen(true)}
-            onTopStoriesClick={() => setMobileMenuOpen(true)} // Changed to open mobile menu on smaller screens
+            onTopStoriesClick={() => setMobileMenuOpen(true)}
             onCategorySelect={handleCategorySelect}
             onArticleClick={handleArticleClick}
             onSettingsClick={() => setView('settings')}
@@ -256,7 +347,16 @@ const App: React.FC = () => {
         </main>
         <Footer />
         <SearchOverlay isOpen={isSearchOpen} onClose={() => setSearchOpen(false)} onSearch={handleSearch} user={auth.user} clearSearchHistory={auth.clearSearchHistory} />
-        <MobileMenu isOpen={isMobileMenuOpen} onClose={() => setMobileMenuOpen(false)} onCategorySelect={handleCategorySelect} />
+        <MobileMenu
+            isOpen={isMobileMenuOpen}
+            onClose={() => setMobileMenuOpen(false)}
+            onCategorySelect={handleCategorySelect}
+            onSearch={handleSearch}
+            user={auth.user}
+            onLoginClick={() => setAuthModalOpen(true)}
+            onLogout={auth.logout}
+            onSettingsClick={() => setView('settings')}
+        />
         <CommandPalette 
             isOpen={isCommandPaletteOpen} 
             onClose={() => setCommandPaletteOpen(false)}
@@ -270,7 +370,20 @@ const App: React.FC = () => {
           onLogin={handleLoginSuccess}
           onRegister={handleRegisterSuccess}
         />
-        <PremiumModal isOpen={isPremiumModalOpen} onClose={() => setPremiumModalOpen(false)} />
+        <PremiumModal 
+            isOpen={isPremiumModalOpen} 
+            onClose={() => setPremiumModalOpen(false)} 
+            onSubscribeClick={handleOpenPaymentModal}
+        />
+        {selectedPlan && (
+            <PaymentModal
+                isOpen={isPaymentModalOpen}
+                onClose={() => setPaymentModalOpen(false)}
+                planName={selectedPlan.plan.charAt(0).toUpperCase() + selectedPlan.plan.slice(1)}
+                price={selectedPlan.price}
+                onPaymentSuccess={handleSubscriptionUpgrade}
+            />
+        )}
         <TopStoriesDrawer 
             isOpen={isTopStoriesDrawerOpen}
             onClose={() => setTopStoriesDrawerOpen(false)}

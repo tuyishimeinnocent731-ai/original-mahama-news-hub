@@ -18,7 +18,16 @@ export const NAV_LINKS: NavLink[] = [
         { name: "Gadgets", href: "#" },
         { name: "Innovation", href: "#" },
     ]},
-    { name: "Sport", href: "#" },
+    { name: "Sport", href: "#", sublinks: [
+        { name: "Football", href: "#" },
+        { name: "Basketball", href: "#" },
+        { name: "Tennis", href: "#" },
+    ]},
+    { name: "Entertainment", href: "#", sublinks: [
+        { name: "Movies", href: "#" },
+        { name: "Music", href: "#" },
+        { name: "Gaming", href: "#" },
+    ]},
     { name: "History", href: "#" },
 ];
 

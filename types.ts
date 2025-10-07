@@ -25,6 +25,15 @@ export interface Ad {
     url: string;
 }
 
+export interface PaymentRecord {
+    id: string;
+    date: string;
+    plan: SubscriptionPlan;
+    amount: string;
+    method: 'Credit Card' | 'PayPal' | 'MTN Mobile Money';
+    status: 'succeeded' | 'pending' | 'failed';
+}
+
 export interface User {
     id: string;
     name: string;
@@ -39,7 +48,8 @@ export interface User {
     integrations: {
         [key in IntegrationId]?: boolean;
     };
-    role?: 'admin' | 'user';
+    role?: 'admin' | 'sub-admin' | 'user';
+    paymentHistory: PaymentRecord[];
 }
 
 export interface NavLink {

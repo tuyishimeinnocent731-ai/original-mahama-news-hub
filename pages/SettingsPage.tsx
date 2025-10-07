@@ -8,6 +8,7 @@ import NotificationSettings from '../components/settings/NotificationSettings';
 import SubscriptionSettings from '../components/settings/SubscriptionSettings';
 import SecuritySettings from '../components/settings/SecuritySettings';
 import IntegrationsSettings from '../components/settings/IntegrationsSettings';
+import BillingSettings from '../components/settings/BillingSettings';
 import { useToast } from '../contexts/ToastContext';
 
 import { UserCircleIcon } from '../components/icons/UserCircleIcon';
@@ -18,9 +19,10 @@ import { BellIcon } from '../components/icons/BellIcon';
 import { StarIcon } from '../components/icons/StarIcon';
 import { LinkIcon } from '../components/icons/LinkIcon';
 import { LockIcon } from '../components/icons/LockIcon';
+import { BillingIcon } from '../components/icons/BillingIcon';
 
 
-type SettingsTab = 'profile' | 'appearance' | 'accessibility' | 'security' | 'notifications' | 'subscription' | 'privacy' | 'integrations';
+type SettingsTab = 'profile' | 'appearance' | 'accessibility' | 'security' | 'notifications' | 'subscription' | 'privacy' | 'integrations' | 'billing';
 
 interface SettingsPageProps {
     user: User;
@@ -44,6 +46,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
         { id: 'security', label: 'Sign In & Security', icon: <ShieldCheckIcon className="w-5 h-5" /> },
         { id: 'notifications', label: 'Notifications', icon: <BellIcon className="w-5 h-5" /> },
         { id: 'subscription', label: 'Subscription', icon: <StarIcon className="w-5 h-5" /> },
+        { id: 'billing', label: 'Billing', icon: <BillingIcon className="w-5 h-5" /> },
         { id: 'privacy', label: 'Privacy & Data', icon: <LockIcon className="w-5 h-5" /> },
         { id: 'integrations', label: 'Integrations', icon: <LinkIcon className="w-5 h-5" /> },
     ];
@@ -62,6 +65,8 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                 return <NotificationSettings />;
             case 'subscription':
                 return <SubscriptionSettings user={props.user} onUpgradeClick={props.onUpgradeClick} />;
+            case 'billing':
+                return <BillingSettings user={props.user} />;
             case 'privacy':
                 return <PrivacySettings user={props.user} clearSearchHistory={props.clearSearchHistory} addToast={addToast} />;
             case 'integrations':

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { User, Article, Ad, IntegrationId, SubscriptionPlan } from '../types';
+import { User, Article, Ad, IntegrationId, SubscriptionPlan, PaymentRecord } from '../types';
 import { useToast } from '../contexts/ToastContext';
 
 // --- LocalStorage Persistence for Users ---
@@ -26,6 +26,7 @@ const loadUsersFromStorage = (): { [email: string]: User } => {
         twoFactorEnabled: true,
         integrations: { slack: true, notion: true, 'google-calendar': true },
         role: 'admin',
+        paymentHistory: [],
     };
     const initialUsers = { [defaultAdmin.email]: defaultAdmin };
     saveUsersToStorage(initialUsers);
@@ -73,14 +74,14 @@ export const useAuth = () => {
         if (potentialUser) {
             // In a real app, you'd check the password hash
             // For admins, we have a special password
-            if (potentialUser.role === 'admin' && password === '2025') {
+            if ((potentialUser.role === 'admin' || potentialUser.role === 'sub-admin') && password === '2025') {
                  setUser(potentialUser);
                  localStorage.setItem('loggedInUser', email);
-                 addToast(`Welcome back, Admin ${potentialUser.name.split(' ')[0]}!`, 'success');
+                 addToast(`Welcome back, ${potentialUser.role} ${potentialUser.name.split(' ')[0]}!`, 'success');
                  return true;
             }
             // For regular users, any password works for this mock setup
-            if (potentialUser.role !== 'admin') {
+            if (potentialUser.role === 'user') {
                  setUser(potentialUser);
                  localStorage.setItem('loggedInUser', email);
                  addToast(`Welcome back, ${potentialUser.name.split(' ')[0]}!`, 'success');
@@ -116,6 +117,7 @@ export const useAuth = () => {
             twoFactorEnabled: false,
             integrations: {},
             role: 'user',
+            paymentHistory: [],
         };
         
         const newUsers = { ...users, [email]: newUser };
@@ -172,7 +174,7 @@ export const useAuth = () => {
     const validatePassword = async (password: string): Promise<boolean> => {
         // Mock validation for any password for regular users, specific for admin
         return new Promise(resolve => setTimeout(() => {
-            if (user?.role === 'admin') {
+            if (user?.role === 'admin' || user?.role === 'sub-admin') {
                 resolve(password === '2025');
             } else {
                 resolve(true); // Allow any password for demo purposes
@@ -201,7 +203,7 @@ export const useAuth = () => {
         return Object.values(users);
     }, [users]);
 
-    const toggleAdminRole = useCallback((emailToModify: string, action: 'promote' | 'demote') => {
+    const updateUserRole = useCallback((emailToModify: string, newRole: 'admin' | 'sub-admin' | 'user') => {
         if (user?.role !== 'admin') {
             addToast('You do not have permission for this action.', 'error');
             return false;
@@ -217,25 +219,67 @@ export const useAuth = () => {
             return false;
         }
         
-        if (action === 'promote') {
-            if (targetUser.role === 'admin') {
-                addToast('User is already an admin.', 'info');
-                return false;
-            }
-            targetUser.role = 'admin';
-            addToast(`${targetUser.name} has been promoted to Admin.`, 'success');
-        } else { // demote
-            if (targetUser.role !== 'admin') {
-                addToast('User is not an admin.', 'info');
-                return false;
-            }
-            targetUser.role = 'user';
-             addToast(`${targetUser.name}'s admin role has been revoked.`, 'success');
-        }
+        targetUser.role = newRole;
+        addToast(`${targetUser.name}'s role has been updated to ${newRole}.`, 'success');
         persistUserUpdate(targetUser);
         return true;
 
     }, [user, users, addToast]);
+
+    const deleteUser = useCallback((emailToDelete: string) => {
+        if (user?.role !== 'admin') {
+            addToast('You do not have permission for this action.', 'error');
+            return false;
+        }
+        if (emailToDelete === user.email) {
+            addToast('You cannot delete your own account.', 'error');
+            return false;
+        }
+        if (emailToDelete === 'reponsekdz0@gmail.com') {
+            addToast('Cannot delete the primary admin account.', 'warning');
+            return false;
+        }
+
+        const targetUser = users[emailToDelete];
+        if (!targetUser) {
+            addToast('User not found.', 'error');
+            return false;
+        }
+
+        const newUsers = { ...users };
+        delete newUsers[emailToDelete];
+        setUsers(newUsers);
+        saveUsersToStorage(newUsers);
+        addToast(`User ${targetUser.name} has been deleted.`, 'success');
+        return true;
+
+    }, [user, users, addToast]);
+
+    const upgradeSubscription = useCallback((plan: SubscriptionPlan, amount: string, method: PaymentRecord['method']) => {
+        if (!user) {
+             addToast('You must be logged in to upgrade.', 'error');
+            return;
+        }
+
+        const newPayment: PaymentRecord = {
+            id: `pay-${Date.now()}`,
+            date: new Date().toISOString(),
+            plan,
+            amount,
+            method,
+            status: 'succeeded',
+        };
+
+        const updatedUser: User = {
+            ...user,
+            subscription: plan,
+            paymentHistory: [newPayment, ...user.paymentHistory],
+        };
+        
+        persistUserUpdate(updatedUser);
+        addToast(`Successfully upgraded to ${plan} plan!`, 'success');
+
+    }, [user, addToast]);
 
 
     return { 
@@ -255,6 +299,8 @@ export const useAuth = () => {
         changePassword,
         toggleIntegration,
         getAllUsers,
-        toggleAdminRole,
+        updateUserRole,
+        deleteUser,
+        upgradeSubscription,
     };
 };

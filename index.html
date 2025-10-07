@@ -15,6 +15,20 @@
               sans: ['Inter', 'sans-serif'],
               dyslexic: ['Atkinson Hyperlegible', 'sans-serif'],
             },
+            keyframes: {
+              slideInFromLeft: {
+                '0%': { transform: 'translateX(-100%)', opacity: '0' },
+                '100%': { transform: 'translateX(0)', opacity: '1' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              }
+            },
+            animation: {
+              'slide-in-left': 'slideInFromLeft 0.3s ease-out forwards',
+              'fade-in-item': 'fadeIn 0.5s ease-out forwards',
+            }
           }
         }
       }
@@ -92,6 +106,34 @@
       }
       .dark .mega-menu-backdrop {
           background-color: rgba(31, 41, 55, 0.8); /* dark:bg-gray-800 with opacity */
+      }
+      
+      /* Scrolled Header Style */
+      .header-scrolled {
+        background-color: rgba(30, 64, 175, 0.8); /* bg-blue-800 with opacity */
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom-color: rgba(49, 46, 129, 0.5) !important;
+      }
+      .dark .header-scrolled {
+        background-color: rgba(17, 24, 39, 0.8) !important; /* dark:bg-gray-900 with opacity */
+      }
+      .header-scrolled .border-b {
+        border-bottom: none !important;
+      }
+
+      /* Mobile Menu Animation */
+      .mobile-menu-item {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      /* Admin Dashboard Charts */
+      .chart-pie {
+        transform: rotate(-90deg);
+      }
+      .chart-pie-segment {
+        transition: stroke-dashoffset 0.5s ease-out;
       }
     </style>
     <script type="importmap">

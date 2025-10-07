@@ -38,6 +38,16 @@ export const deleteArticle = (articleId: string): void => {
     saveToStorage('articles', articles);
 };
 
+export const updateArticle = (articleId: string, articleData: Partial<Omit<Article, 'id'>>): Article | null => {
+    const articleIndex = articles.findIndex(a => a.id === articleId);
+    if (articleIndex === -1) return null;
+    
+    const updatedArticle = { ...articles[articleIndex], ...articleData };
+    articles[articleIndex] = updatedArticle;
+    saveToStorage('articles', articles);
+    return updatedArticle;
+};
+
 export const getArticles = async (category: string = 'World'): Promise<Article[]> => {
     console.log(`Fetching articles for category: ${category}`);
     const lowerCategory = category.toLowerCase();
@@ -45,6 +55,7 @@ export const getArticles = async (category: string = 'World'): Promise<Article[]
         if (lowerCategory === 'world') return ['world', 'europe', 'asia', 'americas', 'africa'].includes(article.category.toLowerCase());
         if (lowerCategory === 'business') return ['business', 'markets', 'companies', 'economy'].includes(article.category.toLowerCase());
         if (lowerCategory === 'technology') return ['technology', 'ai', 'gadgets', 'innovation'].includes(article.category.toLowerCase());
+        if (lowerCategory === 'entertainment') return ['entertainment', 'movies', 'music', 'gaming'].includes(article.category.toLowerCase());
         return article.category.toLowerCase() === lowerCategory;
     });
     return Promise.resolve(filtered);
@@ -77,11 +88,12 @@ export const getArticlesForMegaMenu = (category: string, count: number = 2): Art
     const allCategoryArticles = articles.filter(article => article.category.toLowerCase() === lowerCategory);
     if (allCategoryArticles.length > 0) return allCategoryArticles.slice(0, count);
 
-    // Fallback for parent categories like 'World'
+    // Fallback for parent categories
     const subCategoryArticles = articles.filter(article => {
         if (lowerCategory === 'world') return ['africa', 'americas', 'asia', 'europe'].includes(article.category.toLowerCase());
         if (lowerCategory === 'business') return ['markets', 'companies'].includes(article.category.toLowerCase());
         if (lowerCategory === 'technology') return ['ai', 'gadgets', 'innovation'].includes(article.category.toLowerCase());
+        if (lowerCategory === 'entertainment') return ['movies', 'music', 'gaming'].includes(article.category.toLowerCase());
         return false;
     });
 
@@ -139,6 +151,15 @@ export const deleteAd = (adId: string): void => {
     saveToStorage('ads', ads);
 };
 
+export const updateAd = (adId: string, adData: Partial<Omit<Ad, 'id'>>): Ad | null => {
+    const adIndex = ads.findIndex(a => a.id === adId);
+    if (adIndex === -1) return null;
+    
+    const updatedAd = { ...ads[adIndex], ...adData };
+    ads[adIndex] = updatedAd;
+    saveToStorage('ads', ads);
+    return updatedAd;
+};
 
 // --- Gemini API Functions ---
 export const summarizeArticle = async (body: string, title: string): Promise<string> => {

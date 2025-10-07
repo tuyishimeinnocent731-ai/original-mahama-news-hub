@@ -2,13 +2,15 @@ import React from 'react';
 import Modal from './Modal';
 import { SUBSCRIPTION_PLANS } from '../constants';
 import { CheckCircleIcon } from './icons/CheckCircleIcon';
+import { SubscriptionPlan } from '../types';
 
 interface PremiumModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSubscribeClick: (plan: SubscriptionPlan, price: string) => void;
 }
 
-const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose }) => {
+const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose, onSubscribeClick }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Upgrade Your Plan">
         <div className="p-4 sm:p-6 lg:p-8">
@@ -37,7 +39,9 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose }) => {
                                 </li>
                             ))}
                         </ul>
-                        <button className={`w-full py-2 rounded-lg font-semibold ${plan.id === 'standard' ? 'bg-yellow-500 text-white hover:bg-yellow-600' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>
+                        <button 
+                          onClick={() => onSubscribeClick(plan.id, plan.price)}
+                          className={`w-full py-2 rounded-lg font-semibold ${plan.id === 'standard' ? 'bg-yellow-500 text-white hover:bg-yellow-600' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>
                             Subscribe Now
                         </button>
                     </div>

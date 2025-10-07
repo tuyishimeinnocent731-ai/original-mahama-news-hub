@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 // FIX: Moved Article import from newsService to types, as it's defined in types.ts
 import { NavLink, User, Article } from '../types';
 import { NAV_LINKS } from '../constants';
@@ -27,11 +27,21 @@ interface HeaderProps {
     onAdminClick: () => void;
     onCategorySelect: (category: string) => void;
     onArticleClick: (article: Article) => void;
+    siteName: string;
 }
 
 const Header: React.FC<HeaderProps> = (props) => {
     const { settings, updateSettings } = useSettings();
     const { onCategorySelect, onArticleClick } = props;
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 10);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const toggleTheme = () => {
         const newTheme = settings.theme === 'dark' || (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'light' : 'dark';
@@ -39,11 +49,11 @@ const Header: React.FC<HeaderProps> = (props) => {
     };
 
     return (
-        <header className="bg-blue-800 dark:bg-gray-900 text-white shadow-md sticky top-0 z-30">
+        <header className={`bg-blue-800 dark:bg-gray-900 text-white shadow-md sticky top-0 z-30 transition-colors duration-300 ${isScrolled ? 'header-scrolled' : ''}`}>
             <div className="container mx-auto px-4">
-                <div className="flex justify-between items-center py-3 border-b border-blue-700 dark:border-gray-700">
+                <div className={`flex justify-between items-center py-3 border-b border-blue-700 dark:border-gray-700 transition-colors duration-300 ${isScrolled ? 'border-transparent' : ''}`}>
                     <button onClick={() => onCategorySelect('World')} className="text-xl font-bold text-yellow-400">
-                        Mahama News Hub
+                        {props.siteName}
                     </button>
                     <div className="flex items-center space-x-3">
                         <button onClick={props.onSearchClick} className="p-2 rounded-full hover:bg-blue-700" aria-label="Search">
@@ -78,12 +88,12 @@ const Header: React.FC<HeaderProps> = (props) => {
                 <nav className="hidden lg:flex justify-center items-center py-2 space-x-6">
                     {NAV_LINKS.map(link => (
                         <div key={link.name} className="group relative">
-                             <button onClick={() => onCategorySelect(link.name)} className="px-3 py-2 text-sm font-semibold hover:text-yellow-300 transition-colors">
+                             <button onClick={() => onCategorySelect(link.name)} className="px-3 py-2 text-sm font-semibold hover:text-yellow-300 transition-colors nav-link-underline">
                                 {link.name}
                             </button>
                             {link.sublinks && (
                                 <div className="absolute left-1/2 -translate-x-1/2 top-full pt-3 hidden group-hover:block w-screen max-w-4xl">
-                                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 grid grid-cols-4 gap-6">
+                                    <div className="mega-menu-backdrop rounded-lg shadow-2xl p-6 grid grid-cols-4 gap-6">
                                         <div className="col-span-1">
                                             <h3 className="font-bold text-gray-900 dark:text-white mb-4">{link.name}</h3>
                                             <ul className="space-y-2">
@@ -117,7 +127,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                             )}
                         </div>
                     ))}
-                     <button onClick={props.onTopStoriesClick} className="flex items-center px-3 py-2 text-sm font-semibold text-yellow-400 hover:text-yellow-300 transition-colors">
+                     <button onClick={() => props.onTopStoriesClick} className="flex items-center px-3 py-2 text-sm font-semibold text-yellow-400 hover:text-yellow-300 transition-colors">
                         <TrendingUpIcon className="w-5 h-5 mr-1" />
                         Top Stories
                     </button>
