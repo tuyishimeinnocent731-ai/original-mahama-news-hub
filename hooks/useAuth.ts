@@ -58,12 +58,20 @@ export const useAuth = () => {
         }, 500);
     }, [users]);
     
-    const persistUserUpdate = (updatedUser: User) => {
-        const newUsers = { ...users, [updatedUser.email]: updatedUser };
+    const persistUserUpdate = (updatedUser: User, oldEmail?: string) => {
+        const newUsers = { ...users };
+        if (oldEmail && oldEmail !== updatedUser.email) {
+            delete newUsers[oldEmail];
+        }
+        newUsers[updatedUser.email] = updatedUser;
         setUsers(newUsers);
         saveUsersToStorage(newUsers);
-        if (user?.email === updatedUser.email) {
+
+        if (user?.id === updatedUser.id) {
             setUser(updatedUser);
+            if (oldEmail && oldEmail !== updatedUser.email) {
+                 localStorage.setItem('loggedInUser', updatedUser.email);
+            }
         }
     };
 
@@ -81,7 +89,7 @@ export const useAuth = () => {
                  return true;
             }
             // For regular users, any password works for this mock setup
-            if (potentialUser.role === 'user') {
+            if (potentialUser.role === 'user' || !potentialUser.role) {
                  setUser(potentialUser);
                  localStorage.setItem('loggedInUser', email);
                  addToast(`Welcome back, ${potentialUser.name.split(' ')[0]}!`, 'success');
@@ -203,12 +211,65 @@ export const useAuth = () => {
         return Object.values(users);
     }, [users]);
 
+    const addUser = useCallback((userData: Pick<User, 'name' | 'email' | 'role' | 'subscription'>) => {
+         if (user?.role !== 'admin') {
+            addToast('You do not have permission for this action.', 'error');
+            return false;
+        }
+        if (users[userData.email]) {
+            addToast('An account with this email already exists.', 'error');
+            return false;
+        }
+
+        const newUser: User = {
+            id: `user-${Date.now()}`,
+            name: userData.name,
+            email: userData.email,
+            avatar: `https://i.pravatar.cc/150?u=${userData.email}`,
+            subscription: userData.subscription,
+            savedArticles: [],
+            searchHistory: [],
+            userAds: [],
+            twoFactorEnabled: false,
+            integrations: {},
+            role: userData.role,
+            paymentHistory: [],
+        };
+        
+        persistUserUpdate(newUser);
+        addToast(`User ${newUser.name} created successfully.`, 'success');
+        return true;
+    }, [user, users, addToast]);
+
+    const updateUser = useCallback((userId: string, userData: Partial<User>) => {
+        if (user?.role !== 'admin') {
+            addToast('You do not have permission for this action.', 'error');
+            return false;
+        }
+        // FIX: Explicitly type the parameter in the 'find' callback to resolve type inference issues.
+        const userToUpdate = Object.values(users).find((u: User) => u.id === userId);
+        if (!userToUpdate) {
+            addToast('User not found.', 'error');
+            return false;
+        }
+        if (userData.email && userData.email !== userToUpdate.email && users[userData.email]) {
+            addToast('An account with the new email already exists.', 'error');
+            return false;
+        }
+        
+        const oldEmail = userToUpdate.email;
+        const updatedUser = { ...userToUpdate, ...userData };
+        persistUserUpdate(updatedUser, oldEmail);
+        addToast(`User ${updatedUser.name} updated successfully.`, 'success');
+        return true;
+    }, [user, users, addToast]);
+
     const updateUserRole = useCallback((emailToModify: string, newRole: 'admin' | 'sub-admin' | 'user') => {
         if (user?.role !== 'admin') {
             addToast('You do not have permission for this action.', 'error');
             return false;
         }
-        if (emailToModify === 'reponsekdz0@gmail.com') {
+        if (emailToModify === 'reponsekdz0@gmail.com' && newRole !== 'admin') {
             addToast('Cannot change the primary admin role.', 'warning');
             return false;
         }
@@ -304,6 +365,8 @@ export const useAuth = () => {
         changePassword,
         toggleIntegration,
         getAllUsers,
+        addUser,
+        updateUser,
         updateUserRole,
         deleteUser,
         upgradeSubscription,

@@ -9,8 +9,9 @@ type Density = LayoutSettingsType['density'];
 const LayoutSettings: React.FC = () => {
     const { settings, updateSettings } = useSettings();
 
+    // FIX: Use functional update for settings to correctly merge partial layout settings and avoid type errors.
     const handleLayoutChange = (layout: Partial<LayoutSettingsType>) => {
-        updateSettings({ layout });
+        updateSettings(s => ({ ...s, layout: { ...s.layout, ...layout } }));
     };
 
     const homepageOptions: { value: HomepageLayout; label: string }[] = [

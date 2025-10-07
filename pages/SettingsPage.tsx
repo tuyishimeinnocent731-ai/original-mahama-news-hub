@@ -10,6 +10,7 @@ import SecuritySettings from '../components/settings/SecuritySettings';
 import IntegrationsSettings from '../components/settings/IntegrationsSettings';
 import BillingSettings from '../components/settings/BillingSettings';
 import LayoutSettings from '../components/settings/LayoutSettings';
+import DataSyncSettings from '../components/settings/DataSyncSettings'; // New
 import { useToast } from '../contexts/ToastContext';
 
 import { UserCircleIcon } from '../components/icons/UserCircleIcon';
@@ -22,9 +23,10 @@ import { LinkIcon } from '../components/icons/LinkIcon';
 import { LockIcon } from '../components/icons/LockIcon';
 import { BillingIcon } from '../components/icons/BillingIcon';
 import { LayoutIcon } from '../components/icons/LayoutIcon';
+import { DataSyncIcon } from '../components/icons/DataSyncIcon'; // New
 
 
-type SettingsTab = 'profile' | 'appearance' | 'layout' | 'accessibility' | 'security' | 'notifications' | 'subscription' | 'privacy' | 'integrations' | 'billing';
+type SettingsTab = 'profile' | 'appearance' | 'layout' | 'accessibility' | 'security' | 'notifications' | 'subscription' | 'privacy' | 'integrations' | 'billing' | 'dataSync';
 
 interface SettingsPageProps {
     user: User;
@@ -52,6 +54,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
         { id: 'billing', label: 'Billing', icon: <BillingIcon className="w-5 h-5" /> },
         { id: 'privacy', label: 'Privacy & Data', icon: <LockIcon className="w-5 h-5" /> },
         { id: 'integrations', label: 'Integrations', icon: <LinkIcon className="w-5 h-5" /> },
+        { id: 'dataSync', label: 'Data & Sync', icon: <DataSyncIcon className="w-5 h-5" /> },
     ];
 
     const renderContent = () => {
@@ -76,6 +79,8 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                 return <PrivacySettings user={props.user} clearSearchHistory={props.clearSearchHistory} addToast={addToast} />;
             case 'integrations':
                 return <IntegrationsSettings user={props.user} toggleIntegration={props.toggleIntegration} addToast={addToast} />;
+            case 'dataSync':
+                return <DataSyncSettings user={props.user} />;
             default:
                 return null;
         }

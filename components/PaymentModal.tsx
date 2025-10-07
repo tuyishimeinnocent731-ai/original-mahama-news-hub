@@ -17,7 +17,7 @@ interface PaymentModalProps {
   onPaymentSuccess: (method: PaymentRecord['method']) => void;
 }
 
-type PaymentStep = 'method' | 'details' | 'success';
+type PaymentStep = 'method' | 'details' | 'confirm' | 'success';
 type PaymentMethod = 'Credit Card' | 'PayPal' | 'MTN Mobile Money';
 
 const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, planName, price, onPaymentSuccess }) => {
@@ -30,8 +30,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, planName, 
         setStep('details');
     };
 
-    const handleSubmitPayment = (e: React.FormEvent) => {
+    const handleDetailsSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        setStep('confirm');
+    };
+
+    const handleConfirmPayment = () => {
         setIsLoading(true);
         // Simulate API call
         setTimeout(() => {
@@ -46,42 +50,40 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, planName, 
         }
     };
     
-    const handleBack = () => {
-        setStep('method');
-        setMethod(null);
+    const handleBack = (toStep: PaymentStep) => {
+        setStep(toStep);
     }
     
     const renderCardForm = () => (
-        <form onSubmit={handleSubmitPayment} className="space-y-4">
+        <form onSubmit={handleDetailsSubmit} className="space-y-4">
             <div>
                 <label htmlFor="card-number" className="block text-sm font-medium">Card Number</label>
-                <input type="text" id="card-number" placeholder="•••• •••• •••• ••••" className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                <input type="text" id="card-number" placeholder="•••• •••• •••• ••••" required className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
             </div>
             <div className="flex space-x-4">
                 <div className="flex-1">
                     <label htmlFor="expiry" className="block text-sm font-medium">Expiry</label>
-                    <input type="text" id="expiry" placeholder="MM / YY" className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                    <input type="text" id="expiry" placeholder="MM / YY" required className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                 </div>
                 <div className="flex-1">
                     <label htmlFor="cvc" className="block text-sm font-medium">CVC</label>
-                    <input type="text" id="cvc" placeholder="•••" className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                    <input type="text" id="cvc" placeholder="•••" required className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                 </div>
             </div>
-            <button type="submit" disabled={isLoading} className="w-full mt-4 p-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 disabled:bg-yellow-300">
-                {isLoading ? 'Processing...' : `Pay ${price}`}
+            <button type="submit" className="w-full mt-4 p-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600">
+                Continue
             </button>
         </form>
     );
     
     const renderSimpleForm = (title: string, inputLabel: string, inputType: string, placeholder: string) => (
-         <form onSubmit={handleSubmitPayment} className="space-y-4 text-center">
-            <p className="text-gray-600 dark:text-gray-400">You will be redirected to complete your payment.</p>
+         <form onSubmit={handleDetailsSubmit} className="space-y-4">
              <div>
                 <label htmlFor="payment-info" className="block text-sm font-medium text-left">{inputLabel}</label>
                 <input type={inputType} id="payment-info" placeholder={placeholder} required className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
             </div>
-            <button type="submit" disabled={isLoading} className="w-full mt-4 p-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 disabled:bg-yellow-300">
-                {isLoading ? 'Processing...' : `Continue to ${title}`}
+            <button type="submit" className="w-full mt-4 p-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600">
+                {`Continue to ${title}`}
             </button>
         </form>
     )
@@ -106,13 +108,30 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, planName, 
             case 'details':
                 return (
                     <div>
-                        <button onClick={handleBack} className="flex items-center space-x-2 text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 mb-4">
+                        <button onClick={() => handleBack('method')} className="flex items-center space-x-2 text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 mb-4">
                             <ArrowLeftIcon className="w-4 h-4" />
                             <span>Back</span>
                         </button>
                         {method === 'Credit Card' && renderCardForm()}
                         {method === 'PayPal' && renderSimpleForm('PayPal', 'PayPal Email', 'email', 'user@example.com')}
                         {method === 'MTN Mobile Money' && renderSimpleForm('MTN', 'Phone Number', 'tel', '024 123 4567')}
+                    </div>
+                );
+            case 'confirm':
+                return (
+                    <div>
+                         <button onClick={() => handleBack('details')} className="flex items-center space-x-2 text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 mb-4">
+                            <ArrowLeftIcon className="w-4 h-4" />
+                            <span>Back</span>
+                        </button>
+                        <div className="text-center p-4 bg-secondary rounded-lg">
+                            <p className="text-muted-foreground">You are about to subscribe to the</p>
+                            <p className="text-2xl font-bold text-accent">{planName} Plan</p>
+                            <p className="text-lg font-semibold">for {price}.</p>
+                        </div>
+                         <button onClick={handleConfirmPayment} disabled={isLoading} className="w-full mt-6 p-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 disabled:bg-yellow-300">
+                            {isLoading ? 'Processing...' : `Confirm & Pay ${price}`}
+                        </button>
                     </div>
                 );
             case 'success':
@@ -158,6 +177,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, planName, 
                      <h3 className="text-xl font-bold mb-4">
                         {step === 'method' && 'Choose Payment Method'}
                         {step === 'details' && `Pay with ${method}`}
+                        {step === 'confirm' && 'Confirm Your Purchase'}
                         {step === 'success' && 'Welcome!'}
                      </h3>
                      {renderStepContent()}

@@ -5,14 +5,17 @@ interface ToggleSwitchProps {
     checked: boolean;
     onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
     disabled?: boolean;
+    // FIX: Add name prop to be passed to the input element
+    name?: string;
 }
 
-const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ id, checked, onChange, disabled = false }) => {
+const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ id, name, checked, onChange, disabled = false }) => {
     return (
         <label htmlFor={id} className={`relative inline-flex items-center cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
             <input 
                 type="checkbox" 
                 id={id}
+                name={name || id}
                 className="sr-only peer"
                 checked={checked} 
                 onChange={onChange}

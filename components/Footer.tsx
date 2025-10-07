@@ -1,9 +1,12 @@
-
 import React from 'react';
-import { NAV_LINKS } from '../constants';
+import { NavLink } from '../types';
 import { FacebookIcon, InstagramIcon, TwitterIcon } from './icons/SocialIcons';
 
-const Footer: React.FC = () => {
+interface FooterProps {
+    navLinks: NavLink[];
+}
+
+const Footer: React.FC<FooterProps> = ({ navLinks }) => {
   return (
     <footer className="bg-blue-900 dark:bg-gray-900 text-blue-200 mt-12">
       <div className="container mx-auto px-4 py-12">
@@ -18,12 +21,12 @@ const Footer: React.FC = () => {
                  </div>
             </div>
             <div className="lg:col-span-5 grid grid-cols-2 md:grid-cols-3 gap-8">
-                 {NAV_LINKS.filter(l => l.sublinks).map((link) => (
-                    <div key={link.name}>
+                 {navLinks.filter(l => l.sublinks && l.sublinks.length > 0).map((link) => (
+                    <div key={link.id}>
                         <h3 className="font-semibold text-white mb-4">{link.name}</h3>
                         <ul className="space-y-2">
                             {link.sublinks?.map((sub) => (
-                            <li key={sub.name}><a href={sub.href} className="text-sm hover:text-yellow-300 transition-colors">{sub.name}</a></li>
+                            <li key={sub.id}><a href={sub.href} className="text-sm hover:text-yellow-300 transition-colors">{sub.name}</a></li>
                             ))}
                         </ul>
                     </div>

@@ -1,33 +1,37 @@
 import { NavLink, SubscriptionPlan } from "./types";
 
-export const NAV_LINKS: NavLink[] = [
+// FIX: Added dummy 'id' properties to sublinks to satisfy the NavLink[] type.
+// The type Omit<NavLink, 'id'> doesn't apply recursively, so sublinks were expected to have an id.
+export const NAV_LINKS: Omit<NavLink, 'id'>[] = [
     { name: "World", href: "#", sublinks: [
-        { name: "Africa", href: "#" },
-        { name: "Americas", href: "#" },
-        { name: "Asia", href: "#" },
-        { name: "Europe", href: "#" },
+        { id: '', name: "Africa", href: "#" },
+        { id: '', name: "Americas", href: "#" },
+        { id: '', name: "Asia", href: "#" },
+        { id: '', name: "Europe", href: "#" },
     ]},
     { name: "Politics", href: "#" },
     { name: "Business", href: "#", sublinks: [
-        { name: "Markets", href: "#" },
-        { name: "Companies", href: "#" },
+        { id: '', name: "Markets", href: "#" },
+        { id: '', name: "Companies", href: "#" },
     ]},
     { name: "Economy", href: "#" },
     { name: "Technology", href: "#", sublinks: [
-        { name: "AI", href: "#" },
-        { name: "Gadgets", href: "#" },
-        { name: "Innovation", href: "#" },
+        { id: '', name: "AI", href: "#" },
+        { id: '', name: "Gadgets", href: "#" },
+        { id: '', name: "Innovation", href: "#" },
     ]},
     { name: "Sport", href: "#", sublinks: [
-        { name: "Football", href: "#" },
-        { name: "Basketball", href: "#" },
-        { name: "Tennis", href: "#" },
+        { id: '', name: "Football", href: "#" },
+        { id: '', name: "Basketball", href: "#" },
+        { id: '', name: "Tennis", href: "#" },
     ]},
     { name: "Entertainment", href: "#", sublinks: [
-        { name: "Movies", href: "#" },
-        { name: "Music", href: "#" },
-        { name: "Gaming", href: "#" },
+        { id: '', name: "Movies", href: "#" },
+        { id: '', name: "Music", href: "#" },
+        { id: '', name: "Gaming", href: "#" },
     ]},
+    { name: "Films & TV", href: "#" },
+    { name: "Arts", href: "#" },
     { name: "History", href: "#" },
 ];
 
@@ -74,14 +78,14 @@ export const THEMES = [
         id: 'default', name: 'Default',
         palette: {
             light: createPalette({ bg: '249 250 251', fg: '17 24 39', card: '255 255 255', cardFg: '17 24 39', popover: '255 255 255', popoverFg: '17 24 39', primary: '30 64 175', primaryFg: '255 255 255', secondary: '243 244 246', secondaryFg: '17 24 39', muted: '243 244 246', mutedFg: '107 114 128', border: '229 231 235' }),
-            dark: createPalette({ bg: '17 24 39', fg: '249 250 251', card: '31 41 55', cardFg: '249 250 251', popover: '31 41 55', popoverFg: '249 250 251', primary: '31 41 55', primaryFg: '255 255 255', secondary: '55 65 81', secondaryFg: '249 250 251', muted: '55 65 81', mutedFg: '156 163 175', border: '55 65 81' }),
+            dark: createPalette({ bg: '17 24 39', fg: '249 250 251', card: '31 41 55', cardFg: '249 250 251', popover: '31 41 55', popoverFg: '249 250 251', primary: '30 64 175', primaryFg: '255 255 255', secondary: '55 65 81', secondaryFg: '249 250 251', muted: '55 65 81', mutedFg: '156 163 175', border: '55 65 81' }),
         }
     },
     {
         id: 'midnight', name: 'Midnight',
         palette: {
             light: createPalette({ bg: '226 232 240', fg: '15 23 42', card: '241 245 249', cardFg: '15 23 42', popover: '255 255 255', popoverFg: '15 23 42', primary: '30 41 59', primaryFg: '248 250 252', secondary: '226 232 240', secondaryFg: '30 41 59', muted: '226 232 240', mutedFg: '71 85 105', border: '203 213 225' }),
-            dark: createPalette({ bg: '15 23 42', fg: '226 232 240', card: '30 41 59', cardFg: '226 232 240', popover: '2 6 23', popoverFg: '226 232 240', primary: '2 6 23', primaryFg: '248 250 252', secondary: '30 41 59', secondaryFg: '226 232 240', muted: '30 41 59', mutedFg: '148 163 184', border: '49 60 78' }),
+            dark: createPalette({ bg: '15 23 42', fg: '226 232 240', card: '30 41 59', cardFg: '226 232 240', popover: '2 6 23', popoverFg: '226 232 240', primary: '30 41 59', primaryFg: '248 250 252', secondary: '30 41 59', secondaryFg: '226 232 240', muted: '30 41 59', mutedFg: '148 163 184', border: '49 60 78' }),
         }
     },
     {
@@ -95,16 +99,30 @@ export const THEMES = [
         id: 'rose', name: 'Rose Gold',
         palette: {
             light: createPalette({ bg: '254 242 242', fg: '159 28 66', card: '255 255 255', cardFg: '159 28 66', popover: '255 255 255', popoverFg: '159 28 66', primary: '190 24 93', primaryFg: '255 241 242', secondary: '253 224 224', secondaryFg: '190 24 93', muted: '253 224 224', mutedFg: '190 24 93', border: '254 202 202' }),
-            dark: createPalette({ bg: '59 18 38', fg: '253 224 224', card: '90 24 57', cardFg: '253 224 224', popover: '40 12 25', popoverFg: '253 224 224', primary: '40 12 25', primaryFg: '255 241 242', secondary: '90 24 57', secondaryFg: '253 224 224', muted: '90 24 57', mutedFg: '251 146 156', border: '136 36 86' }),
+            dark: createPalette({ bg: '59 18 38', fg: '253 224 224', card: '90 24 57', cardFg: '253 224 224', popover: '40 12 25', popoverFg: '253 224 224', primary: '190 24 93', primaryFg: '255 241 242', secondary: '90 24 57', secondaryFg: '253 224 224', muted: '90 24 57', mutedFg: '251 146 156', border: '136 36 86' }),
         }
     },
      {
         id: 'cyberpunk', name: 'Cyberpunk',
         palette: {
             light: createPalette({ bg: '254 249 195', fg: '217 70 239', card: '253 230 138', cardFg: '217 70 239', popover: '253 230 138', popoverFg: '217 70 239', primary: '91 33 182', primaryFg: '250 245 255', secondary: '253 230 138', secondaryFg: '91 33 182', muted: '253 230 138', mutedFg: '91 33 182', border: '252 211 77' }),
-            dark: createPalette({ bg: '24 0 54', fg: '250 204 21', card: '58 9 63', cardFg: '250 204 21', popover: '30 0 30', popoverFg: '250 204 21', primary: '30 0 30', primaryFg: '250 204 21', secondary: '58 9 63', secondaryFg: '250 204 21', muted: '58 9 63', mutedFg: '250 204 21', border: '86 13 94' }),
+            dark: createPalette({ bg: '24 0 54', fg: '250 204 21', card: '58 9 63', cardFg: '250 204 21', popover: '30 0 30', popoverFg: '250 204 21', primary: '91 33 182', primaryFg: '250 204 21', secondary: '58 9 63', secondaryFg: '250 204 21', muted: '58 9 63', mutedFg: '250 204 21', border: '86 13 94' }),
         }
     },
+    {
+        id: 'solaris', name: 'Solaris',
+        palette: {
+            light: createPalette({ bg: '255 251 235', fg: '124 58 237', card: '255 255 255', cardFg: '124 58 237', popover: '255 255 255', popoverFg: '124 58 237', primary: '245 158 11', primaryFg: '124 58 237', secondary: '254 243 199', secondaryFg: '124 58 237', muted: '254 243 199', mutedFg: '124 58 237', border: '253 224 71' }),
+            dark: createPalette({ bg: '28 25 23', fg: '253 224 71', card: '41 37 36', cardFg: '253 224 71', popover: '28 25 23', popoverFg: '253 224 71', primary: '245 158 11', primaryFg: '28 25 23', secondary: '68 64 60', secondaryFg: '253 224 71', muted: '68 64 60', mutedFg: '253 224 71', border: '87 83 78' }),
+        }
+    },
+    {
+        id: 'monochrome', name: 'Monochrome',
+        palette: {
+            light: createPalette({ bg: '245 245 245', fg: '23 23 23', card: '255 255 255', cardFg: '23 23 23', popover: '255 255 255', popoverFg: '23 23 23', primary: '23 23 23', primaryFg: '245 245 245', secondary: '229 229 229', secondaryFg: '23 23 23', muted: '229 229 229', mutedFg: '82 82 82', border: '212 212 212' }),
+            dark: createPalette({ bg: '23 23 23', fg: '245 245 245', card: '38 38 38', cardFg: '245 245 245', popover: '38 38 38', popoverFg: '245 245 245', primary: '245 245 245', primaryFg: '23 23 23', secondary: '64 64 64', secondaryFg: '245 245 245', muted: '64 64 64', mutedFg: '163 163 163', border: '82 82 82' }),
+        }
+    }
 ];
 
 export const ACCENT_COLORS = [

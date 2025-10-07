@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
-// FIX: Moved Article import from newsService to types, as it's defined in types.ts
 import { NavLink, User, Article } from '../types';
-import { NAV_LINKS } from '../constants';
 import { SearchIcon } from './icons/SearchIcon';
 import { SunIcon } from './icons/SunIcon';
 import { MoonIcon } from './icons/MoonIcon';
 import { MenuIcon } from './icons/MenuIcon';
-import { useSettings } from '../hooks/useSettings';
 import UserMenu from './UserMenu';
 import FeaturedArticleCard from './FeaturedArticleCard';
 import { getFeaturedArticleForCategory, getArticlesForMegaMenu } from '../services/newsService';
@@ -16,10 +13,12 @@ import { TrendingUpIcon } from './icons/TrendingUpIcon';
 interface HeaderProps {
     user: User | null;
     isLoggedIn: boolean;
+    navLinks: NavLink[];
     onLoginClick: () => void;
     onLogout: () => void;
     onSearchClick: () => void;
     onCommandPaletteClick: () => void;
+    onMobileMenuClick: () => void;
     onTopStoriesClick: () => void;
     onSettingsClick: () => void;
     onSavedClick: () => void;
@@ -31,8 +30,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = (props) => {
-    const { settings, updateSettings } = useSettings();
-    const { onCategorySelect, onArticleClick } = props;
+    const { navLinks, onCategorySelect, onArticleClick } = props;
     const [isScrolled, setIsScrolled] = useState(false);
     const [isDark, setIsDark] = useState(false);
 
@@ -48,34 +46,49 @@ const Header: React.FC<HeaderProps> = (props) => {
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
         setIsDark(document.documentElement.classList.contains('dark'));
         const handler = () => setIsDark(document.documentElement.classList.contains('dark'));
+        
+        const observer = new MutationObserver(handler);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
         mediaQuery.addEventListener('change', handler);
-        return () => mediaQuery.removeEventListener('change', handler);
+        return () => {
+            mediaQuery.removeEventListener('change', handler);
+            observer.disconnect();
+        }
     }, []);
 
     const toggleTheme = () => {
         const newIsDark = !document.documentElement.classList.contains('dark');
         document.documentElement.classList.toggle('dark', newIsDark);
-        // This is a simplified toggle for the icon, useSettings handles the actual theme logic
     };
 
     return (
         <header className={`bg-primary text-primary-foreground shadow-md sticky top-0 z-30 transition-colors duration-300 ${isScrolled ? 'header-scrolled' : ''}`}>
             <div className="container mx-auto px-4">
-                <div className={`flex justify-between items-center py-3 border-b border-primary/80 transition-colors duration-300 ${isScrolled ? 'border-transparent' : ''}`}>
+                <div className={`flex justify-between items-center py-3 border-b border-primary-foreground/20 transition-colors duration-300 ${isScrolled ? 'border-transparent' : ''}`}>
                     <button onClick={() => onCategorySelect('World')} className="text-xl font-bold text-accent">
                         {props.siteName}
                     </button>
-                    <div className="flex items-center space-x-3">
-                        <button onClick={props.onSearchClick} className="p-2 rounded-full hover:bg-primary/80" aria-label="Search">
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                        <button onClick={props.onSearchClick} className="p-2 rounded-full hover:bg-primary-foreground/10" aria-label="Search">
                             <SearchIcon />
                         </button>
-                         <button onClick={props.onCommandPaletteClick} className="hidden md:flex items-center space-x-2 p-2 rounded-md hover:bg-primary/80 text-sm" aria-label="Open command palette">
+                         <button onClick={props.onCommandPaletteClick} className="hidden md:flex items-center space-x-2 p-2 rounded-md hover:bg-primary-foreground/10 text-sm" aria-label="Open command palette">
                             <CommandIcon />
                             <span className="hidden lg:inline">Cmd+K</span>
                         </button>
-                        <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-primary/80" aria-label="Toggle theme">
+                        <button onClick={toggleTheme} className="hidden lg:block p-2 rounded-full hover:bg-primary-foreground/10" aria-label="Toggle theme">
                             {isDark ? <SunIcon /> : <MoonIcon />}
                         </button>
+                        
+                        {/* Mobile Icons */}
+                        <button onClick={props.onTopStoriesClick} className="lg:hidden p-2 rounded-full hover:bg-primary-foreground/10" aria-label="Open top stories">
+                            <TrendingUpIcon />
+                        </button>
+                        <button onClick={props.onMobileMenuClick} className="lg:hidden p-2 rounded-full hover:bg-primary-foreground/10" aria-label="Open mobile menu">
+                            <MenuIcon />
+                        </button>
+
                         {props.isLoggedIn && props.user ? (
                             <UserMenu 
                                 user={props.user} 
@@ -90,25 +103,22 @@ const Header: React.FC<HeaderProps> = (props) => {
                                 Login
                             </button>
                         )}
-                        <button onClick={props.onTopStoriesClick} className="lg:hidden p-2 rounded-full hover:bg-primary/80" aria-label="Open mobile menu">
-                            <MenuIcon />
-                        </button>
                     </div>
                 </div>
                 <nav className="hidden lg:flex justify-center items-center py-2 space-x-6">
-                    {NAV_LINKS.map(link => (
-                        <div key={link.name} className="group relative">
+                    {navLinks.map(link => (
+                        <div key={link.id} className="group relative">
                              <button onClick={() => onCategorySelect(link.name)} className="px-3 py-2 text-sm font-semibold hover:text-accent transition-colors nav-link-underline">
                                 {link.name}
                             </button>
-                            {link.sublinks && (
+                            {link.sublinks && link.sublinks.length > 0 && (
                                 <div className="absolute left-1/2 -translate-x-1/2 top-full pt-3 hidden group-hover:block w-screen max-w-4xl">
                                     <div className="mega-menu-backdrop bg-popover/80 rounded-lg shadow-2xl p-6 grid grid-cols-4 gap-6">
                                         <div className="col-span-1">
                                             <h3 className="font-bold text-popover-foreground mb-4">{link.name}</h3>
                                             <ul className="space-y-2">
                                                 {link.sublinks.map(sublink => (
-                                                    <li key={sublink.name}>
+                                                    <li key={sublink.id}>
                                                         <button onClick={() => onCategorySelect(sublink.name)} className="text-sm text-muted-foreground hover:text-accent">
                                                             {sublink.name}
                                                         </button>
@@ -137,7 +147,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                             )}
                         </div>
                     ))}
-                     <button onClick={() => props.onTopStoriesClick} className="flex items-center px-3 py-2 text-sm font-semibold text-accent hover:text-accent/90 transition-colors">
+                     <button onClick={props.onTopStoriesClick} className="flex items-center px-3 py-2 text-sm font-semibold text-accent hover:text-accent/90 transition-colors">
                         <TrendingUpIcon className="w-5 h-5 mr-1" />
                         Top Stories
                     </button>

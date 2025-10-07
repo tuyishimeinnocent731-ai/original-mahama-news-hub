@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, Article, Ad, SubscriptionPlan } from '../types';
+import { User, Article, Ad, SubscriptionPlan, NavLink } from '../types';
 import { NewspaperIcon } from '../components/icons/NewspaperIcon';
 import { UserGroupIcon } from '../components/icons/UserGroupIcon';
 import { TrashIcon } from '../components/icons/TrashIcon';
@@ -15,6 +15,9 @@ import { BillingIcon } from '../components/icons/BillingIcon';
 import Modal from '../components/Modal';
 import { SearchIcon } from '../components/icons/SearchIcon';
 import { CloseIcon } from '../components/icons/CloseIcon';
+import { PlusCircleIcon } from '../components/icons/PlusCircleIcon';
+import { BookOpenIcon } from '../components/icons/BookOpenIcon';
+import NavigationManager from '../components/admin/NavigationManager';
 
 type ArticleFormData = Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>;
 type AdFormData = Omit<Ad, 'id'>;
@@ -366,70 +369,80 @@ const AdManager: React.FC<AdManagerProps> = ({ onAddAd, onUpdateAd, allAds, onDe
     );
 };
 
-const AddSubAdminModal: React.FC<{
+interface UserFormModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAdd: (email: string) => void;
-    allUsers: User[];
-}> = ({ isOpen, onClose, onAdd, allUsers }) => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const promotableUsers = allUsers.filter(u => 
-        u.subscription === 'pro' && 
-        u.role === 'user' &&
-        (u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    onSubmit: (userData: any, userId?: string) => boolean;
+    userToEdit?: User | null;
+}
+
+const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSubmit, userToEdit }) => {
+    const [formData, setFormData] = useState({
+        name: '', email: '', role: 'user', subscription: 'free'
+    });
+
+    useEffect(() => {
+        if (userToEdit) {
+            setFormData({
+                name: userToEdit.name,
+                email: userToEdit.email,
+                role: userToEdit.role || 'user',
+                subscription: userToEdit.subscription
+            });
+        } else {
+            setFormData({ name: '', email: '', role: 'user', subscription: 'free' });
+        }
+    }, [userToEdit, isOpen]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (onSubmit(formData, userToEdit?.id)) {
+            onClose();
+        }
+    };
 
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
-            <div className="p-4">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold">Promote User to Sub-Admin</h3>
-                    <button onClick={onClose}><CloseIcon /></button>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                <h3 className="text-lg font-semibold">{userToEdit ? 'Edit User' : 'Add New User'}</h3>
+                <input type="text" name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
+                <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
+                <select name="role" value={formData.role} onChange={handleChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
+                    <option value="user">End User</option>
+                    <option value="sub-admin">Sub-Admin</option>
+                    <option value="admin">Admin</option>
+                </select>
+                 <select name="subscription" value={formData.subscription} onChange={handleChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
+                    <option value="free">Free</option>
+                    <option value="standard">Standard</option>
+                    <option value="premium">Premium</option>
+                    <option value="pro">Pro</option>
+                </select>
+                <div className="flex justify-end gap-3 pt-4">
+                    <button type="button" onClick={onClose} className="px-4 py-2 bg-secondary rounded-md">Cancel</button>
+                    <button type="submit" className="px-4 py-2 bg-accent text-accent-foreground rounded-md">{userToEdit ? 'Save Changes' : 'Create User'}</button>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">Select a user with a 'Pro' subscription to grant them article management permissions.</p>
-                <div className="relative mb-4">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <SearchIcon />
-                    </div>
-                    <input 
-                        type="text"
-                        placeholder="Search by name or email..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="block w-full pl-10 pr-3 py-2 bg-card border border-border rounded-md focus:outline-none focus:ring-accent focus:border-accent"
-                    />
-                </div>
-                <ul className="space-y-2 max-h-80 overflow-y-auto">
-                    {promotableUsers.length > 0 ? promotableUsers.map(user => (
-                        <li key={user.id} className="flex items-center justify-between p-2 rounded-md hover:bg-secondary">
-                             <div className="flex items-center">
-                                <img className="h-10 w-10 rounded-full" src={user.avatar} alt={user.name} />
-                                <div className="ml-3">
-                                    <div className="text-sm font-medium">{user.name}</div>
-                                    <div className="text-sm text-muted-foreground">{user.email}</div>
-                                </div>
-                            </div>
-                            <button onClick={() => onAdd(user.email)} className="px-3 py-1 bg-accent text-accent-foreground text-sm font-semibold rounded-md hover:bg-accent/90">
-                                Promote
-                            </button>
-                        </li>
-                    )) : <p className="text-center text-sm text-muted-foreground py-4">No eligible 'Pro' users found.</p>}
-                </ul>
-            </div>
+            </form>
         </Modal>
     );
 };
 
+
 interface UserManagerProps {
     currentUser: User;
     getAllUsers: () => User[];
-    updateUserRole: (email: string, newRole: 'admin' | 'sub-admin' | 'user') => boolean;
+    addUser: (userData: Pick<User, 'name' | 'email' | 'role' | 'subscription'>) => boolean;
+    updateUser: (userId: string, userData: Partial<User>) => boolean;
     deleteUser: (email: string) => boolean;
 }
 
-const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, updateUserRole, deleteUser }) => {
-    const [view, setView] = useState<'all' | 'subAdmins'>('all');
-    const [isAddModalOpen, setAddModalOpen] = useState(false);
+const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, addUser, updateUser, deleteUser }) => {
+    const [isModalOpen, setModalOpen] = useState(false);
+    const [userToEdit, setUserToEdit] = useState<User | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
     const users = useMemo(() => getAllUsers(), [getAllUsers, refreshKey]);
 
@@ -439,145 +452,83 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, upd
         }
     };
     
-    const handleAddSubAdmin = (email: string) => {
-        handleAction(updateUserRole, email, 'sub-admin');
-        setAddModalOpen(false);
+    const handleAddUser = () => {
+        setUserToEdit(null);
+        setModalOpen(true);
     };
 
+    const handleEditUser = (user: User) => {
+        setUserToEdit(user);
+        setModalOpen(true);
+    }
+    
     const handleDeleteUser = (email: string, name: string) => {
         if (window.confirm(`Are you sure you want to delete user ${name}? This action cannot be undone.`)) {
             handleAction(deleteUser, email);
         }
     };
 
-    const renderAllUsersView = () => {
-        const adminUsers = users.filter(u => u.role === 'admin' && u.email === 'reponsekdz0@gmail.com');
-        const subAdminUsers = users.filter(u => u.role === 'sub-admin' || (u.role === 'admin' && u.email !== 'reponsekdz0@gmail.com'));
-        const endUsers = users.filter(u => u.role === 'user');
+    const handleFormSubmit = (userData: any, userId?: string) => {
+        if (userId) { // Editing
+            return updateUser(userId, userData);
+        } else { // Adding
+            return addUser(userData);
+        }
+    };
 
-        const renderUserGroup = (title: string, usersToRender: User[]) => (
-            <React.Fragment key={title}>
-                <tr className="bg-secondary"><td colSpan={3} className="px-6 py-2 text-sm font-semibold text-secondary-foreground">{title}</td></tr>
-                {usersToRender.map(user => (
-                    <tr key={user.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                                <img className="h-10 w-10 rounded-full" src={user.avatar} alt={user.name} />
-                                <div className="ml-4">
-                                    <div className="text-sm font-medium">{user.name}</div>
-                                    <div className="text-sm text-muted-foreground">{user.email}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : user.role === 'sub-admin' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'}`}>
-                                {user.role}
-                            </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                            {user.email !== 'reponsekdz0@gmail.com' && (
-                                <>
-                                    <select 
-                                        value={user.role} 
-                                        onChange={(e) => handleAction(updateUserRole, user.email, e.target.value as any)}
-                                        className="text-sm p-1 rounded bg-secondary border border-border"
-                                    >
-                                        <option value="user">User</option>
-                                        <option value="sub-admin" disabled={user.subscription !== 'pro'}>Sub-Admin (Pro)</option>
-                                        <option value="admin">Admin</option>
-                                    </select>
-                                    <button onClick={() => handleDeleteUser(user.email, user.name)} className="text-destructive hover:text-destructive/80"><TrashIcon /></button>
-                                </>
-                            )}
-                        </td>
-                    </tr>
-                ))}
-            </React.Fragment>
-        );
+    return (
+        <div>
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold">Manage Users</h3>
+                <button onClick={handleAddUser} className="flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground rounded-md hover:bg-accent/90 font-semibold text-sm">
+                    <PlusCircleIcon className="w-5 h-5"/>
+                    Add User
+                </button>
+            </div>
 
-        return (
+            <UserFormModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} onSubmit={handleFormSubmit} userToEdit={userToEdit} />
+
             <div className="overflow-x-auto border rounded-lg border-border">
                 <table className="min-w-full divide-y divide-border">
                     <thead className="bg-secondary">
                         <tr>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">User</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Role</th>
+                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Subscription</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="bg-card divide-y divide-border">
-                        {renderUserGroup('Me as Admin', adminUsers)}
-                        {renderUserGroup('Sub Admins & Other Admins', subAdminUsers)}
-                        {renderUserGroup('End Users', endUsers)}
+                        {users.map(user => (
+                             <tr key={user.id}>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                        <img className="h-10 w-10 rounded-full" src={user.avatar} alt={user.name} />
+                                        <div className="ml-4">
+                                            <div className="text-sm font-medium">{user.name}</div>
+                                            <div className="text-sm text-muted-foreground">{user.email}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : user.role === 'sub-admin' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'}`}>
+                                        {user.role}
+                                    </span>
+                                </td>
+                                 <td className="px-6 py-4 whitespace-nowrap text-sm capitalize">{user.subscription}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                    {user.email !== 'reponsekdz0@gmail.com' && (
+                                        <>
+                                            <button onClick={() => handleEditUser(user)} className="text-primary hover:text-primary/80"><PencilIcon className="w-5 h-5"/></button>
+                                            <button onClick={() => handleDeleteUser(user.email, user.name)} className="text-destructive hover:text-destructive/80"><TrashIcon className="w-5 h-5"/></button>
+                                        </>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
             </div>
-        );
-    };
-
-    const renderSubAdminsView = () => {
-        const subAdmins = users.filter(u => u.role === 'sub-admin');
-        return (
-            <div className="animate-fade-in">
-                <div className="flex justify-between items-center mb-4">
-                    <p className="text-muted-foreground text-sm">List of users with article management permissions.</p>
-                    <button onClick={() => setAddModalOpen(true)} className="px-4 py-2 bg-accent text-accent-foreground rounded-md hover:bg-accent/90 font-semibold text-sm">Add Sub-Admin</button>
-                </div>
-                <div className="overflow-x-auto border rounded-lg border-border">
-                    <table className="min-w-full divide-y divide-border">
-                        <thead className="bg-secondary">
-                            <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Sub-Admin</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Subscription</th>
-                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-card divide-y divide-border">
-                            {subAdmins.length > 0 ? subAdmins.map(user => (
-                                <tr key={user.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            <img className="h-10 w-10 rounded-full" src={user.avatar} alt={user.name} />
-                                            <div className="ml-4">
-                                                <div className="text-sm font-medium">{user.name}</div>
-                                                <div className="text-sm text-muted-foreground">{user.email}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={'px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'}>
-                                            {user.subscription}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button onClick={() => handleAction(updateUserRole, user.email, 'user')} className="text-yellow-600 hover:text-yellow-800 font-semibold">
-                                            Demote to User
-                                        </button>
-                                    </td>
-                                </tr>
-                            )) : (
-                                <tr>
-                                    <td colSpan={3} className="text-center py-8 text-muted-foreground">No Sub-Admins found.</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        );
-    };
-
-    return (
-        <div>
-            <h3 className="text-2xl font-bold mb-4">Manage Users</h3>
-            <div className="flex border-b border-border mb-6">
-                <button onClick={() => setView('all')} className={`px-4 py-2 -mb-px border-b-2 text-sm sm:text-base ${view === 'all' ? 'border-accent text-accent font-semibold' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>All Users</button>
-                <button onClick={() => setView('subAdmins')} className={`px-4 py-2 -mb-px border-b-2 text-sm sm:text-base ${view === 'subAdmins' ? 'border-accent text-accent font-semibold' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>Sub-Admins</button>
-            </div>
-
-            <AddSubAdminModal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} onAdd={handleAddSubAdmin} allUsers={users} />
-
-            {view === 'all' ? renderAllUsersView() : renderSubAdminsView()}
         </div>
     );
 };
@@ -693,12 +644,13 @@ const SiteSettingsManager: React.FC<SiteSettingsManagerProps> = ({ settings, onU
     );
 };
 
-type AdminTab = 'dashboard' | 'articles' | 'ads' | 'users' | 'settings' | 'subscriptions';
+type AdminTab = 'dashboard' | 'articles' | 'ads' | 'users' | 'navigation' | 'settings' | 'subscriptions';
 
 interface AdminPageProps {
     user: User;
     allArticles: Article[];
     allAds: Ad[];
+    navLinks: NavLink[];
     onAddArticle: (data: ArticleFormData) => void;
     onUpdateArticle: (id: string, data: ArticleFormData) => void;
     onDeleteArticle: (id: string) => void;
@@ -706,10 +658,12 @@ interface AdminPageProps {
     onUpdateAd: (id: string, data: AdFormData) => void;
     onDeleteAd: (id: string) => void;
     getAllUsers: () => User[];
-    updateUserRole: (email: string, newRole: 'admin' | 'sub-admin' | 'user') => boolean;
+    addUser: (userData: Pick<User, 'name' | 'email' | 'role' | 'subscription'>) => boolean;
+    updateUser: (userId: string, userData: Partial<User>) => boolean;
     deleteUser: (email: string) => boolean;
     siteSettings: SiteSettings;
     onUpdateSiteSettings: (newSettings: Partial<SiteSettings>) => void;
+    onUpdateNavLinks: (links: NavLink[]) => void;
 }
 
 const AdminPage: React.FC<AdminPageProps> = (props) => {
@@ -718,6 +672,7 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
     const allTabs = [
         { id: 'dashboard', label: 'Dashboard', icon: <ChartPieIcon className="w-5 h-5" />, roles: ['admin', 'sub-admin'] },
         { id: 'articles', label: 'Manage Articles', icon: <NewspaperIcon className="w-5 h-5" />, roles: ['admin', 'sub-admin'] },
+        { id: 'navigation', label: 'Navigation', icon: <BookOpenIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'ads', label: 'Manage Ads', icon: <MegaphoneIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'users', label: 'Manage Users', icon: <UserGroupIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'subscriptions', label: 'Subscriptions', icon: <BillingIcon className="w-5 h-5" />, roles: ['admin'] },
@@ -727,7 +682,6 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
     const visibleTabs = allTabs.filter(tab => tab.roles.includes(props.user.role || 'user'));
 
     useEffect(() => {
-        // If the current tab is not visible to the user (e.g., after a role change), default to the first visible tab
         if (!visibleTabs.find(tab => tab.id === activeTab)) {
             setActiveTab(visibleTabs[0]?.id as AdminTab || 'dashboard');
         }
@@ -739,10 +693,12 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
                 return <Dashboard users={props.getAllUsers()} articles={props.allArticles} ads={props.allAds} />;
             case 'articles':
                 return <ArticleManager onAddArticle={props.onAddArticle} onUpdateArticle={props.onUpdateArticle} allArticles={props.allArticles} onDeleteArticle={props.onDeleteArticle} />;
+            case 'navigation':
+                return <NavigationManager navLinks={props.navLinks} onUpdateNavLinks={props.onUpdateNavLinks} />;
             case 'ads':
                 return <AdManager onAddAd={props.onAddAd} onUpdateAd={props.onUpdateAd} allAds={props.allAds} onDeleteAd={props.onDeleteAd} />;
             case 'users':
-                return <UserManager currentUser={props.user} getAllUsers={props.getAllUsers} updateUserRole={props.updateUserRole} deleteUser={props.deleteUser} />;
+                return <UserManager currentUser={props.user} getAllUsers={props.getAllUsers} addUser={props.addUser} updateUser={props.updateUser} deleteUser={props.deleteUser} />;
             case 'subscriptions':
                 return <SubscriptionManager getAllUsers={props.getAllUsers} />;
             case 'settings':

@@ -53,18 +53,22 @@ export interface User {
 }
 
 export interface NavLink {
+    id: string;
     name: string;
     href: string;
     sublinks?: NavLink[];
 }
 
-export type ThemeName = 'default' | 'midnight' | 'latte' | 'forest' | 'oceanic' | 'rose' | 'slate' | 'sandstone' | 'nebula' | 'cyberpunk';
+export type ThemeName = 'default' | 'midnight' | 'latte' | 'forest' | 'oceanic' | 'rose' | 'slate' | 'sandstone' | 'nebula' | 'cyberpunk' | 'solaris' | 'monochrome' | 'image';
 export type AccentColor = 'yellow' | 'blue' | 'green' | 'red' | 'purple' | 'pink' | 'indigo' | 'teal';
 export type FontWeight = '300' | '400' | '500' | '600' | '700';
+export type CardStyle = 'standard' | 'elevated' | 'outline';
+export type BorderRadius = 'sharp' | 'rounded' | 'pill';
 
 export interface ThemeSettings {
     name: ThemeName;
     accent: AccentColor;
+    customImage?: string; // Base64 encoded image
 }
 
 export interface FontSettings {
@@ -78,10 +82,16 @@ export interface LayoutSettings {
     infiniteScroll: boolean;
 }
 
+export interface UiSettings {
+    cardStyle: CardStyle;
+    borderRadius: BorderRadius;
+}
+
 export interface Settings {
     theme: ThemeSettings;
     font: FontSettings;
     layout: LayoutSettings;
+    ui: UiSettings;
     fontSize: 'small' | 'medium' | 'large';
     highContrast: boolean;
     reduceMotion: boolean;

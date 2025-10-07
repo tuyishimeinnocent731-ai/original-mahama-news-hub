@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Settings, ThemeSettings, FontSettings, LayoutSettings } from '../types';
+import { Settings, ThemeSettings, FontSettings, LayoutSettings, UiSettings } from '../types';
 import { ALL_CATEGORIES, THEMES, ACCENT_COLORS, FONTS, FONT_WEIGHTS } from '../constants';
 
 const defaultSettings: Settings = {
     theme: { name: 'default', accent: 'yellow' },
     font: { family: 'Inter', weight: '400' },
     layout: { homepage: 'grid', density: 'comfortable', infiniteScroll: false },
-    fontSize: 'medium',
+    ui: { cardStyle: 'standard', borderRadius: 'rounded' },
+    fontSize: 'small',
     highContrast: false,
     reduceMotion: false,
     dyslexiaFont: false,
@@ -20,18 +21,76 @@ const defaultSettings: Settings = {
     adPersonalization: true,
 };
 
-const applySettingsToDOM = (settings: Settings) => {
+// Helper to extract palette from image
+const getPaletteFromImage = async (base64Image: string): Promise<Record<string, string>> => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.src = base64Image;
+        img.crossOrigin = 'Anonymous';
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return reject('Canvas context not available');
+            ctx.drawImage(img, 0, 0);
+            
+            // Simplified palette extraction - in real-world, use a library like color-thief
+            const data = ctx.getImageData(0, 0, 50, 50).data;
+            let r = 0, g = 0, b = 0, count = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                r += data[i]; g += data[i+1]; b += data[i+2];
+                count++;
+            }
+            const avgR = Math.floor(r / count);
+            const avgG = Math.floor(g / count);
+            const avgB = Math.floor(b / count);
+            
+            const isDark = (avgR * 0.299 + avgG * 0.587 + avgB * 0.114) < 186;
+
+            resolve({
+                background: isDark ? `30 30 30` : `245 245 245`,
+                foreground: isDark ? `240 240 240` : `20 20 20`,
+                card: isDark ? `45 45 45` : `255 255 255`,
+                'card-foreground': isDark ? `240 240 240` : `20 20 20`,
+                primary: `${avgR} ${avgG} ${avgB}`,
+                'primary-foreground': isDark ? `255 255 255` : `0 0 0`,
+                secondary: isDark ? '60 60 60' : '230 230 230',
+                'secondary-foreground': isDark ? '240 240 240' : '20 20 20',
+                muted: isDark ? '70 70 70' : '220 220 220',
+                'muted-foreground': isDark ? '180 180 180' : '100 100 100',
+                border: isDark ? '80 80 80' : '210 210 210'
+            });
+        };
+        img.onerror = reject;
+    });
+};
+
+const applySettingsToDOM = async (settings: Settings) => {
     const root = document.documentElement;
+    
+    // --- BACKGROUND IMAGE ---
+    if (settings.theme.name === 'image' && settings.theme.customImage) {
+      root.style.setProperty('--bg-image', `url(${settings.theme.customImage})`);
+      document.body.classList.add('bg-image-active');
+    } else {
+      root.style.removeProperty('--bg-image');
+      document.body.classList.remove('bg-image-active');
+    }
 
     // --- THEME & ACCENT ---
-    const theme = THEMES.find(t => t.id === settings.theme.name) || THEMES[0];
-    const isDark = settings.highContrast ? root.classList.contains('dark') : (settings.theme.name !== 'default' || root.classList.contains('dark'));
+    let palette;
+    if (settings.theme.name === 'image' && settings.theme.customImage) {
+        palette = await getPaletteFromImage(settings.theme.customImage);
+    } else {
+        const theme = THEMES.find(t => t.id === settings.theme.name) || THEMES[0];
+        const isDark = document.documentElement.classList.contains('dark');
+        palette = isDark ? (theme.palette.dark || theme.palette.light) : theme.palette.light;
+    }
     
-    // Determine the color palette
-    const palette = isDark ? (theme.palette.dark || theme.palette.light) : theme.palette.light;
-
     Object.entries(palette).forEach(([key, value]) => {
-        root.style.setProperty(`--color-${key}`, value);
+        // FIX: Cast the value to a string to match the setProperty method signature.
+        root.style.setProperty(`--color-${key}`, String(value));
     });
 
     const accent = ACCENT_COLORS.find(a => a.id === settings.theme.accent) || ACCENT_COLORS[0];
@@ -42,13 +101,12 @@ const applySettingsToDOM = (settings: Settings) => {
     const font = FONTS.find(f => f.family === settings.font.family) || FONTS[0];
     const fontWeight = settings.font.weight;
     
-    // Dynamically load Google Font
     const fontLoader = document.getElementById('font-loader');
     if (fontLoader) {
         const fontUrl = `https://fonts.googleapis.com/css2?family=${font.family.replace(/ /g, '+')}:wght@300;400;500;600;700&display=swap`;
         const existingLink = document.getElementById(`font-link-${font.family}`);
         if (!existingLink) {
-            fontLoader.innerHTML = ''; // Clear previous fonts
+            fontLoader.innerHTML = '';
             const link = document.createElement('link');
             link.id = `font-link-${font.family}`;
             link.rel = 'stylesheet';
@@ -59,6 +117,12 @@ const applySettingsToDOM = (settings: Settings) => {
     root.style.setProperty('--font-body', `"${font.family}"`);
     root.style.setProperty('--font-weight-body', fontWeight);
 
+    // --- UI SETTINGS (Card style, border radius) ---
+    const radii = { sharp: '0rem', rounded: '0.5rem', pill: '9999px' };
+    root.style.setProperty('--radius', radii[settings.ui.borderRadius]);
+    
+    document.body.classList.remove('card-standard', 'card-elevated', 'card-outline');
+    document.body.classList.add(`card-${settings.ui.cardStyle}`);
 
     // --- General Accessibility & Layout ---
     root.style.fontSize = settings.fontSize === 'small' ? '14px' : settings.fontSize === 'large' ? '18px' : '16px';
@@ -66,7 +130,6 @@ const applySettingsToDOM = (settings: Settings) => {
     root.classList.toggle('reduce-motion', settings.reduceMotion);
     root.classList.toggle('dyslexia-font', settings.dyslexiaFont);
 
-    // Apply layout density class
     document.body.classList.remove('density-compact', 'density-comfortable', 'density-spacious');
     document.body.classList.add(`density-${settings.layout.density}`);
 };
@@ -76,49 +139,52 @@ export const useSettings = () => {
     const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
-        try {
-            const storedSettings = localStorage.getItem('app-settings');
-            if (storedSettings) {
-                const parsed = JSON.parse(storedSettings);
-                // Deep merge to ensure all keys are present, preventing crashes on new settings
-                const mergedSettings: Settings = {
-                    ...defaultSettings,
-                    ...parsed,
-                    theme: { ...defaultSettings.theme, ...(parsed.theme || {}) },
-                    font: { ...defaultSettings.font, ...(parsed.font || {}) },
-                    layout: { ...defaultSettings.layout, ...(parsed.layout || {}) },
-                    notifications: { ...defaultSettings.notifications, ...(parsed.notifications || {}) },
-                };
-                setSettings(mergedSettings);
-                applySettingsToDOM(mergedSettings);
-            } else {
-                applySettingsToDOM(defaultSettings);
+        const loadAndApplySettings = async () => {
+            try {
+                const storedSettings = localStorage.getItem('app-settings');
+                let effectiveSettings = defaultSettings;
+                if (storedSettings) {
+                    const parsed = JSON.parse(storedSettings);
+                    effectiveSettings = {
+                        ...defaultSettings,
+                        ...parsed,
+                        theme: { ...defaultSettings.theme, ...(parsed.theme || {}) },
+                        font: { ...defaultSettings.font, ...(parsed.font || {}) },
+                        layout: { ...defaultSettings.layout, ...(parsed.layout || {}) },
+                        ui: { ...defaultSettings.ui, ...(parsed.ui || {}) },
+                        notifications: { ...defaultSettings.notifications, ...(parsed.notifications || {}) },
+                    };
+                }
+                setSettings(effectiveSettings);
+                await applySettingsToDOM(effectiveSettings);
+            } catch (error) {
+                console.error("Failed to load settings from localStorage", error);
+                await applySettingsToDOM(defaultSettings);
             }
-        } catch (error) {
-            console.error("Failed to load settings from localStorage", error);
-            applySettingsToDOM(defaultSettings);
-        }
-        setIsInitialized(true);
+            setIsInitialized(true);
+        };
+        loadAndApplySettings();
     }, []);
 
-    const updateSettings = useCallback((newSettings: Partial<Settings>) => {
+    const updateSettings = useCallback((newSettings: Partial<Settings> | ((s: Settings) => Settings)) => {
         setSettings(prevSettings => {
-            // Deep merge partial updates
-            const updatedSettings = {
+            const updated = typeof newSettings === 'function' ? newSettings(prevSettings) : {
                 ...prevSettings,
                 ...newSettings,
                 theme: { ...prevSettings.theme, ...(newSettings.theme || {}) },
                 font: { ...prevSettings.font, ...(newSettings.font || {}) },
                 layout: { ...prevSettings.layout, ...(newSettings.layout || {}) },
+                ui: { ...prevSettings.ui, ...(newSettings.ui || {}) },
                 notifications: { ...prevSettings.notifications, ...(newSettings.notifications || {}) },
             };
+
             try {
-                localStorage.setItem('app-settings', JSON.stringify(updatedSettings));
-                applySettingsToDOM(updatedSettings);
+                localStorage.setItem('app-settings', JSON.stringify(updated));
+                applySettingsToDOM(updated);
             } catch (error) {
                 console.error("Failed to save settings to localStorage", error);
             }
-            return updatedSettings;
+            return updated;
         });
     }, []);
 
@@ -134,5 +200,5 @@ export const useSettings = () => {
         return () => mediaQuery.removeEventListener('change', handleChange);
     }, [settings, isInitialized]);
 
-    return { settings, updateSettings, allCategories: ALL_CATEGORIES, isInitialized };
+    return { settings, setSettings, updateSettings, allCategories: ALL_CATEGORIES, isInitialized };
 };

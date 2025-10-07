@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { NAV_LINKS } from '../constants';
 import { CloseIcon } from './icons/CloseIcon';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import { NavLink, User } from '../types';
@@ -7,8 +6,11 @@ import { SearchIcon } from './icons/SearchIcon';
 import { LoginIcon } from './icons/LoginIcon';
 import { SettingsIcon } from './icons/SettingsIcon';
 import { LogoutIcon } from './icons/LogoutIcon';
+import { SunIcon } from './icons/SunIcon';
+import { MoonIcon } from './icons/MoonIcon';
+import { FilmIcon } from './icons/FilmIcon';
+import { PaintBrushIcon } from './icons/PaintBrushIcon';
 
-// Category Icons defined internally for simplicity
 const WorldIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2h1a2 2 0 002-2v-1a2 2 0 012-2h1.945M7.8 14.286c.32.32.32.839 0 1.159l-.943.943a.803.803 0 01-1.137 0l-.943-.943a.803.803 0 010-1.159l.943-.943a.803.803 0 011.137 0l.943.943zm11.1-2.071c.32.32.32.839 0 1.159l-.943.943a.803.803 0 01-1.137 0l-.943-.943a.803.803 0 010-1.159l.943-.943a.803.803 0 011.137 0l.943.943zM12 21a9 9 0 100-18 9 9 0 000 18z" /></svg>;
 const PoliticsIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>;
 const BusinessIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5h1.586a1 1 0 01.707.293l2.414 2.414a1 1 0 001.414 0l2.414-2.414a1 1 0 01.707-.293H15v5m-6 0v-5h4v5m-4 0H9" /></svg>;
@@ -22,11 +24,13 @@ const categoryIcons: { [key: string]: React.ReactNode } = {
     World: <WorldIcon />, Politics: <PoliticsIcon />, Business: <BusinessIcon />,
     Economy: <EconomyIcon />, Technology: <TechIcon />, Sport: <SportIcon />,
     Entertainment: <EntertainmentIcon />, History: <HistoryIcon />,
+    "Films & TV": <FilmIcon />, Arts: <PaintBrushIcon />
 };
 
 interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
+  navLinks: NavLink[];
   onCategorySelect: (category: string) => void;
   onSearch: (query: string) => void;
   user: User | null;
@@ -50,7 +54,7 @@ const MobileMenuItem: React.FC<{
 
     const handleToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (link.sublinks) {
+        if (link.sublinks && link.sublinks.length > 0) {
             setIsExpanded(!isExpanded);
         } else {
             handleSelect(link.name);
@@ -64,10 +68,10 @@ const MobileMenuItem: React.FC<{
                 className="w-full flex justify-between items-center text-lg text-white hover:text-yellow-300 focus:outline-none"
             >
                 <span className="flex items-center space-x-3">
-                    {categoryIcons[link.name]}
+                    {categoryIcons[link.name] || <WorldIcon/>}
                     <span>{link.name}</span>
                 </span>
-                {link.sublinks && (
+                {link.sublinks && link.sublinks.length > 0 && (
                     <ChevronDownIcon className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                 )}
             </button>
@@ -76,7 +80,7 @@ const MobileMenuItem: React.FC<{
                     <div className="pl-8 pt-2 flex flex-col items-start space-y-2">
                         {link.sublinks.map(sublink => (
                             <button
-                                key={sublink.name}
+                                key={sublink.id}
                                 onClick={() => handleSelect(sublink.name)}
                                 className="text-left text-base text-gray-300 hover:text-yellow-300"
                             >
@@ -91,12 +95,20 @@ const MobileMenuItem: React.FC<{
 };
 
 const MobileMenu: React.FC<MobileMenuProps> = (props) => {
-    const { isOpen, onClose, onCategorySelect, onSearch, user, onLoginClick, onLogout, onSettingsClick } = props;
+    const { isOpen, onClose, navLinks, onCategorySelect, onSearch, user, onLoginClick, onLogout, onSettingsClick } = props;
     const [searchQuery, setSearchQuery] = useState('');
+    const [isDark, setIsDark] = useState(false);
 
     useEffect(() => {
         if (!isOpen) setSearchQuery('');
     }, [isOpen]);
+    
+     useEffect(() => {
+        setIsDark(document.documentElement.classList.contains('dark'));
+        const observer = new MutationObserver(() => setIsDark(document.documentElement.classList.contains('dark')));
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        return () => observer.disconnect();
+    }, []);
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -104,6 +116,10 @@ const MobileMenu: React.FC<MobileMenuProps> = (props) => {
             onSearch(searchQuery);
             onClose();
         }
+    };
+
+    const toggleTheme = () => {
+        document.documentElement.classList.toggle('dark');
     };
 
   if (!isOpen) return null;
@@ -137,17 +153,21 @@ const MobileMenu: React.FC<MobileMenuProps> = (props) => {
         </div>
 
         <nav className="flex-grow overflow-y-auto px-4">
-          {NAV_LINKS.map((link, index) => (
-            <MobileMenuItem key={link.name} link={link} onCategorySelect={onCategorySelect} onClose={onClose} delay={index * 50} />
+          {navLinks.map((link, index) => (
+            <MobileMenuItem key={link.id} link={link} onCategorySelect={onCategorySelect} onClose={onClose} delay={index * 50} />
           ))}
         </nav>
         
         <div className="p-4 mt-auto border-t border-blue-700 dark:border-gray-700">
             {user ? (
-                <div className="flex items-center justify-around">
+                <div className="flex items-center justify-between">
                     <button onClick={() => { onSettingsClick(); onClose(); }} className="flex flex-col items-center space-y-1 text-white hover:text-yellow-300 text-sm">
                         <SettingsIcon />
                         <span>Settings</span>
+                    </button>
+                    <button onClick={toggleTheme} className="flex flex-col items-center space-y-1 text-white hover:text-yellow-300 text-sm p-2 rounded-full">
+                         {isDark ? <SunIcon /> : <MoonIcon />}
+                         <span>{isDark ? 'Light' : 'Dark'}</span>
                     </button>
                     <button onClick={() => { onLogout(); onClose(); }} className="flex flex-col items-center space-y-1 text-white hover:text-yellow-300 text-sm">
                         <LogoutIcon />
@@ -155,10 +175,15 @@ const MobileMenu: React.FC<MobileMenuProps> = (props) => {
                     </button>
                 </div>
             ) : (
-                <button onClick={() => { onLoginClick(); onClose(); }} className="w-full flex items-center justify-center space-x-2 py-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600">
-                    <LoginIcon />
-                    <span>Login / Register</span>
-                </button>
+                 <div className="flex items-center justify-between">
+                    <button onClick={() => { onLoginClick(); onClose(); }} className="w-full flex items-center justify-center space-x-2 py-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600">
+                        <LoginIcon />
+                        <span>Login / Register</span>
+                    </button>
+                     <button onClick={toggleTheme} className="p-3 ml-2 rounded-lg bg-blue-700 text-white hover:bg-blue-600">
+                         {isDark ? <SunIcon /> : <MoonIcon />}
+                    </button>
+                </div>
             )}
         </div>
       </div>
