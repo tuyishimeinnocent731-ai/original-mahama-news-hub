@@ -20,6 +20,7 @@ import AdminPage from './pages/AdminPage';
 import Aside from './components/Aside';
 import { NewspaperIcon } from './components/icons/NewspaperIcon';
 import PaymentModal from './components/PaymentModal';
+import TopStoriesFAB from './components/TopStoriesFAB'; // New Import
 
 import * as newsService from './services/newsService';
 import { useAuth } from './hooks/useAuth';
@@ -334,7 +335,7 @@ const App: React.FC = () => {
             onLogout={auth.logout}
             onSearchClick={() => setSearchOpen(true)}
             onCommandPaletteClick={() => setCommandPaletteOpen(true)}
-            onTopStoriesClick={() => setMobileMenuOpen(true)}
+            onTopStoriesClick={() => setTopStoriesDrawerOpen(true)}
             onCategorySelect={handleCategorySelect}
             onArticleClick={handleArticleClick}
             onSettingsClick={() => setView('settings')}
@@ -390,6 +391,7 @@ const App: React.FC = () => {
             articles={topStories}
             onArticleClick={handleArticleClick}
         />
+        <TopStoriesFAB onOpen={() => setTopStoriesDrawerOpen(true)} />
         <BackToTopButton />
     </div>
   );

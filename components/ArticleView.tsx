@@ -8,7 +8,7 @@ import { ArrowLeftIcon } from './icons/ArrowLeftIcon';
 import SocialShareBar from './SocialShareBar';
 import AIAssistantPanel from './AIAssistantPanel';
 import Aside from './Aside';
-import InArticleAd from './InArticleAd';
+import InFeedAd from './InFeedAd';
 import { PlayIcon } from './icons/PlayIcon';
 import { PauseIcon } from './icons/PauseIcon';
 import LoginPrompt from './LoginPrompt';
@@ -44,6 +44,10 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onArti
 
 
   const isPremium = user?.subscription === 'premium' || user?.subscription === 'pro';
+  
+  const inArticleAd = customAds && customAds.length > 0
+    ? customAds[Math.floor(Math.random() * customAds.length)]
+    : null;
 
   useEffect(() => {
     // Reset states when the article changes
@@ -103,13 +107,6 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onArti
       // newsService.toggleSaveArticle(article) would be ideal
       setIsSaved(!isSaved); 
   }
-  
-  const articleBodyWithAd = article.body.split('\n').map((paragraph, index) => (
-    <React.Fragment key={index}>
-      <p>{paragraph}</p>
-      {index === 1 && <InArticleAd />}
-    </React.Fragment>
-  ));
 
   return (
     <div className="animate-fade-in">
@@ -133,6 +130,12 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onArti
 
             <img src={article.urlToImage} alt={article.title} className="w-full h-auto max-h-[500px] object-cover rounded-lg mb-6" />
 
+            {inArticleAd && (
+                <div className="my-6 md:my-8 -mx-4 sm:mx-0">
+                    <InFeedAd ad={inArticleAd} />
+                </div>
+            )}
+
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 space-y-4 sm:space-y-0">
                 <div className="flex items-center space-x-4">
                     <button onClick={handleToggleSave} className={`flex items-center space-x-2 transition-colors ${isSaved ? 'text-yellow-500' : 'text-gray-600 dark:text-gray-300 hover:text-yellow-500'}`}>
@@ -152,7 +155,9 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onArti
             <div className="prose dark:prose-invert max-w-none text-lg">
                 <p className="lead font-semibold">{article.description}</p>
                  <ImageGallery images={article.galleryImages} />
-                {articleBodyWithAd}
+                {article.body.split('\n').map((paragraph, index) => (
+                    <p key={index}>{paragraph}</p>
+                ))}
             </div>
           </article>
         </main>
