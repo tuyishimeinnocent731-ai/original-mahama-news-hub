@@ -21,14 +21,14 @@ interface SiteSettings {
 }
 
 const ContentPieChart: React.FC<{ articles: Article[] }> = ({ articles }) => {
-    // FIX: Explicitly typing the accumulator in the reduce function to prevent potential type inference errors.
-    const categoryCounts = articles.reduce((acc: Record<string, number>, article) => {
+    // FIX: Typing the initial value of reduce is a more robust way to ensure type safety.
+    const categoryCounts = articles.reduce((acc, article) => {
         acc[article.category] = (acc[article.category] || 0) + 1;
         return acc;
-    }, {});
+    }, {} as Record<string, number>);
 
     const total = articles.length;
-    if (total === 0) return <div className="text-center text-sm text-gray-500">No articles to display.</div>;
+    if (total === 0) return <div className="text-center text-sm text-muted-foreground">No articles to display.</div>;
 
     const colors = ['#FBBF24', '#60A5FA', '#34D399', '#F87171', '#A78BFA', '#F472B6'];
     const segments = Object.entries(categoryCounts);
@@ -52,7 +52,8 @@ const ContentPieChart: React.FC<{ articles: Article[] }> = ({ articles }) => {
                             stroke={colors[index % colors.length]}
                             strokeWidth="50"
                             strokeDasharray={`${percentage} ${100 - percentage}`}
-                            strokeDashoffset={0 - offset}
+                            // FIX: Using unary negation `-offset` instead of binary `0 - offset` to resolve the TypeScript error.
+                            strokeDashoffset={-offset}
                             className="chart-pie-segment"
                         />
                     );
@@ -89,20 +90,20 @@ const Dashboard: React.FC<DashboardProps> = ({ users, articles, ads }) => {
         <div>
             <h3 className="text-2xl font-bold mb-6">Dashboard Overview</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-lg shadow-md">
-                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Articles</h4>
+                <div className="bg-secondary p-6 rounded-lg shadow-md">
+                    <h4 className="text-sm font-medium text-muted-foreground">Total Articles</h4>
                     <p className="text-3xl font-bold mt-2">{totalArticles}</p>
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-lg shadow-md">
-                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Ads</h4>
+                <div className="bg-secondary p-6 rounded-lg shadow-md">
+                    <h4 className="text-sm font-medium text-muted-foreground">Total Ads</h4>
                     <p className="text-3xl font-bold mt-2">{totalAds}</p>
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-lg shadow-md">
-                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Users</h4>
+                <div className="bg-secondary p-6 rounded-lg shadow-md">
+                    <h4 className="text-sm font-medium text-muted-foreground">Total Users</h4>
                     <p className="text-3xl font-bold mt-2">{totalUsers}</p>
                 </div>
-                 <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-lg shadow-md">
-                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Subscriptions</h4>
+                 <div className="bg-secondary p-6 rounded-lg shadow-md">
+                    <h4 className="text-sm font-medium text-muted-foreground">Subscriptions</h4>
                     <div className="mt-2 space-y-1">
                         {Object.entries(subscriptions).map(([plan, count]) => (
                              <div key={plan} className="flex justify-between text-sm">
@@ -114,11 +115,11 @@ const Dashboard: React.FC<DashboardProps> = ({ users, articles, ads }) => {
                 </div>
             </div>
              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-lg shadow-md">
+                <div className="bg-secondary p-6 rounded-lg shadow-md">
                     <h4 className="text-lg font-semibold mb-4">Content Distribution</h4>
                     <ContentPieChart articles={articles} />
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-lg shadow-md">
+                <div className="bg-secondary p-6 rounded-lg shadow-md">
                     <h4 className="text-lg font-semibold mb-4">User Roles</h4>
                      <p>Coming Soon</p>
                 </div>
@@ -199,48 +200,48 @@ const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateA
         <div className="space-y-12">
             <div>
                 <h3 className="text-2xl font-bold mb-4">{editingArticleId ? 'Edit Article' : 'Upload New Article'}</h3>
-                <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg dark:border-gray-700">
-                    <input type="text" name="title" placeholder="Title" value={formData.title} onChange={handleChange} required className="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500" />
-                    <textarea name="description" placeholder="Description" value={formData.description} onChange={handleChange} required rows={3} className="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500" />
-                    <textarea name="body" placeholder="Body" value={formData.body} onChange={handleChange} required rows={6} className="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500" />
+                <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg border-border">
+                    <input type="text" name="title" placeholder="Title" value={formData.title} onChange={handleChange} required className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent" />
+                    <textarea name="description" placeholder="Description" value={formData.description} onChange={handleChange} required rows={3} className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent" />
+                    <textarea name="body" placeholder="Body" value={formData.body} onChange={handleChange} required rows={6} className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent" />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input type="text" name="author" placeholder="Author" value={formData.author} onChange={handleChange} required className="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500" />
-                        <select name="category" value={formData.category} onChange={handleChange} required className="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500">
+                        <input type="text" name="author" placeholder="Author" value={formData.author} onChange={handleChange} required className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent" />
+                        <select name="category" value={formData.category} onChange={handleChange} required className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent">
                             {ALL_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
                     </div>
                      <div>
                         <label htmlFor="image-upload" className="block text-sm font-medium mb-1">Featured Image</label>
-                        <input type="file" name="image" id="image-upload" onChange={handleImageChange} accept="image/*" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100 dark:file:bg-gray-600 dark:file:text-gray-200" />
+                        <input type="file" name="image" id="image-upload" onChange={handleImageChange} accept="image/*" className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent/20 file:text-accent hover:file:bg-accent/30" />
                     </div>
                     {imagePreview && <img src={imagePreview} alt="Preview" className="mt-2 rounded-md max-h-48" />}
                     <div className="text-right flex justify-end gap-3">
                         {editingArticleId && (
-                            <button type="button" onClick={handleCancelEdit} className="px-5 py-2.5 bg-gray-200 dark:bg-gray-600 text-black dark:text-white rounded-md hover:bg-gray-300 font-semibold">Cancel</button>
+                            <button type="button" onClick={handleCancelEdit} className="px-5 py-2.5 bg-secondary text-secondary-foreground rounded-md hover:bg-muted font-semibold">Cancel</button>
                         )}
-                        <button type="submit" className="px-5 py-2.5 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 font-semibold">{editingArticleId ? 'Update Article' : 'Publish Article'}</button>
+                        <button type="submit" className="px-5 py-2.5 bg-accent text-accent-foreground rounded-md hover:bg-accent/90 font-semibold">{editingArticleId ? 'Update Article' : 'Publish Article'}</button>
                     </div>
                 </form>
             </div>
             <div>
                  <h3 className="text-2xl font-bold mb-4">Existing Articles</h3>
-                 <div className="overflow-x-auto border rounded-lg dark:border-gray-700">
-                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-700/50">
+                 <div className="overflow-x-auto border rounded-lg border-border">
+                     <table className="min-w-full divide-y divide-border">
+                        <thead className="bg-secondary">
                             <tr>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Title</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider hidden md:table-cell">Category</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
-                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                         <tbody className="bg-card divide-y divide-border">
                             {allArticles.map(article => (
                                 <tr key={article.id}>
                                     <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm font-medium max-w-xs truncate">{article.title}</div></td>
                                     <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell text-sm">{article.category}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-4">
-                                        <button onClick={() => setEditingArticleId(article.id)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"><PencilIcon /></button>
-                                        <button onClick={() => { if(window.confirm('Are you sure?')) onDeleteArticle(article.id); }} className="text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400"><TrashIcon /></button>
+                                        <button onClick={() => setEditingArticleId(article.id)} className="text-primary hover:text-primary/80"><PencilIcon /></button>
+                                        <button onClick={() => { if(window.confirm('Are you sure?')) onDeleteArticle(article.id); }} className="text-destructive hover:text-destructive/80"><TrashIcon /></button>
                                     </td>
                                 </tr>
                             ))}
@@ -316,41 +317,41 @@ const AdManager: React.FC<AdManagerProps> = ({ onAddAd, onUpdateAd, allAds, onDe
         <div className="space-y-12">
             <div>
                 <h3 className="text-2xl font-bold mb-4">{editingAdId ? 'Edit Advertisement' : 'Create New Advertisement'}</h3>
-                <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg dark:border-gray-700">
-                    <input type="text" name="headline" value={formData.headline} onChange={handleChange} placeholder="Headline" required className="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500" />
-                    <input type="url" name="url" value={formData.url} onChange={handleChange} placeholder="https://example.com" required className="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500" />
+                <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg border-border">
+                    <input type="text" name="headline" value={formData.headline} onChange={handleChange} placeholder="Headline" required className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent" />
+                    <input type="url" name="url" value={formData.url} onChange={handleChange} placeholder="https://example.com" required className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent" />
                     <div>
                         <label htmlFor="ad-image-upload" className="block text-sm font-medium mb-1">Ad Image</label>
-                        <input type="file" name="image" id="ad-image-upload" onChange={handleImageChange} accept="image/*" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-yellow-50 file:text-yellow-700 hover:file:bg-yellow-100 dark:file:bg-gray-600 dark:file:text-gray-200" />
+                        <input type="file" name="image" id="ad-image-upload" onChange={handleImageChange} accept="image/*" className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent/20 file:text-accent hover:file:bg-accent/30" />
                     </div>
                     {imagePreview && <img src={imagePreview} alt="Ad Preview" className="mt-2 rounded-md max-h-48" />}
                     <div className="text-right flex justify-end gap-3">
                          {editingAdId && (
-                            <button type="button" onClick={handleCancelEdit} className="px-5 py-2.5 bg-gray-200 dark:bg-gray-600 text-black dark:text-white rounded-md hover:bg-gray-300 font-semibold">Cancel</button>
+                            <button type="button" onClick={handleCancelEdit} className="px-5 py-2.5 bg-secondary text-secondary-foreground rounded-md hover:bg-muted font-semibold">Cancel</button>
                         )}
-                        <button type="submit" className="px-5 py-2.5 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 font-semibold">{editingAdId ? 'Update Ad' : 'Create Ad'}</button>
+                        <button type="submit" className="px-5 py-2.5 bg-accent text-accent-foreground rounded-md hover:bg-accent/90 font-semibold">{editingAdId ? 'Update Ad' : 'Create Ad'}</button>
                     </div>
                 </form>
             </div>
             <div>
                  <h3 className="text-2xl font-bold mb-4">Existing Ads</h3>
-                 <div className="overflow-x-auto border rounded-lg dark:border-gray-700">
-                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-700/50">
+                 <div className="overflow-x-auto border rounded-lg border-border">
+                     <table className="min-w-full divide-y divide-border">
+                        <thead className="bg-secondary">
                             <tr>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Image</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Headline</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
-                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                         <tbody className="bg-card divide-y divide-border">
                             {allAds.map(ad => (
                                 <tr key={ad.id}>
                                     <td className="px-6 py-4 whitespace-nowrap"><img src={ad.image} alt={ad.headline} className="w-16 h-10 object-cover rounded"/></td>
                                     <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm font-medium max-w-xs truncate">{ad.headline}</div></td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-4">
-                                        <button onClick={() => setEditingAdId(ad.id)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"><PencilIcon /></button>
-                                        <button onClick={() => { if(window.confirm('Are you sure?')) onDeleteAd(ad.id); }} className="text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400"><TrashIcon /></button>
+                                        <button onClick={() => setEditingAdId(ad.id)} className="text-primary hover:text-primary/80"><PencilIcon /></button>
+                                        <button onClick={() => { if(window.confirm('Are you sure?')) onDeleteAd(ad.id); }} className="text-destructive hover:text-destructive/80"><TrashIcon /></button>
                                     </td>
                                 </tr>
                             ))}
@@ -392,17 +393,17 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, upd
         }
     };
 
-    const renderUserGroup = (title: string, users: User[]) => (
-        <div key={title}>
-            <h4 className="px-6 py-2 text-sm font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50">{title}</h4>
-            {users.map(user => (
+    const renderUserGroup = (title: string, usersToRender: User[]) => (
+        <React.Fragment key={title}>
+            <tr className="bg-secondary"><td colSpan={3} className="px-6 py-2 text-sm font-semibold text-secondary-foreground">{title}</td></tr>
+            {usersToRender.map(user => (
                 <tr key={user.id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                             <img className="h-10 w-10 rounded-full" src={user.avatar} alt="" />
                             <div className="ml-4">
                                 <div className="text-sm font-medium">{user.name}</div>
-                                <div className="text-sm text-gray-500">{user.email}</div>
+                                <div className="text-sm text-muted-foreground">{user.email}</div>
                             </div>
                         </div>
                     </td>
@@ -417,38 +418,38 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, upd
                                 <select 
                                     value={user.role} 
                                     onChange={(e) => handleRoleChange(user.email, e.target.value as any)}
-                                    className="text-sm p-1 rounded bg-gray-100 dark:bg-gray-700"
+                                    className="text-sm p-1 rounded bg-secondary border border-border"
                                 >
                                     <option value="user">User</option>
-                                    <option value="sub-admin">Sub-Admin</option>
+                                    <option value="sub-admin" disabled={user.subscription !== 'pro'}>Sub-Admin (Pro required)</option>
                                     <option value="admin">Admin</option>
                                 </select>
-                                <button onClick={() => handleDeleteUser(user.email, user.name)} className="text-red-600 hover:text-red-900 dark:text-red-500 dark:hover:text-red-400"><TrashIcon /></button>
+                                <button onClick={() => handleDeleteUser(user.email, user.name)} className="text-destructive hover:text-destructive/80"><TrashIcon /></button>
                             </>
                         )}
                     </td>
                 </tr>
             ))}
-        </div>
+        </React.Fragment>
     );
     
-    const adminUsers = users.filter(u => u.role === 'admin' && u.email === currentUser.email);
-    const subAdminUsers = users.filter(u => u.role === 'sub-admin' || (u.role === 'admin' && u.email !== currentUser.email));
+    const adminUsers = users.filter(u => u.role === 'admin' && u.email === 'reponsekdz0@gmail.com');
+    const subAdminUsers = users.filter(u => u.role === 'sub-admin' || (u.role === 'admin' && u.email !== 'reponsekdz0@gmail.com'));
     const endUsers = users.filter(u => u.role === 'user');
 
     return (
         <div>
             <h3 className="text-2xl font-bold mb-4">Manage Users</h3>
-            <div className="overflow-x-auto border rounded-lg dark:border-gray-700">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-700/50">
+            <div className="overflow-x-auto border rounded-lg border-border">
+                <table className="min-w-full divide-y divide-border">
+                    <thead className="bg-secondary">
                         <tr>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">User</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Role</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" key={refreshKey}>
+                    <tbody className="bg-card divide-y divide-border" key={refreshKey}>
                         {renderUserGroup('Me as Admin', adminUsers)}
                         {renderUserGroup('Sub Admins & Other Admins', subAdminUsers)}
                         {renderUserGroup('End Users', endUsers)}
@@ -476,16 +477,16 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ getAllUsers }
     return (
          <div>
             <h3 className="text-2xl font-bold mb-4">Subscriptions & Payments</h3>
-            <div className="overflow-x-auto border rounded-lg dark:border-gray-700">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-700/50">
+            <div className="overflow-x-auto border rounded-lg border-border">
+                <table className="min-w-full divide-y divide-border">
+                    <thead className="bg-secondary">
                          <tr>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">User</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Subscription</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Last Payment</th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody className="bg-card divide-y divide-border">
                         {users.map(user => (
                             <tr key={user.id}>
                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -493,7 +494,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ getAllUsers }
                                         <img className="h-10 w-10 rounded-full" src={user.avatar} alt="" />
                                         <div className="ml-4">
                                             <div className="text-sm font-medium">{user.name}</div>
-                                            <div className="text-sm text-gray-500">{user.email}</div>
+                                            <div className="text-sm text-muted-foreground">{user.email}</div>
                                         </div>
                                     </div>
                                 </td>
@@ -502,7 +503,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ getAllUsers }
                                         {user.subscription}
                                     </span>
                                 </td>
-                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                                     {user.paymentHistory.length > 0 ? (
                                         <div>
                                             <span>{user.paymentHistory[0].amount}</span>
@@ -548,11 +549,11 @@ const SiteSettingsManager: React.FC<SiteSettingsManagerProps> = ({ settings, onU
         <div>
             <h3 className="text-2xl font-bold mb-4">Site Settings</h3>
             <div className="space-y-6 max-w-lg">
-                <div className="p-4 border rounded-lg dark:border-gray-700">
+                <div className="p-4 border rounded-lg border-border">
                     <label htmlFor="siteName" className="block text-sm font-medium mb-1">Site Name</label>
-                    <input type="text" name="siteName" id="siteName" value={localSettings.siteName} onChange={handleChange} className="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500" />
+                    <input type="text" name="siteName" id="siteName" value={localSettings.siteName} onChange={handleChange} className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent" />
                 </div>
-                <div className="p-4 border border-yellow-500/50 rounded-lg bg-yellow-50 dark:bg-yellow-900/20">
+                <div className="p-4 border border-yellow-500/50 rounded-lg bg-yellow-500/10">
                     <div className="flex items-center justify-between">
                         <div>
                             <label htmlFor="maintenanceMode" className="font-medium text-yellow-800 dark:text-yellow-200">Maintenance Mode</label>
@@ -562,7 +563,7 @@ const SiteSettingsManager: React.FC<SiteSettingsManagerProps> = ({ settings, onU
                     </div>
                 </div>
                  <div className="text-right">
-                    <button onClick={handleSave} className="px-5 py-2.5 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 font-semibold">Save Settings</button>
+                    <button onClick={handleSave} className="px-5 py-2.5 bg-accent text-accent-foreground rounded-md hover:bg-accent/90 font-semibold">Save Settings</button>
                 </div>
             </div>
         </div>
@@ -602,6 +603,13 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
     
     const visibleTabs = allTabs.filter(tab => tab.roles.includes(props.user.role || 'user'));
 
+    useEffect(() => {
+        // If the current tab is not visible to the user (e.g., after a role change), default to the first visible tab
+        if (!visibleTabs.find(tab => tab.id === activeTab)) {
+            setActiveTab(visibleTabs[0]?.id as AdminTab || 'dashboard');
+        }
+    }, [props.user.role, activeTab, visibleTabs]);
+
     const renderContent = () => {
         switch (activeTab) {
             case 'dashboard':
@@ -633,8 +641,8 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
                                 onClick={() => setActiveTab(tab.id as AdminTab)}
                                 className={`flex items-center space-x-3 px-3 py-2.5 text-sm font-medium rounded-md transition-colors w-full text-left ${
                                     activeTab === tab.id 
-                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300' 
-                                    : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                                    ? 'bg-accent/20 text-accent' 
+                                    : 'hover:bg-secondary'
                                 }`}
                             >
                                {tab.icon}
@@ -644,7 +652,7 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
                     </nav>
                 </aside>
                 <div className="flex-1">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 sm:p-6">
+                    <div className="bg-card text-card-foreground rounded-lg shadow-xl p-4 sm:p-6">
                         {renderContent()}
                     </div>
                 </div>

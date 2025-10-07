@@ -219,6 +219,11 @@ export const useAuth = () => {
             return false;
         }
         
+        if (newRole === 'sub-admin' && targetUser.subscription !== 'pro') {
+            addToast('Cannot promote to Sub-Admin. User must have a Pro subscription.', 'error');
+            return false;
+        }
+
         targetUser.role = newRole;
         addToast(`${targetUser.name}'s role has been updated to ${newRole}.`, 'success');
         persistUserUpdate(targetUser);

@@ -5,15 +5,160 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mahama News Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        /* Default Light Theme (CSS variables) */
+        --color-background: 249 250 251; /* gray-50 */
+        --color-foreground: 17 24 39;    /* gray-900 */
+        --color-card: 255 255 255;       /* white */
+        --color-card-foreground: 17 24 39;
+        --color-popover: 255 255 255;
+        --color-popover-foreground: 17 24 39;
+        --color-primary: 30 64 175;      /* blue-800 */
+        --color-primary-foreground: 255 255 255;
+        --color-secondary: 243 244 246;  /* gray-100 */
+        --color-secondary-foreground: 17 24 39;
+        --color-muted: 243 244 246;
+        --color-muted-foreground: 107 114 128; /* gray-500 */
+        --color-accent: 251 191 36;       /* yellow-400 */
+        --color-accent-foreground: 23 23 23;
+        --color-destructive: 239 68 68;    /* red-500 */
+        --color-destructive-foreground: 255 255 255;
+        --color-border: 229 231 235;      /* gray-200 */
+
+        --font-sans: 'Inter', sans-serif;
+        --font-dyslexic: 'Atkinson Hyperlegible', sans-serif;
+        --font-body: var(--font-sans);
+        --font-weight-body: 400;
+      }
+
+      body {
+        background-color: rgb(var(--color-background));
+        color: rgb(var(--color-foreground));
+        font-family: var(--font-body), sans-serif;
+        font-weight: var(--font-weight-body);
+      }
+
+      /* Reduce motion for users who prefer it */
+      .reduce-motion * {
+        transition: none !important;
+        animation: none !important;
+      }
+      /* Dyslexia-friendly font */
+      .dyslexia-font {
+        font-family: var(--font-dyslexic), sans-serif !important;
+      }
+      /* High Contrast Modes */
+      .high-contrast {
+        --color-background: 255 255 255 !important;
+        --color-foreground: 0 0 0 !important;
+        --color-card: 240 240 240 !important;
+        --color-border: 102 102 102 !important;
+      }
+      .dark.high-contrast {
+        --color-background: 0 0 0 !important;
+        --color-foreground: 255 255 255 !important;
+        --color-card: 31 31 31 !important;
+        --color-border: 153 153 153 !important;
+      }
+
+      /* Modern underline effect for header nav links */
+      .nav-link-underline {
+        position: relative;
+        text-decoration: none;
+      }
+      .nav-link-underline::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 2px;
+        background-color: rgb(var(--color-accent));
+        transition: width 0.3s ease-in-out;
+      }
+      .nav-link-underline:hover::after {
+        width: 100%;
+      }
+
+      /* Mega Menu Backdrop for modern feel */
+      .mega-menu-backdrop {
+          background-color: rgba(var(--color-popover), 0.8);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px); /* For Safari */
+      }
+      
+      /* Scrolled Header Style */
+      .header-scrolled {
+        background-color: rgba(var(--color-primary), 0.8) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+
+      /* Mobile Menu Animation */
+      .mobile-menu-item {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      /* Admin Dashboard Charts */
+      .chart-pie {
+        transform: rotate(-90deg);
+      }
+      .chart-pie-segment {
+        transition: stroke-dashoffset 0.5s ease-out;
+      }
+    </style>
     <script>
-      // Enable class-based dark mode and extend theme for a better font
+      // Enable class-based dark mode and extend theme with CSS variables
       tailwind.config = {
         darkMode: 'class',
         theme: {
           extend: {
+            colors: {
+              border: 'rgb(var(--color-border) / <alpha-value>)',
+              background: 'rgb(var(--color-background) / <alpha-value>)',
+              foreground: 'rgb(var(--color-foreground) / <alpha-value>)',
+              card: {
+                DEFAULT: 'rgb(var(--color-card) / <alpha-value>)',
+                foreground: 'rgb(var(--color-card-foreground) / <alpha-value>)',
+              },
+              popover: {
+                DEFAULT: 'rgb(var(--color-popover) / <alpha-value>)',
+                foreground: 'rgb(var(--color-popover-foreground) / <alpha-value>)',
+              },
+              primary: {
+                DEFAULT: 'rgb(var(--color-primary) / <alpha-value>)',
+                foreground: 'rgb(var(--color-primary-foreground) / <alpha-value>)',
+              },
+              secondary: {
+                DEFAULT: 'rgb(var(--color-secondary) / <alpha-value>)',
+                foreground: 'rgb(var(--color-secondary-foreground) / <alpha-value>)',
+              },
+              muted: {
+                DEFAULT: 'rgb(var(--color-muted) / <alpha-value>)',
+                foreground: 'rgb(var(--color-muted-foreground) / <alpha-value>)',
+              },
+              accent: {
+                DEFAULT: 'rgb(var(--color-accent) / <alpha-value>)',
+                foreground: 'rgb(var(--color-accent-foreground) / <alpha-value>)',
+              },
+              destructive: {
+                DEFAULT: 'rgb(var(--color-destructive) / <alpha-value>)',
+                foreground: 'rgb(var(--color-destructive-foreground) / <alpha-value>)',
+              },
+            },
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              dyslexic: ['Atkinson Hyperlegible', 'sans-serif'],
+              sans: ['var(--font-body)', 'Inter', 'sans-serif'],
+              dyslexic: ['var(--font-dyslexic)', 'Atkinson Hyperlegible', 'sans-serif'],
+            },
+            fontWeight: {
+                light: 300,
+                normal: 'var(--font-weight-body)',
+                medium: 500,
+                semibold: 600,
+                bold: 700,
             },
             keyframes: {
               slideInFromLeft: {
@@ -36,119 +181,20 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-      /* Apply a clean, modern font for better readability and UI aesthetics */
-      body {
-        font-family: 'Inter', sans-serif;
-      }
-      /* Reduce motion for users who prefer it */
-      .reduce-motion * {
-        transition: none !important;
-        animation: none !important;
-      }
-      /* Dyslexia-friendly font */
-      .dyslexia-font {
-        font-family: 'Atkinson Hyperlegible', sans-serif;
-      }
-      /* High Contrast Modes */
-      .high-contrast.light {
-        --bg-color: white;
-        --text-color: black;
-        --card-bg: #f0f0f0;
-        --border-color: #666;
-      }
-      .high-contrast.dark {
-        --bg-color: black;
-        --text-color: white;
-        --card-bg: #1f1f1f;
-        --border-color: #999;
-      }
-      .high-contrast {
-        background-color: var(--bg-color) !important;
-        color: var(--text-color) !important;
-      }
-      .high-contrast .bg-white, .high-contrast .dark\:bg-gray-800, 
-      .high-contrast .bg-gray-100, .high-contrast .dark\:bg-gray-900,
-      .high-contrast .bg-blue-800, .high-contrast .dark\:bg-gray-900,
-      .high-contrast .bg-blue-900 {
-        background-color: var(--card-bg) !important;
-        color: var(--text-color) !important;
-      }
-      .high-contrast .border-b, .high-contrast .border-t {
-        border-color: var(--border-color) !important;
-      }
-
-      /* Modern underline effect for header nav links */
-      .nav-link-underline {
-        position: relative;
-        text-decoration: none;
-      }
-      .nav-link-underline::after {
-        content: '';
-        position: absolute;
-        bottom: -2px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 0;
-        height: 2px;
-        background-color: #FBBF24; /* yellow-400 */
-        transition: width 0.3s ease-in-out;
-      }
-      .nav-link-underline:hover::after {
-        width: 100%;
-      }
-
-      /* Mega Menu Backdrop for modern feel */
-      .mega-menu-backdrop {
-          background-color: rgba(255, 255, 255, 0.8);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px); /* For Safari */
-      }
-      .dark .mega-menu-backdrop {
-          background-color: rgba(31, 41, 55, 0.8); /* dark:bg-gray-800 with opacity */
-      }
-      
-      /* Scrolled Header Style */
-      .header-scrolled {
-        background-color: rgba(30, 64, 175, 0.8); /* bg-blue-800 with opacity */
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-bottom-color: rgba(49, 46, 129, 0.5) !important;
-      }
-      .dark .header-scrolled {
-        background-color: rgba(17, 24, 39, 0.8) !important; /* dark:bg-gray-900 with opacity */
-      }
-      .header-scrolled .border-b {
-        border-bottom: none !important;
-      }
-
-      /* Mobile Menu Animation */
-      .mobile-menu-item {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-
-      /* Admin Dashboard Charts */
-      .chart-pie {
-        transform: rotate(-90deg);
-      }
-      .chart-pie-segment {
-        transition: stroke-dashoffset 0.5s ease-out;
-      }
-    </style>
-    <script type="importmap">
-    {
-      "imports": {
-        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.22.0",
-        "react/": "https://aistudiocdn.com/react@^19.2.0/",
-        "react": "https://aistudiocdn.com/react@^19.2.0",
-        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
-      }
-    }
-    </script>
+<script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.22.0"
+  }
+}
+</script>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900">
+<body class="bg-background text-foreground transition-colors duration-300">
     <div id="root"></div>
+    <div id="font-loader"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>

@@ -35,7 +35,7 @@ interface SiteSettings {
 }
 
 const MaintenanceBanner = () => (
-    <div className="bg-red-600 text-center p-2 text-white font-semibold text-sm animate-pulse">
+    <div className="bg-destructive text-center p-2 text-destructive-foreground font-semibold text-sm animate-pulse">
         Site is currently in maintenance mode. Some features may be unavailable for non-admin users.
     </div>
 );
@@ -232,10 +232,10 @@ const App: React.FC = () => {
   const renderMainContent = () => {
     if (siteSettings.maintenanceMode && auth.user?.role !== 'admin') {
          return (
-            <div className="text-center py-20 bg-gray-50 dark:bg-gray-800/50 rounded-lg col-span-full">
-                <NewspaperIcon className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
+            <div className="text-center py-20 bg-secondary rounded-lg col-span-full">
+                <NewspaperIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
                 <h2 className="text-xl font-semibold">Under Maintenance</h2>
-                <p className="text-gray-500 dark:text-gray-400 mt-2">
+                <p className="text-muted-foreground mt-2">
                     We are currently performing maintenance. Please check back later.
                 </p>
             </div>
@@ -284,7 +284,7 @@ const App: React.FC = () => {
         return (
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
                 <div className="md:col-span-8">
-                    <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-yellow-500">{currentCategory}</h1>
+                    <h1 className="text-3xl font-bold mb-6 pb-2 border-b-2 border-accent">{currentCategory}</h1>
                     {isLoading ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {[...Array(6)].map((_, i) => <ArticleCardSkeleton key={i} />)}
@@ -299,10 +299,10 @@ const App: React.FC = () => {
                         ))}
                         </div>
                     ) : (
-                        <div className="text-center py-20 bg-gray-50 dark:bg-gray-800/50 rounded-lg col-span-full">
-                            <NewspaperIcon className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
+                        <div className="text-center py-20 bg-secondary rounded-lg col-span-full">
+                            <NewspaperIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
                             <h2 className="text-xl font-semibold">No Articles Published Yet</h2>
-                            <p className="text-gray-500 dark:text-gray-400 mt-2">
+                            <p className="text-muted-foreground mt-2">
                                 Admins are working on it. Please check back later for the latest news.
                             </p>
                         </div>
@@ -323,7 +323,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 min-h-screen font-sans text-gray-900 dark:text-gray-100">
+    <div className="bg-background min-h-screen font-sans text-foreground">
         {siteSettings.maintenanceMode && <MaintenanceBanner />}
         <TopStoriesBanner articles={topStories} onArticleClick={handleArticleClick} />
         <Header 

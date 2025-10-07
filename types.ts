@@ -58,8 +58,30 @@ export interface NavLink {
     sublinks?: NavLink[];
 }
 
+export type ThemeName = 'default' | 'midnight' | 'latte' | 'forest' | 'oceanic' | 'rose' | 'slate' | 'sandstone' | 'nebula' | 'cyberpunk';
+export type AccentColor = 'yellow' | 'blue' | 'green' | 'red' | 'purple' | 'pink' | 'indigo' | 'teal';
+export type FontWeight = '300' | '400' | '500' | '600' | '700';
+
+export interface ThemeSettings {
+    name: ThemeName;
+    accent: AccentColor;
+}
+
+export interface FontSettings {
+    family: string;
+    weight: FontWeight;
+}
+
+export interface LayoutSettings {
+    homepage: 'grid' | 'list' | 'magazine';
+    density: 'compact' | 'comfortable' | 'spacious';
+    infiniteScroll: boolean;
+}
+
 export interface Settings {
-    theme: 'light' | 'dark' | 'system';
+    theme: ThemeSettings;
+    font: FontSettings;
+    layout: LayoutSettings;
     fontSize: 'small' | 'medium' | 'large';
     highContrast: boolean;
     reduceMotion: boolean;

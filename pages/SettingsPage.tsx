@@ -9,6 +9,7 @@ import SubscriptionSettings from '../components/settings/SubscriptionSettings';
 import SecuritySettings from '../components/settings/SecuritySettings';
 import IntegrationsSettings from '../components/settings/IntegrationsSettings';
 import BillingSettings from '../components/settings/BillingSettings';
+import LayoutSettings from '../components/settings/LayoutSettings';
 import { useToast } from '../contexts/ToastContext';
 
 import { UserCircleIcon } from '../components/icons/UserCircleIcon';
@@ -20,9 +21,10 @@ import { StarIcon } from '../components/icons/StarIcon';
 import { LinkIcon } from '../components/icons/LinkIcon';
 import { LockIcon } from '../components/icons/LockIcon';
 import { BillingIcon } from '../components/icons/BillingIcon';
+import { LayoutIcon } from '../components/icons/LayoutIcon';
 
 
-type SettingsTab = 'profile' | 'appearance' | 'accessibility' | 'security' | 'notifications' | 'subscription' | 'privacy' | 'integrations' | 'billing';
+type SettingsTab = 'profile' | 'appearance' | 'layout' | 'accessibility' | 'security' | 'notifications' | 'subscription' | 'privacy' | 'integrations' | 'billing';
 
 interface SettingsPageProps {
     user: User;
@@ -42,6 +44,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
     const menuItems = [
         { id: 'profile', label: 'Profile & Account', icon: <UserCircleIcon className="w-5 h-5" /> },
         { id: 'appearance', label: 'Appearance', icon: <PaletteIcon className="w-5 h-5" /> },
+        { id: 'layout', label: 'Layout & Content', icon: <LayoutIcon className="w-5 h-5" /> },
         { id: 'accessibility', label: 'Accessibility', icon: <AccessibilityIcon className="w-5 h-5" /> },
         { id: 'security', label: 'Sign In & Security', icon: <ShieldCheckIcon className="w-5 h-5" /> },
         { id: 'notifications', label: 'Notifications', icon: <BellIcon className="w-5 h-5" /> },
@@ -57,6 +60,8 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                 return <ProfileSettings user={props.user} updateProfile={props.updateProfile} addToast={addToast} />;
             case 'appearance':
                 return <AppearanceSettings />;
+            case 'layout':
+                return <LayoutSettings />;
             case 'accessibility':
                 return <AccessibilitySettings user={props.user} onUpgradeClick={props.onUpgradeClick} />;
             case 'security':
@@ -88,8 +93,8 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                                 onClick={() => setActiveTab(item.id as SettingsTab)}
                                 className={`flex items-center space-x-3 px-3 py-2.5 text-sm font-medium rounded-md transition-colors w-full text-left ${
                                     activeTab === item.id 
-                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300' 
-                                    : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                                    ? 'bg-accent/20 text-accent' 
+                                    : 'hover:bg-secondary'
                                 }`}
                             >
                                {item.icon}
@@ -99,7 +104,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                     </nav>
                 </aside>
                 <div className="flex-1">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 sm:p-8">
+                    <div className="bg-card text-card-foreground rounded-lg shadow-xl p-6 sm:p-8">
                         {renderContent()}
                     </div>
                 </div>

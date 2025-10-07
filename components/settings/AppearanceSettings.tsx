@@ -1,73 +1,101 @@
-
 import React from 'react';
 import { useSettings } from '../../hooks/useSettings';
-import { SunIcon } from '../icons/SunIcon';
-import { MoonIcon } from '../icons/MoonIcon';
-import { DesktopComputerIcon } from '../icons/DesktopComputerIcon';
-import { Settings } from '../../types';
-import ToggleSwitch from '../ToggleSwitch';
-
-type Theme = Settings['theme'];
-type FontSize = Settings['fontSize'];
+import { THEMES, ACCENT_COLORS, FONTS, FONT_WEIGHTS } from '../../constants';
+import { ThemeSettings, FontSettings } from '../../types';
+import { CheckIcon } from '../icons/CheckIcon';
 
 const AppearanceSettings: React.FC = () => {
     const { settings, updateSettings } = useSettings();
 
-    const handleThemeChange = (theme: Theme) => {
+    const handleThemeChange = (theme: Partial<ThemeSettings>) => {
         updateSettings({ theme });
     };
 
-    const handleFontSizeChange = (size: FontSize) => {
-        updateSettings({ fontSize: size });
+    const handleFontChange = (font: Partial<FontSettings>) => {
+        updateSettings({ font });
     };
-
-    const themeOptions = [
-        { value: 'light', label: 'Light', icon: <SunIcon /> },
-        { value: 'dark', label: 'Dark', icon: <MoonIcon /> },
-        { value: 'system', label: 'System', icon: <DesktopComputerIcon /> },
-    ];
-
-    const fontSizeOptions: {value: FontSize, label: string}[] = [
-        { value: 'small', label: 'Small' },
-        { value: 'medium', label: 'Medium' },
-        { value: 'large', label: 'Large' },
-    ];
 
     return (
         <div>
             <h3 className="text-2xl font-bold mb-2">Appearance</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">Customize the look and feel of the application.</p>
+            <p className="text-muted-foreground mb-6">Customize the look and feel of the application.</p>
             
             <div className="space-y-8">
+                {/* Theme Selection */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Theme</label>
-                    <div className="grid grid-cols-3 gap-4 max-w-md">
-                        {themeOptions.map(option => (
+                    <label className="block text-sm font-medium mb-2">Theme</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {THEMES.map(theme => (
+                            <div key={theme.id} className="text-center">
+                                <button
+                                    onClick={() => handleThemeChange({ name: theme.id as any })}
+                                    className={`w-full h-16 rounded-lg border-2 flex items-center justify-center transition-all ${settings.theme.name === theme.id ? 'border-accent ring-2 ring-accent' : 'border-border hover:border-accent/70'}`}
+                                >
+                                    <div className="flex -space-x-2">
+                                        <div className="w-8 h-8 rounded-full" style={{ backgroundColor: `rgb(${theme.palette.light.primary})` }}></div>
+                                        <div className="w-8 h-8 rounded-full" style={{ backgroundColor: `rgb(${theme.palette.dark.background})` }}></div>
+                                    </div>
+                                </button>
+                                <span className="text-xs mt-2 block">{theme.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Accent Color Selection */}
+                <div>
+                    <label className="block text-sm font-medium mb-2">Accent Color</label>
+                    <div className="flex flex-wrap gap-3">
+                        {ACCENT_COLORS.map(color => (
                             <button
-                                key={option.value}
-                                onClick={() => handleThemeChange(option.value as Theme)}
-                                className={`p-4 border rounded-lg text-center transition-colors ${settings.theme === option.value ? 'border-yellow-500 ring-2 ring-yellow-500' : 'border-gray-300 dark:border-gray-600 hover:border-yellow-400'}`}
+                                key={color.id}
+                                onClick={() => handleThemeChange({ accent: color.id as any })}
+                                className="w-10 h-10 rounded-full flex items-center justify-center transition-transform transform hover:scale-110"
+                                style={{ backgroundColor: `rgb(${color.rgb})` }}
+                                aria-label={`Select ${color.name} accent`}
                             >
-                                <div className="mx-auto w-6 h-6 mb-2">{option.icon}</div>
-                                <span className="text-sm font-medium">{option.label}</span>
+                                {settings.theme.accent === color.id && <CheckIcon className="w-6 h-6" style={{ color: `rgb(${color.fgRgb})` }} />}
                             </button>
                         ))}
                     </div>
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Font Size</label>
-                    <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-900/50 p-1 rounded-lg max-w-xs">
-                        {fontSizeOptions.map(option => (
-                            <button
-                                key={option.value}
-                                onClick={() => handleFontSizeChange(option.value)}
-                                className={`w-full py-2 text-sm font-semibold rounded-md transition-colors ${settings.fontSize === option.value ? 'bg-white dark:bg-gray-700 text-yellow-600 shadow' : 'hover:bg-gray-200 dark:hover:bg-gray-700/50'}`}
-                            >
-                                {option.label}
-                            </button>
-                        ))}
+                {/* Font Selection */}
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label htmlFor="font-family" className="block text-sm font-medium mb-2">Font</label>
+                        <select
+                            id="font-family"
+                            value={settings.font.family}
+                            onChange={(e) => handleFontChange({ family: e.target.value })}
+                            className="w-full p-2 border rounded-md bg-card border-border focus:ring-accent focus:border-accent"
+                        >
+                            {FONTS.map(font => (
+                                <option key={font.family} value={font.family} style={{ fontFamily: font.family }}>
+                                    {font.name}
+                                </option>
+                            ))}
+                        </select>
                     </div>
+                    <div>
+                         <label className="block text-sm font-medium mb-2">Font Weight</label>
+                        <div className="flex items-center space-x-2 bg-secondary p-1 rounded-lg w-full">
+                            {FONT_WEIGHTS.map(weight => (
+                                <button
+                                    key={weight.value}
+                                    onClick={() => handleFontChange({ weight: weight.value as any })}
+                                    className={`w-full py-1.5 text-sm font-semibold rounded-md transition-colors ${settings.font.weight === weight.value ? 'bg-card text-accent shadow' : 'hover:bg-card/50'}`}
+                                >
+                                    {weight.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                 <div className="p-4 bg-secondary rounded-lg">
+                    <p className="text-secondary-foreground" style={{ fontFamily: `"${settings.font.family}"`, fontWeight: settings.font.weight as any }}>
+                        The quick brown fox jumps over the lazy dog.
+                    </p>
                 </div>
             </div>
         </div>
