@@ -2,6 +2,8 @@ CREATE DATABASE IF NOT EXISTS mahama_news_hub;
 
 USE mahama_news_hub;
 
+-- Main Tables
+
 CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(255) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -13,7 +15,6 @@ CREATE TABLE IF NOT EXISTS users (
     subscription ENUM('free', 'standard', 'premium', 'pro') DEFAULT 'free',
     two_factor_enabled BOOLEAN DEFAULT FALSE,
     role ENUM('admin', 'sub-admin', 'user') DEFAULT 'user',
-    settings JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -29,7 +30,6 @@ CREATE TABLE IF NOT EXISTS articles (
     category VARCHAR(255),
     gallery_images JSON,
     scheduled_for TIMESTAMP NULL,
-    view_count INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -41,42 +41,6 @@ CREATE TABLE IF NOT EXISTS ads (
     user_id VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-);
-
-CREATE TABLE IF NOT EXISTS saved_articles (
-    user_id VARCHAR(255) NOT NULL,
-    article_id VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, article_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS search_history (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id VARCHAR(255) NOT NULL,
-    query VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS nav_links (
-    id VARCHAR(255) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    href VARCHAR(255) NOT NULL,
-    parent_id VARCHAR(255),
-    sort_order INT DEFAULT 0
-);
-
-CREATE TABLE IF NOT EXISTS payment_history (
-    id VARCHAR(255) PRIMARY KEY,
-    user_id VARCHAR(255) NOT NULL,
-    date TIMESTAMP NOT NULL,
-    plan ENUM('free', 'standard', 'premium', 'pro') NOT NULL,
-    amount VARCHAR(255) NOT NULL,
-    method VARCHAR(255) NOT NULL,
-    status ENUM('succeeded', 'pending', 'failed') NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS comments (
@@ -91,15 +55,107 @@ CREATE TABLE IF NOT EXISTS comments (
     FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE
 );
 
+-- Join & Relational Tables
+
+CREATE TABLE IF NOT EXISTS saved_articles (
+    user_id VARCHAR(255) NOT NULL,
+    article_id VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, article_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
+);
+
+-- User-specific Data Tables
+
+CREATE TABLE IF NOT EXISTS user_settings (
+    user_id VARCHAR(255) PRIMARY KEY,
+    theme_name ENUM('default', 'midnight', 'latte', 'forest', 'oceanic', 'rose', 'slate', 'sandstone', 'nebula', 'cyberpunk', 'solaris', 'monochrome', 'cosmic', 'sunset', 'image') DEFAULT 'default',
+    theme_accent ENUM('yellow', 'blue', 'green', 'red', 'purple', 'pink', 'indigo', 'teal') DEFAULT 'yellow',
+    font_family VARCHAR(255) DEFAULT 'Inter',
+    font_weight ENUM('300', '400', '500', '600', '700') DEFAULT '400',
+    homepage_layout ENUM('grid', 'list', 'magazine') DEFAULT 'grid',
+    content_density ENUM('compact', 'comfortable', 'spacious') DEFAULT 'comfortable',
+    infinite_scroll BOOLEAN DEFAULT FALSE,
+    card_style ENUM('standard', 'elevated', 'outline') DEFAULT 'standard',
+    border_radius ENUM('sharp', 'rounded', 'pill') DEFAULT 'rounded',
+    auto_play_audio BOOLEAN DEFAULT FALSE,
+    default_summary_view BOOLEAN DEFAULT FALSE,
+    line_height DECIMAL(3, 2) DEFAULT 1.6,
+    letter_spacing DECIMAL(3, 2) DEFAULT 0.0,
+    justify_text BOOLEAN DEFAULT FALSE,
+    font_size ENUM('small', 'medium', 'large') DEFAULT 'small',
+    high_contrast BOOLEAN DEFAULT FALSE,
+    reduce_motion BOOLEAN DEFAULT FALSE,
+    dyslexia_font BOOLEAN DEFAULT FALSE,
+    notifications_breaking_news BOOLEAN DEFAULT TRUE,
+    notifications_weekly_digest BOOLEAN DEFAULT TRUE,
+    notifications_special_offers BOOLEAN DEFAULT FALSE,
+    data_sharing BOOLEAN DEFAULT TRUE,
+    ad_personalization BOOLEAN DEFAULT TRUE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS search_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL,
+    query VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS payment_history (
+    id VARCHAR(255) PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL,
+    date TIMESTAMP NOT NULL,
+    plan ENUM('free', 'standard', 'premium', 'pro') NOT NULL,
+    amount VARCHAR(255) NOT NULL,
+    method VARCHAR(255) NOT NULL,
+    status ENUM('succeeded', 'pending', 'failed') NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Analytics & Logging Tables
+
+CREATE TABLE IF NOT EXISTS article_views (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    article_id VARCHAR(255) NOT NULL,
+    user_id VARCHAR(255),
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS activity_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL,
+    action_type VARCHAR(255) NOT NULL,
+    details JSON,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Site Configuration Tables
+
+CREATE TABLE IF NOT EXISTS nav_links (
+    id VARCHAR(255) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    href VARCHAR(255) NOT NULL,
+    parent_id VARCHAR(255),
+    sort_order INT DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS site_settings (
     setting_key VARCHAR(255) PRIMARY KEY,
     setting_value TEXT
 );
 
 
--- Insert Default Admin User
--- Password is '2025'
-INSERT INTO users (id, name, email, password_hash, avatar, bio, socials, subscription, two_factor_enabled, role, settings) 
+-- Insert Default Admin User & Settings
+INSERT INTO users (id, name, email, password_hash, avatar, bio, socials, subscription, two_factor_enabled, role) 
 VALUES (
     'admin-001', 
     'Admin Reponse', 
@@ -110,9 +166,10 @@ VALUES (
     '{"twitter": "reponse", "linkedin": "reponse"}', 
     'pro', 
     true, 
-    'admin',
-    '{"theme": {"name": "default", "accent": "yellow"}, "font": {"family": "Inter", "weight": "400"}, "layout": {"homepage": "grid", "density": "comfortable", "infiniteScroll": false}, "ui": {"cardStyle": "standard", "borderRadius": "rounded"}, "reading": {"autoPlayAudio": false, "defaultSummaryView": false, "lineHeight": 1.6, "letterSpacing": 0, "justifyText": false}, "fontSize": "small", "highContrast": false, "reduceMotion": false, "dyslexiaFont": false, "notifications": {"breakingNews": true, "weeklyDigest": true, "specialOffers": false}, "preferredCategories": [], "dataSharing": true, "adPersonalization": true}'
-) ON DUPLICATE KEY UPDATE name = name; -- Do nothing if admin already exists
+    'admin'
+) ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+INSERT INTO user_settings (user_id) VALUES ('admin-001') ON DUPLICATE KEY UPDATE user_id=user_id;
 
 -- Populate default site settings
 INSERT INTO site_settings (setting_key, setting_value) VALUES 

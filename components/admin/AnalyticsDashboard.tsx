@@ -76,7 +76,10 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ getAllUsers, ar
     
     const categoryData = Object.entries(viewsByCategory).map(([label, value]) => ({ label, value })).sort((a,b) => b.value - a.value).slice(0, 5);
     
-    const topArticles = [...articles].sort((a,b) => b.id.length - a.id.length).slice(0, 5).map(a => ({...a, views: Math.floor(Math.random() * 5000 + 1000)}));
+    // FIX: The original sorting logic was based on article ID length, which is arbitrary and does not represent "top performing" articles.
+    // It also caused a type error in some environments.
+    // The logic is corrected to first assign random mock views to articles, then sort by these views to get a realistic list of top articles.
+    const topArticles = [...articles].map(a => ({...a, views: Math.floor(Math.random() * 5000 + 1000)})).sort((a,b) => b.views - a.views).slice(0, 5);
 
     return (
         <div>

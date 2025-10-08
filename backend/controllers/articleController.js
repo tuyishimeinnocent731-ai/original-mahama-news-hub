@@ -25,7 +25,7 @@ const getArticlesByCategory = (category) => {
     }
 }
 
-const getAllArticles = async (req, res) => {
+const getAllArticles = async (req, res, next) => {
     const { category = 'World', page = 1, limit = 10 } = req.query;
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
@@ -47,12 +47,11 @@ const getAllArticles = async (req, res) => {
         );
         res.json({ articles, totalPages, currentPage: pageNum });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        next(error);
     }
 };
 
-const searchArticles = async (req, res) => {
+const searchArticles = async (req, res, next) => {
     const { query, category, author, page = 1, limit = 10 } = req.query;
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
@@ -102,23 +101,28 @@ const searchArticles = async (req, res) => {
         const [articles] = await pool.query(sql, params);
         res.json({ articles, totalPages, currentPage: pageNum });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        next(error);
     }
 };
 
-const getTopStories = async (req, res) => {
+const getTopStories = async (req, res, next) => {
     try {
-        const [articles] = await pool.query(
-            'SELECT * FROM articles WHERE scheduled_for IS NULL OR scheduled_for <= NOW() ORDER BY view_count DESC, published_at DESC LIMIT 4'
-        );
+        const [articles] = await pool.query(`
+            SELECT a.*, COUNT(av.id) as view_count 
+            FROM articles a
+            LEFT JOIN article_views av ON a.id = av.article_id
+            WHERE a.scheduled_for IS NULL OR a.scheduled_for <= NOW()
+            GROUP BY a.id
+            ORDER BY view_count DESC, a.published_at DESC 
+            LIMIT 4
+        `);
         res.json(articles);
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        next(error);
     }
 };
 
-const getSuggestions = async (req, res) => {
+const getSuggestions = async (req, res, next) => {
     const { query } = req.query;
     if (!query) return res.json([]);
     try {
@@ -128,14 +132,18 @@ const getSuggestions = async (req, res) => {
         );
         res.json(articles);
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        next(error);
     }
 };
 
 
-const getArticleById = async (req, res) => {
+const getArticleById = async (req, res, next) => {
     try {
-        pool.query('UPDATE articles SET view_count = view_count + 1 WHERE id = ?', [req.params.id]);
+        // Log the view in the new analytics table
+        const user_id = req.user ? req.user.id : null;
+        pool.query('INSERT INTO article_views (article_id, user_id, ip_address, user_agent) VALUES (?, ?, ?, ?)', [
+            req.params.id, user_id, req.ipAddress, req.headers['user-agent']
+        ]);
 
         const [articles] = await pool.query('SELECT * FROM articles WHERE id = ?', [req.params.id]);
         if (articles.length > 0) {
@@ -144,11 +152,11 @@ const getArticleById = async (req, res) => {
             res.status(404).json({ message: 'Article not found' });
         }
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        next(error);
     }
 };
 
-const getRelatedArticles = async (req, res) => {
+const getRelatedArticles = async (req, res, next) => {
     const { id } = req.params;
     try {
         const [currentArticles] = await pool.query('SELECT category FROM articles WHERE id = ?', [id]);
@@ -161,12 +169,12 @@ const getRelatedArticles = async (req, res) => {
         );
         res.json(related);
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        next(error);
     }
 };
 
 
-const createArticle = async (req, res) => {
+const createArticle = async (req, res, next) => {
     const { title, description, body, author, category, scheduledFor } = req.body;
     
     let urlToImage;
@@ -191,12 +199,11 @@ const createArticle = async (req, res) => {
         await pool.query('INSERT INTO articles SET ?', newArticle);
         res.status(201).json(newArticle);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        next(error);
     }
 };
 
-const updateArticle = async (req, res) => {
+const updateArticle = async (req, res, next) => {
     const { id } = req.params;
     const { title, description, body, author, category, scheduledFor, urlToImage: bodyUrlToImage } = req.body;
 
@@ -221,12 +228,11 @@ const updateArticle = async (req, res) => {
         await pool.query('UPDATE articles SET ? WHERE id = ?', [updatedArticle, id]);
         res.json({ id, ...updatedArticle });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        next(error);
     }
 };
 
-const deleteArticle = async (req, res) => {
+const deleteArticle = async (req, res, next) => {
     try {
         const [result] = await pool.query('DELETE FROM articles WHERE id = ?', [req.params.id]);
         if (result.affectedRows > 0) {
@@ -235,12 +241,11 @@ const deleteArticle = async (req, res) => {
             res.status(404).json({ message: 'Article not found' });
         }
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        next(error);
     }
 };
 
-const createComment = async (req, res) => {
+const createComment = async (req, res, next) => {
     const { articleId, body, parentId } = req.body;
     const userId = req.user.id;
 
@@ -267,12 +272,11 @@ const createComment = async (req, res) => {
 
         res.status(201).json(commentRows[0]);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error while posting comment.' });
+        next(error);
     }
 };
 
-const getCommentsForArticle = async (req, res) => {
+const getCommentsForArticle = async (req, res, next) => {
     const { id } = req.params;
     try {
         const [comments] = await pool.query(`
@@ -300,8 +304,7 @@ const getCommentsForArticle = async (req, res) => {
 
         res.json(nestedComments);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error fetching comments.' });
+        next(error);
     }
 };
 

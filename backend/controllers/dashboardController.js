@@ -1,6 +1,6 @@
 const pool = require('../config/db');
 
-const getDashboardStats = async (req, res) => {
+const getDashboardStats = async (req, res, next) => {
     try {
         const [userStats] = await pool.query(`
             SELECT 
@@ -12,13 +12,8 @@ const getDashboardStats = async (req, res) => {
             FROM users
         `);
 
-        const [articleStats] = await pool.query(`
-            SELECT 
-                COUNT(*) as totalArticles,
-                SUM(view_count) as totalViews
-            FROM articles
-        `);
-
+        const [articleStats] = await pool.query('SELECT COUNT(*) as totalArticles FROM articles');
+        const [viewStats] = await pool.query('SELECT COUNT(*) as totalViews FROM article_views');
         const [adStats] = await pool.query('SELECT COUNT(*) as totalAds FROM ads');
 
         const [categoryDistribution] = await pool.query(`
@@ -40,7 +35,7 @@ const getDashboardStats = async (req, res) => {
             },
             articles: {
                 total: articleStats[0].totalArticles,
-                totalViews: parseInt(articleStats[0].totalViews) || 0,
+                totalViews: viewStats[0].totalViews || 0,
             },
             ads: {
                 total: adStats[0].totalAds
@@ -51,8 +46,7 @@ const getDashboardStats = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
-        res.status(500).json({ message: 'Server error' });
+        next(error);
     }
 };
 
