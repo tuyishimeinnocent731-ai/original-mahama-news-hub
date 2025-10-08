@@ -9,6 +9,12 @@ const PLAN_TO_PRICE_ID = {
     pro: process.env.STRIPE_PRO_PRICE_ID,
 };
 
+const getConfig = (req, res) => {
+    res.json({
+        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+    });
+};
+
 const createCheckoutSession = async (req, res, next) => {
     const { plan } = req.body;
     const { id: userId, email, stripe_customer_id } = req.user;
@@ -137,4 +143,4 @@ const handleWebhook = async (req, res) => {
     }
 };
 
-module.exports = { createCheckoutSession, createPortalSession, handleWebhook };
+module.exports = { getConfig, createCheckoutSession, createPortalSession, handleWebhook };

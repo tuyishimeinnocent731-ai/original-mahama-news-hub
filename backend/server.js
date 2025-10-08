@@ -1,7 +1,27 @@
+require('dotenv').config();
+
+// --- Environment Variable Validation ---
+const requiredEnvVars = [
+    'DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME',
+    'JWT_SECRET', 'API_KEY', 
+    'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_PUBLISHABLE_KEY',
+    'STRIPE_STANDARD_PRICE_ID', 'STRIPE_PREMIUM_PRICE_ID', 'STRIPE_PRO_PRICE_ID',
+    'CLIENT_URL'
+];
+const missingVars = requiredEnvVars.filter(varName => {
+    const value = process.env[varName];
+    return !value || value.trim() === '';
+});
+if (missingVars.length > 0) {
+    console.error(`FATAL ERROR: Missing required environment variables: ${missingVars.join(', ')}`);
+    console.error('Please create a .env file based on .env.example and fill in the values.');
+    process.exit(1); // Exit with a failure code
+}
+// --- End Validation ---
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');

@@ -4,12 +4,17 @@ import { SubscriptionPlan } from '../types';
 declare const Stripe: any;
 
 const stripePromise = (async () => {
-    const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
-    if (!publishableKey) {
-        console.error("Stripe publishable key not found. Please set it in your environment variables.");
+    try {
+        const { publishableKey } = await api.get<{ publishableKey: string }>('/api/payments/config');
+        if (!publishableKey) {
+            console.error("Stripe publishable key could not be fetched from the backend.");
+            return null;
+        }
+        return Stripe(publishableKey);
+    } catch (error) {
+        console.error("Failed to fetch Stripe configuration:", error);
         return null;
     }
-    return Stripe(publishableKey);
 })();
 
 

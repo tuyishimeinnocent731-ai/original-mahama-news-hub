@@ -29,7 +29,7 @@ const registerUser = async (req, res, next) => {
         }
 
         const salt = await bcrypt.genSalt(10);
-        const password_hash = await bcrypt.hash(password, salt);
+        const password_hash = await bcrypt.hash(String(password), salt);
         
         const newUser = {
             id: `user-${uuidv4()}`,
@@ -46,20 +46,19 @@ const registerUser = async (req, res, next) => {
 
         await connection.commit();
         
-        const [createdUserRows] = await pool.query('SELECT * FROM users WHERE id = ?', [newUser.id]);
-        const createdUser = createdUserRows[0];
-
-        if (createdUser) {
+        // Fetch the full user object to ensure a consistent response with login
+        const [fullUserRows] = await connection.query(formatUserFromDb.userQuery, [newUser.id]);
+        
+        if (fullUserRows.length > 0) {
+            const fullUser = formatUserFromDb(fullUserRows[0]);
             res.status(201).json({
-                id: createdUser.id,
-                name: createdUser.name,
-                email: createdUser.email,
-                role: createdUser.role,
-                token: generateToken(createdUser.id),
+                ...fullUser,
+                token: generateToken(fullUser.id),
             });
         } else {
-            res.status(400).json({ message: 'Invalid user data' });
+            res.status(400).json({ message: 'Invalid user data after creation' });
         }
+
     } catch (error) {
         await connection.rollback();
         next(error);
@@ -106,7 +105,8 @@ const loginUser = async (req, res, next) => {
 
         const user = users[0];
 
-        if (await bcrypt.compare(password, user.password_hash)) {
+        // Ensure password is a string for bcrypt comparison
+        if (await bcrypt.compare(String(password), user.password_hash)) {
 
             // Log activity
             await pool.query('INSERT INTO activity_log (user_id, action_type, ip_address, details) VALUES (?, ?, ?, ?)', [
