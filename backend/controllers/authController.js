@@ -72,7 +72,7 @@ const loginUser = async (req, res, next) => {
     const { email, password } = req.body;
 
     // Static admin credentials check
-    if (email === 'reponsekdz0@gmail.com' && password === '2025') {
+    if (email === 'reponsekdz0@gmail.com' && String(password) === '2025') {
         try {
             const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
             if (users.length === 0) {
