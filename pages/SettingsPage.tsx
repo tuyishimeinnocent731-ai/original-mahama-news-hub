@@ -12,6 +12,8 @@ import BillingSettings from '../components/settings/BillingSettings';
 import LayoutSettings from '../components/settings/LayoutSettings';
 import DataSyncSettings from '../components/settings/DataSyncSettings';
 import ReadingSettings from '../components/settings/ReadingSettings';
+import MyAdsSettings from '../components/settings/MyAdsSettings';
+import ActivityLogSettings from '../components/settings/ActivityLogSettings';
 import { useToast } from '../contexts/ToastContext';
 
 import { UserCircleIcon } from '../components/icons/UserCircleIcon';
@@ -26,13 +28,16 @@ import { BillingIcon } from '../components/icons/BillingIcon';
 import { LayoutIcon } from '../components/icons/LayoutIcon';
 import { DataSyncIcon } from '../components/icons/DataSyncIcon';
 import { BookOpenIcon } from '../components/icons/BookOpenIcon';
+import { MegaphoneIcon } from '../components/icons/MegaphoneIcon';
+import { ActivityIcon } from '../components/icons/ActivityIcon';
 
 
-type SettingsTab = 'profile' | 'appearance' | 'layout' | 'reading' | 'accessibility' | 'security' | 'notifications' | 'subscription' | 'privacy' | 'integrations' | 'billing' | 'dataSync';
+type SettingsTab = 'profile' | 'appearance' | 'layout' | 'reading' | 'accessibility' | 'security' | 'notifications' | 'subscription' | 'billing' | 'privacy' | 'integrations' | 'dataSync' | 'myAds' | 'activityLog';
 
 interface SettingsPageProps {
     user: User;
     onUpgradeClick: () => void;
+    onManageAdsClick: () => void;
     clearSearchHistory: () => void;
     updateProfile: (profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar' | 'socials'>>) => void;
     toggleTwoFactor: (enabled: boolean) => void;
@@ -57,6 +62,8 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
         { id: 'billing', label: 'Billing', icon: <BillingIcon className="w-5 h-5" /> },
         { id: 'privacy', label: 'Privacy & Data', icon: <LockIcon className="w-5 h-5" /> },
         { id: 'integrations', label: 'Integrations', icon: <LinkIcon className="w-5 h-5" /> },
+        { id: 'myAds', label: 'My Ads', icon: <MegaphoneIcon className="w-5 h-5" />, condition: props.user.subscription === 'pro' || props.user.role === 'admin' },
+        { id: 'activityLog', label: 'Activity Log', icon: <ActivityIcon className="w-5 h-5" /> },
         { id: 'dataSync', label: 'Data & Sync', icon: <DataSyncIcon className="w-5 h-5" /> },
     ];
 
@@ -84,6 +91,10 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                 return <PrivacySettings user={props.user} clearSearchHistory={props.clearSearchHistory} addToast={addToast} />;
             case 'integrations':
                 return <IntegrationsSettings user={props.user} toggleIntegration={props.toggleIntegration} addToast={addToast} />;
+            case 'myAds':
+                return <MyAdsSettings user={props.user} onManageAdsClick={props.onManageAdsClick} />;
+            case 'activityLog':
+                return <ActivityLogSettings user={props.user} />;
             case 'dataSync':
                 return <DataSyncSettings user={props.user} />;
             default:
@@ -97,7 +108,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
             <div className="flex flex-col md:flex-row gap-8 lg:gap-12">
                 <aside className="md:w-1/4 lg:w-1/5">
                     <nav className="flex flex-col space-y-2">
-                        {menuItems.map(item => (
+                        {menuItems.filter(item => item.condition !== false).map(item => (
                              <button
                                 key={item.id}
                                 onClick={() => setActiveTab(item.id as SettingsTab)}

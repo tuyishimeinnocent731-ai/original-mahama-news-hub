@@ -145,6 +145,10 @@
         from { transform: translateY(-20px) scale(0.98); opacity: 0; }
         to { transform: translateY(0) scale(1); opacity: 1; }
       }
+       @keyframes pulse-border {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(var(--color-accent), 0.7); }
+        50% { box-shadow: 0 0 0 10px rgba(var(--color-accent), 0); }
+      }
 
       .search-modal-backdrop {
         animation: search-fade-in 0.3s ease-out forwards;
@@ -223,6 +227,7 @@
             animation: {
               'slide-in-left': 'slideInFromLeft 0.3s ease-out forwards',
               'fade-in-item': 'fadeIn 0.5s ease-out forwards',
+              'pulse-border': 'pulse-border 2s infinite',
             }
           }
         }

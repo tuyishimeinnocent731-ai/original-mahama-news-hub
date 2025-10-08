@@ -184,6 +184,14 @@ export const useAuth = () => {
         if (!user) return;
         persistUserUpdate({ ...user, searchHistory: [] });
     }, [user]);
+    
+    const addUserAd = useCallback((adData: Omit<Ad, 'id'>) => {
+        if (!user) return;
+        const newAd: Ad = { ...adData, id: `user-ad-${Date.now()}` };
+        const newUserAds = [...user.userAds, newAd];
+        persistUserUpdate({ ...user, userAds: newUserAds });
+    }, [user]);
+
 
     const updateProfile = useCallback((profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar' | 'socials'>>) => {
         if (!user) return;
@@ -264,12 +272,11 @@ export const useAuth = () => {
             addToast('You do not have permission for this action.', 'error');
             return false;
         }
-        // FIX: All errors stemmed from 'userToUpdate' being inferred as 'unknown'.
-        // Removing the explicit type annotation `(u: User)` from the `find` callback
-        // allows TypeScript to correctly infer the type of `u` as `User` from the `users` state array.
-        // This ensures `userToUpdate` is correctly typed as `User | undefined`, which is then
-        // narrowed to `User` after the existence check, resolving all subsequent property access and spread operator errors.
-        const userToUpdate = Object.values(users).find(u => u.id === userId);
+        // FIX: Explicitly type the parameter 'u' as 'User' in the .find() callback.
+        // This ensures that `userToUpdate` is correctly typed as `User | undefined` instead of `unknown`.
+        // The `unknown` type was being inferred because some TypeScript configurations do not strictly type the return value of `Object.values()`.
+        // This fix allows for safe property access on `userToUpdate` after the existence check.
+        const userToUpdate = Object.values(users).find((u: User) => u.id === userId);
         if (!userToUpdate) {
             addToast('User not found.', 'error');
             return false;
@@ -393,6 +400,7 @@ export const useAuth = () => {
         toggleSaveArticle,
         addSearchHistory,
         clearSearchHistory,
+        addUserAd,
         updateProfile,
         toggleTwoFactor,
         validatePassword,

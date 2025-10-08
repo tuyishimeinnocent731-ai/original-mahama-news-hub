@@ -24,7 +24,7 @@ const categoryIcons: { [key: string]: React.ReactNode } = {
     World: <WorldIcon />, Politics: <PoliticsIcon />, Business: <BusinessIcon />,
     Economy: <EconomyIcon />, Technology: <TechIcon />, Sport: <SportIcon />,
     Entertainment: <EntertainmentIcon />, History: <HistoryIcon />,
-    "Films & TV": <FilmIcon />, Arts: <PaintBrushIcon />
+    "Video": <FilmIcon />, "Films & TV": <FilmIcon />, Arts: <PaintBrushIcon />
 };
 
 interface MobileMenuProps {

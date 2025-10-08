@@ -8,6 +8,7 @@ import UserMenu from './UserMenu';
 import { getArticlesForMegaMenu } from '../services/newsService';
 import { CommandIcon } from './icons/CommandIcon';
 import { TrendingUpIcon } from './icons/TrendingUpIcon';
+import { MicrophoneIcon } from './icons/MicrophoneIcon';
 
 interface HeaderProps {
     user: User | null;
@@ -19,6 +20,7 @@ interface HeaderProps {
     onCommandPaletteClick: () => void;
     onMobileMenuClick: () => void;
     onTopStoriesClick: () => void;
+    onLiveAssistantClick: () => void;
     onSettingsClick: () => void;
     onSavedClick: () => void;
     onPremiumClick: () => void;
@@ -60,6 +62,8 @@ const Header: React.FC<HeaderProps> = (props) => {
         const newIsDark = !document.documentElement.classList.contains('dark');
         document.documentElement.classList.toggle('dark', newIsDark);
     };
+    
+    const isPremium = props.user?.subscription === 'premium' || props.user?.subscription === 'pro';
 
     return (
         <header className={`bg-primary text-primary-foreground shadow-md sticky top-0 z-30 transition-colors duration-300 ${isScrolled ? 'header-scrolled' : ''}`}>
@@ -69,6 +73,12 @@ const Header: React.FC<HeaderProps> = (props) => {
                         {props.siteName}
                     </button>
                     <div className="flex items-center space-x-2 sm:space-x-3">
+                         {props.isLoggedIn && isPremium && (
+                             <button onClick={props.onLiveAssistantClick} className="hidden lg:flex items-center space-x-2 px-3 py-2 rounded-md bg-accent/20 text-accent font-semibold hover:bg-accent/30 transition-colors text-sm" aria-label="Talk to AI">
+                                <MicrophoneIcon />
+                                <span>Talk to AI</span>
+                            </button>
+                        )}
                         <button onClick={props.onSearchClick} className="p-2 rounded-full hover:bg-primary-foreground/10" aria-label="Search">
                             <SearchIcon />
                         </button>
@@ -113,29 +123,59 @@ const Header: React.FC<HeaderProps> = (props) => {
                             {link.sublinks && link.sublinks.length > 0 && (
                                 <div className="absolute left-1/2 -translate-x-1/2 top-full pt-3 hidden group-hover:block w-screen max-w-3xl">
                                     <div className="mega-menu-backdrop bg-popover/80 rounded-lg shadow-2xl p-6 grid grid-cols-3 gap-6">
-                                        <div className="col-span-1">
-                                            <h3 className="font-bold text-popover-foreground mb-4 border-b-2 border-accent pb-2">{link.name}</h3>
-                                            <ul className="space-y-2">
-                                                {link.sublinks.map(sublink => (
-                                                    <li key={sublink.id}>
-                                                        <button onClick={() => onCategorySelect(sublink.name)} className="text-sm text-muted-foreground hover:text-accent transition-colors">
-                                                            {sublink.name}
-                                                        </button>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                        <div className="col-span-2 grid grid-cols-2 gap-4">
-                                            {getArticlesForMegaMenu(link.name, 2).map(article => (
-                                                <div key={article.id} onClick={() => onArticleClick(article)} className="cursor-pointer group/article">
-                                                    <div className="overflow-hidden rounded-md">
-                                                      <img src={article.urlToImage} alt={article.title} className="w-full h-32 object-cover mb-2 transition-transform duration-300 group-hover/article:scale-105" />
-                                                    </div>
-                                                    <h4 className="text-sm font-semibold text-popover-foreground line-clamp-2 mt-2 group-hover/article:text-accent transition-colors">{article.title}</h4>
-                                                    <p className="text-xs text-muted-foreground mt-1">{new Date(article.publishedAt).toLocaleDateString()}</p>
+                                       {link.name === 'World' ? (
+                                           <>
+                                                <div className="col-span-2 grid grid-cols-2 gap-4">
+                                                    {getArticlesForMegaMenu(link.name, 2).map(article => (
+                                                        <div key={article.id} onClick={() => onArticleClick(article)} className="cursor-pointer group/article">
+                                                            <div className="overflow-hidden rounded-md">
+                                                            <img src={article.urlToImage} alt={article.title} className="w-full h-32 object-cover mb-2 transition-transform duration-300 group-hover/article:scale-105" />
+                                                            </div>
+                                                            <h4 className="text-sm font-semibold text-popover-foreground line-clamp-2 mt-2 group-hover/article:text-accent transition-colors">{article.title}</h4>
+                                                            <p className="text-xs text-muted-foreground mt-1">{new Date(article.publishedAt).toLocaleDateString()}</p>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            ))}
-                                        </div>
+                                                <div className="col-span-1">
+                                                    <h3 className="font-bold text-popover-foreground mb-4 border-b-2 border-accent pb-2">{link.name}</h3>
+                                                    <ul className="space-y-2">
+                                                        {link.sublinks.map(sublink => (
+                                                            <li key={sublink.id}>
+                                                                <button onClick={() => onCategorySelect(sublink.name)} className="text-sm text-muted-foreground hover:text-accent transition-colors">
+                                                                    {sublink.name}
+                                                                </button>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                           </>
+                                       ) : (
+                                           <>
+                                                <div className="col-span-1">
+                                                    <h3 className="font-bold text-popover-foreground mb-4 border-b-2 border-accent pb-2">{link.name}</h3>
+                                                    <ul className="space-y-2">
+                                                        {link.sublinks.map(sublink => (
+                                                            <li key={sublink.id}>
+                                                                <button onClick={() => onCategorySelect(sublink.name)} className="text-sm text-muted-foreground hover:text-accent transition-colors">
+                                                                    {sublink.name}
+                                                                </button>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                                <div className="col-span-2 grid grid-cols-2 gap-4">
+                                                    {getArticlesForMegaMenu(link.name, 2).map(article => (
+                                                        <div key={article.id} onClick={() => onArticleClick(article)} className="cursor-pointer group/article">
+                                                            <div className="overflow-hidden rounded-md">
+                                                            <img src={article.urlToImage} alt={article.title} className="w-full h-32 object-cover mb-2 transition-transform duration-300 group-hover/article:scale-105" />
+                                                            </div>
+                                                            <h4 className="text-sm font-semibold text-popover-foreground line-clamp-2 mt-2 group-hover/article:text-accent transition-colors">{article.title}</h4>
+                                                            <p className="text-xs text-muted-foreground mt-1">{new Date(article.publishedAt).toLocaleDateString()}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                           </>
+                                       )}
                                     </div>
                                 </div>
                             )}

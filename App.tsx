@@ -20,6 +20,9 @@ import AdminPage from './pages/AdminPage';
 import Aside from './components/Aside';
 import { NewspaperIcon } from './components/icons/NewspaperIcon';
 import PaymentModal from './components/PaymentModal';
+import VideoPage from './pages/VideoPage';
+import LiveAssistantModal from './components/LiveAssistantModal';
+import MyAdsPage from './pages/MyAdsPage';
 
 import * as newsService from './services/newsService';
 import * as navigationService from './services/navigationService';
@@ -28,7 +31,7 @@ import { useSettings } from './hooks/useSettings';
 import { useToast } from './contexts/ToastContext';
 import { Article, Ad, SubscriptionPlan, PaymentRecord, NavLink } from './types';
 
-type View = 'home' | 'article' | 'settings' | 'saved' | 'admin';
+type View = 'home' | 'article' | 'settings' | 'saved' | 'admin' | 'video' | 'my-ads';
 
 interface SiteSettings {
   siteName: string;
@@ -61,6 +64,7 @@ const App: React.FC = () => {
   const [isPremiumModalOpen, setPremiumModalOpen] = useState(false);
   const [isTopStoriesDrawerOpen, setTopStoriesDrawerOpen] = useState(false);
   const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [isLiveAssistantOpen, setLiveAssistantOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{plan: SubscriptionPlan, price: string} | null>(null);
 
 
@@ -167,7 +171,13 @@ const App: React.FC = () => {
   };
   
   const handleCategorySelect = (category: string) => {
-      fetchArticles(category);
+      if (category.toLowerCase() === 'video') {
+          setView('video');
+          setCurrentArticle(null);
+          setCurrentCategory('Video');
+      } else {
+          fetchArticles(category);
+      }
   }
 
   const handleOpenPaymentModal = (plan: SubscriptionPlan, price: string) => {
@@ -226,6 +236,11 @@ const App: React.FC = () => {
     addToast('Advertisement deleted successfully.', 'success');
   };
 
+  const handleAddUserAd = (adData: Omit<Ad, 'id'>) => {
+      auth.addUserAd(adData);
+      addToast('Your advertisement has been created!', 'success');
+  }
+
   const handleDeleteUser = (email: string): boolean => {
       return auth.deleteUser(email);
   };
@@ -269,7 +284,7 @@ const App: React.FC = () => {
           />
         );
       case 'settings':
-        return auth.user && <SettingsPage user={auth.user} {...auth} onUpgradeClick={() => setPremiumModalOpen(true)} />;
+        return auth.user && <SettingsPage user={auth.user} {...auth} onUpgradeClick={() => setPremiumModalOpen(true)} onManageAdsClick={() => setView('my-ads')} />;
       case 'saved':
         const savedArticles = allArticles.filter(a => auth.isArticleSaved(a.id));
         return <SavedArticlesPage savedArticles={savedArticles} onArticleClick={handleArticleClick} />;
@@ -295,6 +310,10 @@ const App: React.FC = () => {
                 onUpdateNavLinks={handleUpdateNavLinks}
             />
         );
+       case 'video':
+          return <VideoPage allArticles={allArticles} onArticleClick={handleArticleClick} />;
+       case 'my-ads':
+          return <MyAdsPage user={auth.user} onBack={handleBackToHome} onCreateAd={handleAddUserAd} />
       case 'home':
       default:
         return (
@@ -353,6 +372,7 @@ const App: React.FC = () => {
             onCommandPaletteClick={() => setCommandPaletteOpen(true)}
             onMobileMenuClick={() => setMobileMenuOpen(true)}
             onTopStoriesClick={() => setTopStoriesDrawerOpen(true)}
+            onLiveAssistantClick={() => setLiveAssistantOpen(true)}
             onCategorySelect={handleCategorySelect}
             onArticleClick={handleArticleClick}
             onSettingsClick={() => setView('settings')}
@@ -369,6 +389,7 @@ const App: React.FC = () => {
             onClose={() => setSearchOpen(false)} 
             onSearch={handleSearch} 
             onArticleSelect={handleArticleClick}
+            topStories={topStories}
             user={auth.user} 
             clearSearchHistory={auth.clearSearchHistory} 
         />
@@ -410,6 +431,10 @@ const App: React.FC = () => {
                 onPaymentSuccess={handleSubscriptionUpgrade}
             />
         )}
+        <LiveAssistantModal
+            isOpen={isLiveAssistantOpen}
+            onClose={() => setLiveAssistantOpen(false)}
+        />
         <TopStoriesDrawer 
             isOpen={isTopStoriesDrawerOpen}
             onClose={() => setTopStoriesDrawerOpen(false)}

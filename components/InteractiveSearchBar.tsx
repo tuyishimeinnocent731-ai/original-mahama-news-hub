@@ -6,7 +6,7 @@ import { CloseIcon } from './icons/CloseIcon';
 import { SearchIcon } from './icons/SearchIcon';
 import { ClockIcon } from './icons/ClockIcon';
 import { MicrophoneIcon } from './icons/MicrophoneIcon';
-import { NewspaperIcon } from './icons/NewspaperIcon';
+import { TrendingUpIcon } from './icons/TrendingUpIcon';
 
 interface InteractiveSearchBarProps {
     isOpen: boolean;
@@ -15,10 +15,11 @@ interface InteractiveSearchBarProps {
     onArticleSelect: (article: Article) => void;
     user: User | null;
     clearSearchHistory: () => void;
+    topStories: Article[];
 }
 
 const InteractiveSearchBar: React.FC<InteractiveSearchBarProps> = (props) => {
-    const { isOpen, onClose, onSearch, onArticleSelect, user, clearSearchHistory } = props;
+    const { isOpen, onClose, onSearch, onArticleSelect, user, clearSearchHistory, topStories } = props;
     const [query, setQuery] = useState('');
     const [suggestions, setSuggestions] = useState<Article[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -83,7 +84,7 @@ const InteractiveSearchBar: React.FC<InteractiveSearchBarProps> = (props) => {
 
     return (
         <div className="fixed inset-0 z-50 flex justify-center items-start p-4 pt-[10vh] sm:pt-[15vh] search-modal-backdrop bg-background/80 backdrop-blur-sm" onClick={onClose}>
-            <div className="relative w-full max-w-2xl search-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="relative w-full max-w-3xl search-modal-content" onClick={e => e.stopPropagation()}>
                 <form onSubmit={handleSearch} className="relative">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <SearchIcon />
@@ -103,26 +104,46 @@ const InteractiveSearchBar: React.FC<InteractiveSearchBarProps> = (props) => {
                     )}
                 </form>
 
-                <div className="bg-card border border-border rounded-b-lg shadow-2xl mt-1 overflow-hidden">
+                <div className="bg-card border border-border rounded-b-lg shadow-2xl mt-1 overflow-hidden max-h-[60vh] overflow-y-auto">
                     {query.length < 2 ? (
-                        user && user.searchHistory.length > 0 && (
-                             <div className="p-4">
-                                <div className="flex justify-between items-center mb-2">
-                                    <h3 className="text-sm font-semibold text-muted-foreground flex items-center space-x-2">
-                                        <ClockIcon className="w-4 h-4" />
-                                        <span>Recent Searches</span>
+                        <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
+                           {user && user.searchHistory.length > 0 && (
+                                <div className="md:col-span-1">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h3 className="text-sm font-semibold text-muted-foreground flex items-center space-x-2">
+                                            <ClockIcon className="w-4 h-4" />
+                                            <span>Recent</span>
+                                        </h3>
+                                        <button onClick={clearSearchHistory} className="text-xs text-muted-foreground hover:text-foreground hover:underline">Clear</button>
+                                    </div>
+                                    <div className="flex flex-col items-start gap-2">
+                                        {user.searchHistory.map(term => (
+                                            <button key={term} onClick={() => handleRecentSearchClick(term)} className="px-3 py-1 bg-secondary text-secondary-foreground rounded-md text-sm hover:bg-muted transition-colors">
+                                                {term}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                             {topStories.length > 0 && (
+                                <div className={user && user.searchHistory.length > 0 ? "md:col-span-2" : "md:col-span-3"}>
+                                    <h3 className="text-sm font-semibold text-muted-foreground flex items-center space-x-2 mb-3">
+                                        <TrendingUpIcon className="w-4 h-4" />
+                                        <span>Trending Now</span>
                                     </h3>
-                                    <button onClick={clearSearchHistory} className="text-xs text-muted-foreground hover:text-foreground hover:underline">Clear</button>
+                                    <div className="space-y-2">
+                                        {topStories.slice(0, 4).map(article => (
+                                            <button key={article.id} onClick={() => handleSuggestionClick(article)} className="w-full text-left flex items-center p-2 rounded-lg hover:bg-secondary transition-colors">
+                                                <img src={article.urlToImage} alt={article.title} className="w-16 h-10 object-cover rounded-md mr-3 flex-shrink-0" />
+                                                <div>
+                                                    <p className="font-semibold text-sm line-clamp-2">{article.title}</p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {user.searchHistory.map(term => (
-                                        <button key={term} onClick={() => handleRecentSearchClick(term)} className="px-3 py-1.5 bg-secondary text-secondary-foreground rounded-full text-sm hover:bg-muted transition-colors">
-                                            {term}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )
+                            )}
+                        </div>
                     ) : (
                         <ul>
                             {isLoading && <li className="px-4 py-3 text-center text-muted-foreground">Searching...</li>}
@@ -130,10 +151,11 @@ const InteractiveSearchBar: React.FC<InteractiveSearchBarProps> = (props) => {
                             {suggestions.map(article => (
                                 <li key={article.id}>
                                     <button onClick={() => handleSuggestionClick(article)} className="w-full text-left flex items-center px-4 py-3 hover:bg-secondary transition-colors">
-                                        <NewspaperIcon className="w-5 h-5 mr-3 text-muted-foreground" />
-                                        <div>
-                                            <p className="font-semibold">{article.title}</p>
-                                            <p className="text-xs text-muted-foreground">{article.category}</p>
+                                        <img src={article.urlToImage} alt={article.title} className="w-20 h-16 object-cover rounded-lg mr-4 flex-shrink-0" />
+                                        <div className="overflow-hidden">
+                                            <span className="text-xs font-bold text-accent uppercase">{article.category}</span>
+                                            <p className="font-semibold text-card-foreground truncate">{article.title}</p>
+                                            <p className="text-sm text-muted-foreground truncate">{article.description}</p>
                                         </div>
                                     </button>
                                 </li>

@@ -30,6 +30,7 @@ export const NAV_LINKS: Omit<NavLink, 'id'>[] = [
         { id: '', name: "Music", href: "#" },
         { id: '', name: "Gaming", href: "#" },
     ]},
+    { name: "Video", href: "#" },
     { name: "Films & TV", href: "#" },
     { name: "Arts", href: "#" },
     { name: "History", href: "#" },
