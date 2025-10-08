@@ -5,6 +5,7 @@ import { PencilIcon } from '../icons/PencilIcon';
 import { TrashIcon } from '../icons/TrashIcon';
 import ImageGeneratorModal from './ImageGeneratorModal';
 import { SparklesIcon } from '../icons/SparklesIcon';
+import { api } from '../../services/apiService';
 
 export type ArticleFormData = Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>;
 

@@ -1,41 +1,20 @@
 import { NavLink } from '../types';
-import { NAV_LINKS as INITIAL_NAV_LINKS } from '../constants';
-
-const addIds = (links: Omit<NavLink, 'id'>[], parentId: string = 'nav'): NavLink[] => {
-    return links.map((link, index) => {
-        const id = `${parentId}-${link.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${index}`;
-        return {
-            ...link,
-            id,
-            sublinks: link.sublinks ? addIds(link.sublinks, id) : [],
-        };
-    });
-};
-
-const defaultNavLinks = addIds(INITIAL_NAV_LINKS);
-
-const loadFromStorage = <T>(key: string, defaultValue: T): T => {
-    try {
-        const storedValue = localStorage.getItem(key);
-        return storedValue ? JSON.parse(storedValue) : defaultValue;
-    } catch (error) {
-        console.error(`Error loading ${key} from storage`, error);
-        return defaultValue;
-    }
-};
-
-const saveToStorage = <T>(key: string, value: T): void => {
-    try {
-        localStorage.setItem(key, JSON.stringify(value));
-    } catch (error) {
-        console.error(`Error saving ${key} to storage`, error);
-    }
-};
+import { api } from './apiService';
 
 export const getNavLinks = async (): Promise<NavLink[]> => {
-    return Promise.resolve(loadFromStorage<NavLink[]>('nav-links', defaultNavLinks));
+    try {
+        return await api.get<NavLink[]>('/api/site/nav-links');
+    } catch (error) {
+        console.error("Failed to fetch nav links from API, returning empty array.", error);
+        return [];
+    }
 };
 
-export const saveNavLinks = (links: NavLink[]): void => {
-    saveToStorage('nav-links', links);
+export const saveNavLinks = async (links: NavLink[]): Promise<void> => {
+    try {
+        await api.put('/api/site/nav-links', links);
+    } catch (error) {
+        console.error("Failed to save nav links.", error);
+        throw new Error("Could not save navigation links.");
+    }
 };

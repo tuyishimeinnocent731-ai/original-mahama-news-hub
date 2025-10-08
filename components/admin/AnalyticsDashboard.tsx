@@ -68,8 +68,8 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ users, articles
                 <StatCard title="Total Article Views" value={totalViews.toLocaleString()} icon={<EyeIcon />} />
                 <StatCard title="Total Articles" value={articles.length.toString()} icon={<NewspaperIcon />} />
                 <StatCard title="Total Users" value={users.length.toString()} icon={<UserGroupIcon />} />
-                {/* FIX: Explicitly cast values to Number to prevent arithmetic operation type errors. */}
-                <StatCard title="Premium Users" value={(Number(subscriptions.premium || 0) + Number(subscriptions.pro || 0)).toString()} icon={<StarIcon />} />
+                {/* FIX: Use fallback `|| 0` to prevent arithmetic operations on undefined if a subscription plan has no users. */}
+                <StatCard title="Premium Users" value={((subscriptions.premium || 0) + (subscriptions.pro || 0)).toString()} icon={<StarIcon />} />
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

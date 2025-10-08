@@ -31,6 +31,7 @@ import { useAuth } from './hooks/useAuth';
 import { useSettings } from './hooks/useSettings';
 import { useToast } from './contexts/ToastContext';
 import { Article, Ad, SubscriptionPlan, PaymentRecord, NavLink } from './types';
+import { API_URL } from './services/apiService';
 
 type View = 'home' | 'article' | 'settings' | 'saved' | 'admin' | 'video' | 'my-ads' | 'sub-admin-management';
 
@@ -57,7 +58,6 @@ const App: React.FC = () => {
   const [currentArticle, setCurrentArticle] = useState<Article | null>(null);
   const [view, setView] = useState<View>('home');
   
-  // Modals and Overlays state
   const [isSearchOpen, setSearchOpen] = useState(false);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -68,31 +68,21 @@ const App: React.FC = () => {
   const [isLiveAssistantOpen, setLiveAssistantOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{plan: SubscriptionPlan, price: string} | null>(null);
 
-
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({
       siteName: 'Mahama News Hub',
       maintenanceMode: false
   });
 
   const auth = useAuth();
-  useSettings(); // Initialize settings hook
+  useSettings();
   const { addToast } = useToast();
 
-  const updateSiteSettings = (newSettings: Partial<SiteSettings>) => {
+  const updateSiteSettings = async (newSettings: Partial<SiteSettings>) => {
+      // In real app, this would be an API call
       const updatedSettings = { ...siteSettings, ...newSettings };
       setSiteSettings(updatedSettings);
-      localStorage.setItem('site-settings', JSON.stringify(updatedSettings));
       addToast('Site settings updated!', 'success');
   };
-
-  useEffect(() => {
-      try {
-        const storedSettings = localStorage.getItem('site-settings');
-        if (storedSettings) {
-            setSiteSettings(JSON.parse(storedSettings));
-        }
-      } catch(e) { console.error("Could not load site settings", e)}
-  }, []);
 
   const fetchArticles = useCallback(async (category: string) => {
     setIsLoading(true);
@@ -103,39 +93,46 @@ const App: React.FC = () => {
       setArticles(fetchedArticles);
       setCurrentCategory(category);
     } catch (error) {
-      console.error("Error fetching articles:", error);
+      addToast("Error fetching articles.", 'error');
     } finally {
       setIsLoading(false);
       window.scrollTo(0, 0);
     }
-  }, []);
+  }, [addToast]);
 
   const fetchAllContent = useCallback(async () => {
     setIsLoading(true);
     setIsTopStoriesLoading(true);
 
-    const [all, stories, ads, links] = await Promise.all([
-        newsService.getAllArticles(),
-        newsService.getTopStories(),
-        newsService.getAds(),
-        navigationService.getNavLinks()
-    ]);
+    try {
+        const [stories, ads, links, categoryArticles] = await Promise.all([
+            newsService.getTopStories(),
+            newsService.getAds(),
+            navigationService.getNavLinks(),
+            newsService.getArticles(currentCategory),
+        ]);
+        
+        setTopStories(stories);
+        setAllAds(ads);
+        setNavLinks(links);
+        setArticles(categoryArticles);
+
+    } catch(err) {
+        addToast("Failed to load initial content.", "error");
+    } finally {
+        setIsTopStoriesLoading(false);
+        setIsLoading(false);
+    }
     
-    setAllArticles(all);
-    setTopStories(stories);
-    setAllAds(ads);
-    setNavLinks(links);
-    setIsTopStoriesLoading(false);
-    
-    const currentCategoryArticles = await newsService.getArticles(currentCategory);
-    setArticles(currentCategoryArticles);
-    setIsLoading(false);
-  }, [currentCategory]);
+    // Fetch all articles in background for admin panel/search filters
+    newsService.getAllArticles().then(setAllArticles).catch(() => {});
+
+  }, [currentCategory, addToast]);
 
 
   useEffect(() => {
     fetchAllContent();
-  }, [fetchAllContent]);
+  }, [auth.isLoggedIn]); // Refetch content on login/logout
 
   const handleArticleClick = (article: Article) => {
     setCurrentArticle(article);
@@ -148,43 +145,36 @@ const App: React.FC = () => {
     setCurrentArticle(null);
   }
 
-    const handleSearch = (query: string, filters: { category?: string; author?: string } = {}) => {
+    const handleSearch = async (query: string, filters: { category?: string; author?: string } = {}) => {
         setSearchOpen(false);
+        setIsLoading(true);
+        setView('home');
+        setCurrentArticle(null);
+        try {
+            const fetchedArticles = await newsService.searchArticles(query, filters);
+            setArticles(fetchedArticles);
 
-        const executeSearch = async () => {
-            setIsLoading(true);
-            setView('home');
-            setCurrentArticle(null);
-            try {
-                const fetchedArticles = await newsService.searchArticles(query, filters);
-                setArticles(fetchedArticles);
+            let categoryTitle = `Search Results`;
+            if(query) categoryTitle += ` for "${query}"`;
+            
+            setCurrentCategory(categoryTitle);
 
-                const filterText = [filters.category, filters.author].filter(Boolean).join(', ');
-                let categoryTitle = `Search Results`;
-                if(query) categoryTitle += ` for "${query}"`;
-                if(filterText) categoryTitle += ` (${filterText})`;
-
-                setCurrentCategory(categoryTitle);
-                if(query) auth.addSearchHistory(query);
-
-            } catch (error) {
-                console.error("Error searching articles:", error);
-            } finally {
-                setIsLoading(false);
-                window.scrollTo(0, 0);
-            }
+        } catch (error) {
+            addToast("Error searching articles.", 'error');
+        } finally {
+            setIsLoading(false);
+            window.scrollTo(0, 0);
         }
-        executeSearch();
     };
   
-  const handleLoginSuccess = (email: string, password?: string) => {
-    if (auth.login(email, password)) {
+  const handleLoginSuccess = async (email: string, password?: string) => {
+    if (await auth.login(email, password)) {
       setAuthModalOpen(false);
     }
   };
   
-  const handleRegisterSuccess = (email: string, password?: string) => {
-    if (auth.register(email, password)) {
+  const handleRegisterSuccess = async (email: string, password?: string) => {
+    if (await auth.register(email, password)) {
       setAuthModalOpen(false);
     }
   };
@@ -210,69 +200,77 @@ const App: React.FC = () => {
     setPaymentModalOpen(true);
   };
 
-  const handleSubscriptionUpgrade = (method: PaymentRecord['method']) => {
+  const handleSubscriptionUpgrade = async (method: PaymentRecord['method']) => {
     if (selectedPlan) {
-        auth.upgradeSubscription(selectedPlan.plan, selectedPlan.price, method);
+        await auth.upgradeSubscription(selectedPlan.plan, selectedPlan.price, method);
         setPaymentModalOpen(false);
         setSelectedPlan(null);
     }
   };
 
-  // --- Admin Handlers ---
-  const handleAddArticle = (articleData: Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>) => {
-    newsService.addArticle(articleData);
+  const handleAddArticle = async (articleData: Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>) => {
+    await newsService.addArticle(articleData);
     fetchAllContent();
     addToast('Article uploaded successfully!', 'success');
   };
 
-  const handleUpdateArticle = (articleId: string, articleData: Partial<Omit<Article, 'id'>>) => {
-      newsService.updateArticle(articleId, articleData);
+  const handleUpdateArticle = async (articleId: string, articleData: Partial<Omit<Article, 'id'>>) => {
+      await newsService.updateArticle(articleId, articleData);
       fetchAllContent();
       addToast('Article updated successfully!', 'success');
   }
 
-  const handleDeleteArticle = (articleId: string) => {
-    newsService.deleteArticle(articleId);
+  const handleDeleteArticle = async (articleId: string) => {
+    await newsService.deleteArticle(articleId);
     fetchAllContent();
     addToast('Article deleted successfully.', 'success');
   };
 
-  const handleAddAd = (adData: Omit<Ad, 'id'>) => {
-    newsService.addAd(adData);
+  const handleAddAd = async (adData: Omit<Ad, 'id'>) => {
+    await newsService.addAd(adData);
     fetchAllContent();
     addToast('Advertisement created successfully!', 'success');
   };
   
-  const handleUpdateAd = (adId: string, adData: Partial<Omit<Ad, 'id'>>) => {
-      newsService.updateAd(adId, adData);
+  const handleUpdateAd = async (adId: string, adData: Partial<Omit<Ad, 'id'>>) => {
+      await newsService.updateAd(adId, adData);
       fetchAllContent();
       addToast('Advertisement updated successfully!', 'success');
   };
 
-  const handleDeleteAd = (adId: string) => {
-    newsService.deleteAd(adId);
+  const handleDeleteAd = async (adId: string) => {
+    await newsService.deleteAd(adId);
     fetchAllContent();
     addToast('Advertisement deleted successfully.', 'success');
   };
 
-  const handleAddUserAd = (adData: Omit<Ad, 'id'>) => {
-      auth.addUserAd(adData);
+  const handleAddUserAd = async (adData: Omit<Ad, 'id'>) => {
+      await auth.addUserAd(adData);
       addToast('Your advertisement has been created!', 'success');
   }
 
-  const handleDeleteUser = (email: string): boolean => {
+  const handleDeleteUser = async (email: string): Promise<boolean> => {
+      // This is now based on ID in useAuth hook for safety
       return auth.deleteUser(email);
   };
 
-  const handleUpdateNavLinks = (links: NavLink[]) => {
-      navigationService.saveNavLinks(links);
+  const handleUpdateNavLinks = async (links: NavLink[]) => {
+      await navigationService.saveNavLinks(links);
       setNavLinks(links);
       addToast('Navigation links updated successfully!', 'success');
   };
-
-  const inFeedAd = allAds.length > 0
-    ? allAds[Math.floor(Math.random() * allAds.length)]
-    : null;
+  
+  const inFeedAd = allAds.length > 0 ? allAds[Math.floor(Math.random() * allAds.length)] : null;
+  
+  // Prepend base URL to image paths
+  const processUrl = (url: string) => (url.startsWith('http') || url.startsWith('data:')) ? url : `${API_URL}${url}`;
+  
+  const articlesWithFullUrls = articles.map(a => ({...a, urlToImage: processUrl(a.urlToImage)}));
+  const allArticlesWithFullUrls = allArticles.map(a => ({...a, urlToImage: processUrl(a.urlToImage)}));
+  const topStoriesWithFullUrls = topStories.map(a => ({...a, urlToImage: processUrl(a.urlToImage)}));
+  const currentArticleWithFullUrl = currentArticle ? {...currentArticle, urlToImage: processUrl(currentArticle.urlToImage)} : null;
+  const allAdsWithFullUrls = allAds.map(ad => ({...ad, image: processUrl(ad.image)}));
+  const inFeedAdWithFullUrl = inFeedAd ? {...inFeedAd, image: processUrl(inFeedAd.image)} : null;
 
 
   const renderMainContent = () => {
@@ -290,29 +288,29 @@ const App: React.FC = () => {
 
     switch(view) {
       case 'article':
-        return currentArticle && (
+        return currentArticleWithFullUrl && (
           <ArticleView 
-            article={currentArticle} 
+            article={currentArticleWithFullUrl} 
             user={auth.user}
             onBack={handleBackToHome} 
             onArticleClick={handleArticleClick}
             onUpgradeClick={() => setPremiumModalOpen(true)}
             onLoginClick={() => setAuthModalOpen(true)}
-            customAds={allAds}
+            customAds={allAdsWithFullUrls}
             toggleSaveArticle={auth.toggleSaveArticle}
           />
         );
       case 'settings':
         return auth.user && <SettingsPage user={auth.user} {...auth} onUpgradeClick={() => setPremiumModalOpen(true)} onManageAdsClick={() => setView('my-ads')} />;
       case 'saved':
-        const savedArticles = allArticles.filter(a => auth.isArticleSaved(a.id));
+        const savedArticles = allArticlesWithFullUrls.filter(a => auth.isArticleSaved(a.id));
         return <SavedArticlesPage savedArticles={savedArticles} onArticleClick={handleArticleClick} />;
       case 'admin':
         return (auth.user?.role === 'admin' || auth.user?.role === 'sub-admin') && (
             <AdminPage 
                 user={auth.user}
-                allArticles={allArticles}
-                allAds={allAds}
+                allArticles={allArticlesWithFullUrls}
+                allAds={allAdsWithFullUrls}
                 navLinks={navLinks}
                 onAddArticle={handleAddArticle}
                 onUpdateArticle={handleUpdateArticle}
@@ -332,7 +330,7 @@ const App: React.FC = () => {
        case 'sub-admin-management':
           return (auth.user?.role === 'admin') && (
               <SubAdminPage
-                  allArticles={allArticles}
+                  allArticles={allArticlesWithFullUrls}
                   onAddArticle={handleAddArticle}
                   onUpdateArticle={handleUpdateArticle}
                   onDeleteArticle={handleDeleteArticle}
@@ -340,7 +338,7 @@ const App: React.FC = () => {
               />
           );
        case 'video':
-          return <VideoPage allArticles={allArticles} onArticleClick={handleArticleClick} />;
+          return <VideoPage allArticles={allArticlesWithFullUrls} onArticleClick={handleArticleClick} />;
        case 'my-ads':
           return <MyAdsPage user={auth.user} onBack={handleBackToHome} onCreateAd={handleAddUserAd} />
       case 'home':
@@ -353,12 +351,12 @@ const App: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {[...Array(6)].map((_, i) => <ArticleCardSkeleton key={i} />)}
                         </div>
-                    ) : articles.length > 0 ? (
+                    ) : articlesWithFullUrls.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {articles.map((article, index) => (
+                        {articlesWithFullUrls.map((article, index) => (
                             <React.Fragment key={article.id}>
                                 <ArticleCard article={article} onArticleClick={handleArticleClick} />
-                                {index === 1 && inFeedAd && <InFeedAd ad={inFeedAd} />}
+                                {index === 1 && inFeedAdWithFullUrl && <InFeedAd ad={inFeedAdWithFullUrl} />}
                             </React.Fragment>
                         ))}
                         </div>
@@ -375,10 +373,10 @@ const App: React.FC = () => {
                  <div className="md:col-span-4">
                     <Aside
                         title="Top Stories"
-                        articles={topStories}
+                        articles={topStoriesWithFullUrls}
                         onArticleClick={handleArticleClick}
                         isLoading={isTopStoriesLoading}
-                        customAds={allAds}
+                        customAds={allAdsWithFullUrls}
                     />
                 </div>
             </div>
@@ -389,7 +387,7 @@ const App: React.FC = () => {
   return (
     <div className="bg-background min-h-screen font-sans text-foreground">
         {siteSettings.maintenanceMode && <MaintenanceBanner />}
-        <TopStoriesBanner articles={topStories} onArticleClick={handleArticleClick} />
+        <TopStoriesBanner articles={topStoriesWithFullUrls} onArticleClick={handleArticleClick} />
         <Header 
             siteName={siteSettings.siteName}
             navLinks={navLinks}
@@ -419,10 +417,10 @@ const App: React.FC = () => {
             onClose={() => setSearchOpen(false)} 
             onSearch={handleSearch} 
             onArticleSelect={handleArticleClick}
-            topStories={topStories}
+            topStories={topStoriesWithFullUrls}
             user={auth.user} 
             clearSearchHistory={auth.clearSearchHistory}
-            allArticles={allArticles}
+            allArticles={allArticlesWithFullUrls}
         />
         <MobileMenu
             isOpen={isMobileMenuOpen}
@@ -469,7 +467,7 @@ const App: React.FC = () => {
         <TopStoriesDrawer 
             isOpen={isTopStoriesDrawerOpen}
             onClose={() => setTopStoriesDrawerOpen(false)}
-            articles={topStories}
+            articles={topStoriesWithFullUrls}
             onArticleClick={handleArticleClick}
         />
         <BackToTopButton />

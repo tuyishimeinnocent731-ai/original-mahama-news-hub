@@ -1,342 +1,165 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import { Ad, Article } from '../types';
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-// --- LocalStorage Persistence ---
-const loadFromStorage = <T>(key: string, defaultValue: T): T => {
-    try {
-        const storedValue = localStorage.getItem(key);
-        return storedValue ? JSON.parse(storedValue) : defaultValue;
-    } catch (error) {
-        console.error(`Error loading ${key} from storage`, error);
-        return defaultValue;
-    }
-};
-
-const saveToStorage = <T>(key: string, value: T): void => {
-    try {
-        localStorage.setItem(key, JSON.stringify(value));
-    } catch (error) {
-        console.error(`Error saving ${key} to storage`, error);
-    }
-};
-
-// --- Data Stores (loaded from localStorage) ---
-let articles: Article[] = loadFromStorage<Article[]>('articles', []);
-let ads: Ad[] = loadFromStorage<Ad[]>('ads', []);
-let offlineArticleIds: string[] = loadFromStorage<string[]>('offline-articles', []);
-
-const updateOfflineStatus = (article: Article): Article => ({
-    ...article,
-    isOffline: offlineArticleIds.includes(article.id)
-});
+import { api } from './apiService';
 
 // --- Article Service Functions ---
 export const getAllArticles = async (): Promise<Article[]> => {
-    const now = new Date();
-    // Filter out scheduled articles for non-admins and update offline status
-    const visibleArticles = articles
-        .filter(a => !a.scheduledFor || new Date(a.scheduledFor) <= now)
-        .map(updateOfflineStatus);
-    return Promise.resolve(visibleArticles);
+    return api.get<Article[]>('/api/articles/all'); // Assuming an admin-only endpoint
 };
 
-export const deleteArticle = (articleId: string): void => {
-    articles = articles.filter(article => article.id !== articleId);
-    saveToStorage('articles', articles);
+export const deleteArticle = async (articleId: string): Promise<void> => {
+    await api.delete(`/api/articles/${articleId}`);
 };
 
-export const updateArticle = (articleId: string, articleData: Partial<Omit<Article, 'id'>>): Article | null => {
-    const articleIndex = articles.findIndex(a => a.id === articleId);
-    if (articleIndex === -1) return null;
+export const updateArticle = async (articleId: string, articleData: Partial<Omit<Article, 'id'>>): Promise<Article> => {
+    const formData = new FormData();
+    Object.entries(articleData).forEach(([key, value]) => {
+        if (value) formData.append(key, value instanceof Blob ? value : String(value));
+    });
+    // Check if urlToImage is a new upload (base64)
+    if (articleData.urlToImage && articleData.urlToImage.startsWith('data:')) {
+         const fetchRes = await fetch(articleData.urlToImage);
+         const blob = await fetchRes.blob();
+         formData.set('image', blob);
+         formData.delete('urlToImage'); // remove base64 from body
+    }
     
-    const updatedArticle = { ...articles[articleIndex], ...articleData };
-    articles[articleIndex] = updatedArticle;
-    saveToStorage('articles', articles);
-    return updatedArticle;
+    return api.putFormData<Article>(`/api/articles/${articleId}`, formData);
 };
 
 export const getArticles = async (category: string = 'World'): Promise<Article[]> => {
-    console.log(`Fetching articles for category: ${category}`);
-    const now = new Date();
-    const lowerCategory = category.toLowerCase();
-
-    const filtered = articles.filter(article => {
-        // Exclude future-scheduled articles
-        if (article.scheduledFor && new Date(article.scheduledFor) > now) {
-            return false;
-        }
-
-        if (lowerCategory === 'world') return ['world', 'europe', 'asia', 'americas', 'africa'].includes(article.category.toLowerCase());
-        if (lowerCategory === 'business') return ['business', 'markets', 'companies', 'economy'].includes(article.category.toLowerCase());
-        if (lowerCategory === 'technology') return ['technology', 'ai', 'gadgets', 'innovation'].includes(article.category.toLowerCase());
-        if (lowerCategory === 'entertainment') return ['entertainment', 'movies', 'music', 'gaming'].includes(article.category.toLowerCase());
-        return article.category.toLowerCase() === lowerCategory;
-    }).map(updateOfflineStatus);
-    
-    return Promise.resolve(filtered);
+    return api.get<Article[]>(`/api/articles?category=${encodeURIComponent(category)}`);
 };
 
 export const getTopStories = async (): Promise<Article[]> => {
-    const now = new Date();
-    const sorted = [...articles]
-        .filter(a => !a.scheduledFor || new Date(a.scheduledFor) <= now)
-        .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-    return Promise.resolve(sorted.slice(0, 4).map(updateOfflineStatus));
+    return api.get<Article[]>('/api/articles/top-stories');
 }
 
-export const addArticle = (articleData: Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>): Article => {
-    const newArticle: Article = {
-        ...articleData,
-        id: `article-${Date.now()}`,
-        publishedAt: new Date().toISOString(),
-        source: { name: 'Mahama News Hub' },
-        url: '#',
-    };
-    articles.unshift(newArticle);
-    saveToStorage('articles', articles);
-    return newArticle;
-};
-
-export const getFeaturedArticleForCategory = (category: string): Article | null => {
-    const now = new Date();
-    return articles
-        .filter(a => !a.scheduledFor || new Date(a.scheduledFor) <= now)
-        .find(a => a.category.toLowerCase() === category.toLowerCase()) 
-        || articles[0] 
-        || null;
-};
-
-export const getArticlesForMegaMenu = (category: string, count: number = 2): Article[] => {
-    const now = new Date();
-    const availableArticles = articles.filter(a => !a.scheduledFor || new Date(a.scheduledFor) <= now);
-    const lowerCategory = category.toLowerCase();
-    
-    const allCategoryArticles = availableArticles.filter(article => article.category.toLowerCase() === lowerCategory);
-    if (allCategoryArticles.length > 0) return allCategoryArticles.slice(0, count);
-
-    const subCategoryArticles = availableArticles.filter(article => {
-        if (lowerCategory === 'world') return ['africa', 'americas', 'asia', 'europe'].includes(article.category.toLowerCase());
-        if (lowerCategory === 'business') return ['markets', 'companies'].includes(article.category.toLowerCase());
-        if (lowerCategory === 'technology') return ['ai', 'gadgets', 'innovation'].includes(article.category.toLowerCase());
-        if (lowerCategory === 'entertainment') return ['movies', 'music', 'gaming'].includes(article.category.toLowerCase());
-        return false;
+export const addArticle = async (articleData: Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>): Promise<Article> => {
+    const formData = new FormData();
+    Object.entries(articleData).forEach(([key, value]) => {
+         if (value) formData.append(key, value as string);
     });
+     // Handle base64 image upload
+    if (articleData.urlToImage && articleData.urlToImage.startsWith('data:')) {
+        const fetchRes = await fetch(articleData.urlToImage);
+        const blob = await fetchRes.blob();
+        formData.set('image', blob);
+        formData.delete('urlToImage');
+    }
 
-    return subCategoryArticles.slice(0, count);
+    return api.postFormData<Article>('/api/articles', formData);
 };
 
 export const searchArticles = async (query: string, filters: { category?: string; author?: string } = {}): Promise<Article[]> => {
-    console.log(`Searching for: ${query} with filters:`, filters);
-    const lowercasedQuery = query.toLowerCase();
-    const now = new Date();
-    
-    return Promise.resolve(articles.filter(a => {
-        if (a.scheduledFor && new Date(a.scheduledFor) > now) {
-            return false;
-        }
-
-        const queryMatch = !query || (
-            a.title.toLowerCase().includes(lowercasedQuery) || 
-            a.description.toLowerCase().includes(lowercasedQuery) ||
-            a.body.toLowerCase().includes(lowercasedQuery)
-        );
-
-        const categoryMatch = !filters.category || a.category.toLowerCase() === filters.category.toLowerCase();
-        const authorMatch = !filters.author || a.author.toLowerCase() === filters.author.toLowerCase();
-
-        return queryMatch && categoryMatch && authorMatch;
-    }).map(updateOfflineStatus));
+    const params = new URLSearchParams();
+    if (query) params.append('query', query);
+    if (filters.category) params.append('category', filters.category);
+    if (filters.author) params.append('author', filters.author);
+    return api.get<Article[]>(`/api/articles/search?${params.toString()}`);
 };
 
 export const getSearchSuggestions = async (query: string): Promise<Article[]> => {
     if (!query) return [];
-    const lowercasedQuery = query.toLowerCase();
-    const now = new Date();
-    return Promise.resolve(
-        articles.filter(a => 
-            (!a.scheduledFor || new Date(a.scheduledFor) <= now) &&
-            a.title.toLowerCase().includes(lowercasedQuery)
-        ).slice(0, 5).map(updateOfflineStatus)
-    );
+    return api.get<Article[]>(`/api/articles/suggestions?query=${encodeURIComponent(query)}`);
 };
 
 export const getRelatedArticles = async (currentArticleId: string, category: string): Promise<Article[]> => {
-    const now = new Date();
-    const availableArticles = articles.filter(a => !a.scheduledFor || new Date(a.scheduledFor) <= now);
-    
-    const relatedInCategory = availableArticles.filter(a =>
-        a.id !== currentArticleId && a.category.toLowerCase() === category.toLowerCase()
-    );
-
-    if (relatedInCategory.length >= 4) {
-        return Promise.resolve(relatedInCategory.slice(0, 4).map(updateOfflineStatus));
-    }
-
-    const otherArticles = availableArticles.filter(a => {
-        if (a.id === currentArticleId) return false;
-        if (relatedInCategory.some(r => r.id === a.id)) return false;
-        return true;
-    });
-    
-    const combined = [...relatedInCategory, ...otherArticles];
-    return Promise.resolve(combined.slice(0, 4).map(updateOfflineStatus));
-};
-
-// --- Offline Functionality ---
-export const saveArticleForOffline = (articleId: string) => {
-    if (!offlineArticleIds.includes(articleId)) {
-        offlineArticleIds.push(articleId);
-        saveToStorage('offline-articles', offlineArticleIds);
-    }
-};
-
-export const removeArticleFromOffline = (articleId: string) => {
-    offlineArticleIds = offlineArticleIds.filter(id => id !== articleId);
-    saveToStorage('offline-articles', offlineArticleIds);
+    return api.get<Article[]>(`/api/articles/${currentArticleId}/related`);
 };
 
 
 // --- Ad Service Functions ---
 export const getAds = async (): Promise<Ad[]> => {
-    return Promise.resolve(ads);
+    return api.get<Ad[]>('/api/ads');
 };
 
-export const addAd = (adData: Omit<Ad, 'id'>): Ad => {
-    const newAd: Ad = {
-        ...adData,
-        id: `ad-${Date.now()}`,
-    };
-    ads.unshift(newAd);
-    saveToStorage('ads', ads);
-    return newAd;
-};
-
-export const deleteAd = (adId: string): void => {
-    ads = ads.filter(ad => ad.id !== adId);
-    saveToStorage('ads', ads);
-};
-
-export const updateAd = (adId: string, adData: Partial<Omit<Ad, 'id'>>): Ad | null => {
-    const adIndex = ads.findIndex(a => a.id === adId);
-    if (adIndex === -1) return null;
-    
-    const updatedAd = { ...ads[adIndex], ...adData };
-    ads[adIndex] = updatedAd;
-    saveToStorage('ads', ads);
-    return updatedAd;
-};
-
-// --- Gemini API Functions ---
-export const summarizeArticle = async (body: string, title: string): Promise<string> => {
-    const prompt = `Summarize the following news article in 3-4 concise sentences, focusing on the main points.
-    Title: ${title}
-    Article: ${body}`;
-    
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-        });
-        return response.text;
-    } catch (error) {
-        console.error("Error summarizing article:", error);
-        return "Sorry, we couldn't generate a summary at this time.";
+export const addAd = async (adData: Omit<Ad, 'id'>): Promise<Ad> => {
+    const formData = new FormData();
+    Object.entries(adData).forEach(([key, value]) => {
+         if (value) formData.append(key, value as string);
+    });
+    if (adData.image && adData.image.startsWith('data:')) {
+        const fetchRes = await fetch(adData.image);
+        const blob = await fetchRes.blob();
+        formData.set('image', blob);
     }
+    return api.postFormData<Ad>('/api/ads', formData);
+};
+
+export const deleteAd = async (adId: string): Promise<void> => {
+    await api.delete(`/api/ads/${adId}`);
+};
+
+export const updateAd = async (adId: string, adData: Partial<Omit<Ad, 'id'>>): Promise<Ad> => {
+    const formData = new FormData();
+    Object.entries(adData).forEach(([key, value]) => {
+         if (value) formData.append(key, value as string);
+    });
+    if (adData.image && adData.image.startsWith('data:')) {
+        const fetchRes = await fetch(adData.image);
+        const blob = await fetchRes.blob();
+        formData.set('image', blob);
+    }
+    return api.putFormData<Ad>(`/api/ads/${adId}`, formData);
+};
+
+// --- Gemini API Functions (via backend) ---
+export const summarizeArticle = async (body: string, title: string): Promise<string> => {
+    const response = await api.post<{ summary: string }>('/api/ai/summarize', { body, title });
+    return response.summary;
 };
 
 export const getKeyPoints = async (body: string): Promise<string[]> => {
-    const prompt = `Extract the 3 to 5 most important key points from the following article. Present them as a list. Do not use markdown like '*' or '-'. Each point should be a separate line.
-    Article: ${body}`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-        });
-        const text = response.text;
-        return text.split('\n').map(p => p.trim()).filter(p => p.length > 0);
-    } catch (error) {
-        console.error("Error getting key points:", error);
-        return ["Could not extract key points at this time."];
-    }
+    const response = await api.post<{ keyPoints: string[] }>('/api/ai/key-points', { body });
+    return response.keyPoints;
 };
 
 export const askAboutArticle = async (body: string, title: string, question: string): Promise<string> => {
-    const prompt = `Based on the following article, please answer the user's question. If the answer is not in the article, say that you cannot find the information in the provided text.
-    
-    Title: ${title}
-    Article: ${body}
-    
-    Question: ${question}`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-        });
-        return response.text;
-    } catch (error) {
-        console.error("Error answering question about article:", error);
-        return "Sorry, I encountered an error while trying to answer your question.";
-    }
+    const response = await api.post<{ answer: string }>('/api/ai/ask', { body, title, question });
+    return response.answer;
 };
 
 export const generateImageForArticle = async (prompt: string): Promise<string> => {
-    try {
-        const response = await ai.models.generateImages({
-            model: 'imagen-4.0-generate-001',
-            prompt: `News article illustration, professional digital art style. ${prompt}`,
-            config: {
-                numberOfImages: 1,
-                outputMimeType: 'image/jpeg',
-                aspectRatio: '16:9',
-            },
-        });
-
-        if (response.generatedImages && response.generatedImages.length > 0) {
-            const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
-            return `data:image/jpeg;base64,${base64ImageBytes}`;
-        }
-        throw new Error("No image was generated.");
-    } catch (error) {
-        console.error("Error generating image:", error);
-        throw new Error("Sorry, we couldn't generate an image at this time.");
-    }
+    const response = await api.post<{ imageUrl: string }>('/api/ai/generate-image', { prompt });
+    return response.imageUrl;
 };
 
 export const translateArticle = async (body: string, title: string, targetLanguage: string): Promise<{ title: string, body: string }> => {
-    const prompt = `Translate the following news article into ${targetLanguage}. Return a JSON object with two keys: "translatedTitle" and "translatedBody". Do not add any other text or markdown formatting outside of the JSON object.
-    Original Title: ${title}
-    Original Body: ${body}`;
-    
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        translatedTitle: { type: Type.STRING },
-                        translatedBody: { type: Type.STRING }
-                    },
-                    required: ["translatedTitle", "translatedBody"]
-                }
-            }
-        });
-        
-        const jsonText = response.text.trim();
-        const parsed = JSON.parse(jsonText);
-        
-        return {
-            title: parsed.translatedTitle,
-            body: parsed.translatedBody,
-        };
-    } catch (error) {
-        console.error(`Error translating article to ${targetLanguage}:`, error);
-        return { title: "Translation Failed", body: "We couldn't translate this article at the moment. Please try again later." };
+    return await api.post<{ title: string, body: string }>('/api/ai/translate', { body, title, targetLanguage });
+};
+
+
+// --- Offline functions are deprecated as we move to a client-server model ---
+export const saveArticleForOffline = (articleId: string) => {
+    console.warn("Offline functionality should be re-implemented using Service Workers and Cache API.");
+};
+
+export const removeArticleFromOffline = (articleId: string) => {
+     console.warn("Offline functionality should be re-implemented using Service Workers and Cache API.");
+};
+
+// FIX: Added missing function 'getArticlesForMegaMenu' with a mock implementation
+// as it is called synchronously in the Header component.
+export const getArticlesForMegaMenu = (category: string, count: number): Article[] => {
+    // This is a mock implementation because the original component calls it synchronously.
+    // In a real application, this data should be fetched asynchronously and managed in component state.
+    const mockArticles: Article[] = [
+        { id: 'mega-world-1', title: 'Global Summit Addresses Climate Change Urgently', urlToImage: '/uploads/placeholder.jpg', category: 'World', author: 'Jane Doe', publishedAt: new Date().toISOString(), body: '', description: '', source: { name: 'World News' }, url: '#' },
+        { id: 'mega-world-2', title: 'New Alliances Form in European Politics', urlToImage: '/uploads/placeholder.jpg', category: 'Europe', author: 'John Smith', publishedAt: new Date().toISOString(), body: '', description: '', source: { name: 'World News' }, url: '#' },
+        { id: 'mega-business-1', title: 'Tech Stocks Surge on AI Breakthroughs', urlToImage: '/uploads/placeholder.jpg', category: 'Business', author: 'Emily Jones', publishedAt: new Date().toISOString(), body: '', description: '', source: { name: 'BizTech' }, url: '#' },
+        { id: 'mega-business-2', title: 'Market Volatility Expected to Continue', urlToImage: '/uploads/placeholder.jpg', category: 'Markets', author: 'Chris Brown', publishedAt: new Date().toISOString(), body: '', description: '', source: { name: 'Finance Times' }, url: '#' },
+        { id: 'mega-tech-1', title: 'Quantum Computing Reaches New Milestone', urlToImage: '/uploads/placeholder.jpg', category: 'Technology', author: 'Alan Turing', publishedAt: new Date().toISOString(), body: '', description: '', source: { name: 'Tech Sphere' }, url: '#' },
+        { id: 'mega-tech-2', title: 'The Rise of Smart Home Gadgets', urlToImage: '/uploads/placeholder.jpg', category: 'Gadgets', author: 'Ada Lovelace', publishedAt: new Date().toISOString(), body: '', description: '', source: { name: 'Tech Sphere' }, url: '#' },
+    ];
+
+    const articlesForCategory = mockArticles.filter(
+        article => article.category.toLowerCase() === category.toLowerCase()
+    );
+
+    if (articlesForCategory.length > 0) {
+        return articlesForCategory.slice(0, count);
     }
+    
+    // Fallback if category has no specific articles, return some generic ones.
+    return mockArticles.slice(0, count);
 };

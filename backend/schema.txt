@@ -1,0 +1,96 @@
+CREATE DATABASE IF NOT EXISTS mahama_news_hub;
+
+USE mahama_news_hub;
+
+CREATE TABLE IF NOT EXISTS users (
+    id VARCHAR(255) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    avatar VARCHAR(255),
+    bio TEXT,
+    socials JSON,
+    subscription ENUM('free', 'standard', 'premium', 'pro') DEFAULT 'free',
+    two_factor_enabled BOOLEAN DEFAULT FALSE,
+    role ENUM('admin', 'sub-admin', 'user') DEFAULT 'user',
+    settings JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS articles (
+    id VARCHAR(255) PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    body LONGTEXT,
+    author VARCHAR(255),
+    published_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    source_name VARCHAR(255),
+    url_to_image TEXT,
+    category VARCHAR(255),
+    gallery_images JSON,
+    scheduled_for TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS ads (
+    id VARCHAR(255) PRIMARY KEY,
+    headline VARCHAR(255) NOT NULL,
+    image TEXT,
+    url TEXT,
+    user_id VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS saved_articles (
+    user_id VARCHAR(255) NOT NULL,
+    article_id VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, article_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS search_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL,
+    query VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS nav_links (
+    id VARCHAR(255) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    href VARCHAR(255) NOT NULL,
+    parent_id VARCHAR(255),
+    sort_order INT DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS payment_history (
+    id VARCHAR(255) PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL,
+    date TIMESTAMP NOT NULL,
+    plan ENUM('free', 'standard', 'premium', 'pro') NOT NULL,
+    amount VARCHAR(255) NOT NULL,
+    method VARCHAR(255) NOT NULL,
+    status ENUM('succeeded', 'pending', 'failed') NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Insert Default Admin User
+-- Password is '2025'
+INSERT INTO users (id, name, email, password_hash, avatar, bio, socials, subscription, two_factor_enabled, role, settings) 
+VALUES (
+    'admin-001', 
+    'Admin Reponse', 
+    'reponsekdz0@gmail.com', 
+    '$2a$10$f/e.aN1kSg8g.b.1kQ2a..rA8Q2C/1z3c.E4o.Xg.j4a.QY4k.b.K', 
+    'https://i.pravatar.cc/150?u=adminreponse', 
+    'Site Administrator.', 
+    '{"twitter": "reponse", "linkedin": "reponse"}', 
+    'pro', 
+    true, 
+    'admin',
+    '{"theme": {"name": "default", "accent": "yellow"}, "font": {"family": "Inter", "weight": "400"}, "layout": {"homepage": "grid", "density": "comfortable", "infiniteScroll": false}, "ui": {"cardStyle": "standard", "borderRadius": "rounded"}, "reading": {"autoPlayAudio": false, "defaultSummaryView": false, "lineHeight": 1.6, "letterSpacing": 0, "justifyText": false}, "fontSize": "small", "highContrast": false, "reduceMotion": false, "dyslexiaFont": false, "notifications": {"breakingNews": true, "weeklyDigest": true, "specialOffers": false}, "preferredCategories": [], "dataSharing": true, "adPersonalization": true}'
+) ON DUPLICATE KEY UPDATE name = name; -- Do nothing if admin already exists

@@ -47,7 +47,7 @@ const ArticleView: React.FC<ArticleViewProps> = (props) => {
 
   const { isPlaying, isSupported, speak, stop, pause } = useTTS();
   const { settings } = useSettings();
-  const isSaved = user?.savedArticles.includes(article.id) ?? false;
+  const isSaved = user?.savedArticles?.includes(article.id) ?? false;
   const isPremium = user?.subscription === 'premium' || user?.subscription === 'pro';
   
   const inArticleAd = customAds && customAds.length > 0
@@ -79,14 +79,14 @@ const ArticleView: React.FC<ArticleViewProps> = (props) => {
     if (user && isPremium && settings.reading.defaultSummaryView) {
         handleGenerateSummary();
     }
-  }, [article, stop]);
+  }, [article.id]);
 
     useEffect(() => {
     if (user && isPremium && settings.reading.autoPlayAudio && isSupported && article) {
       const textToSpeak = summary || `${article.title}. ${article.description}. ${article.body}`;
       speak(textToSpeak);
     }
-  }, [summary, article, user, isPremium, settings.reading.autoPlayAudio, isSupported, speak]);
+  }, [summary, article.id, user, isPremium, settings.reading.autoPlayAudio, isSupported]);
 
 
   const handleGenerateSummary = async () => {
@@ -195,7 +195,7 @@ const ArticleView: React.FC<ArticleViewProps> = (props) => {
                            <span>{isTranslating ? 'Translating...' : 'Translate'}</span>
                         </button>
                         {isPremium && (
-                             <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-popover text-popover-foreground rounded-md shadow-lg border border-border py-1">
+                             <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-popover text-popover-foreground rounded-md shadow-lg border border-border py-1 z-10">
                                 <button onClick={() => handleTranslate('Spanish')} className="block w-full text-left px-4 py-2 text-sm hover:bg-secondary">Spanish</button>
                                 <button onClick={() => handleTranslate('French')} className="block w-full text-left px-4 py-2 text-sm hover:bg-secondary">French</button>
                                 <button onClick={() => handleTranslate('German')} className="block w-full text-left px-4 py-2 text-sm hover:bg-secondary">German</button>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Modal from '../Modal';
-import * as newsService from '../../services/newsService';
+import { api } from '../../services/apiService';
 import { SparklesIcon } from '../icons/SparklesIcon';
 import LoadingSpinner from '../LoadingSpinner';
 
@@ -23,8 +23,8 @@ const ImageGeneratorModal: React.FC<ImageGeneratorModalProps> = ({ isOpen, onClo
         setError('');
         setGeneratedImage(null);
         try {
-            const image = await newsService.generateImageForArticle(prompt);
-            setGeneratedImage(image);
+            const response = await api.post<{ imageUrl: string }>('/api/ai/generate-image', { prompt });
+            setGeneratedImage(response.imageUrl);
         } catch (err: any) {
             setError(err.message || 'An unexpected error occurred.');
         } finally {
