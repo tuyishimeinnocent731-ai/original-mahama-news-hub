@@ -122,7 +122,21 @@ export const THEMES = [
             light: createPalette({ bg: '245 245 245', fg: '23 23 23', card: '255 255 255', cardFg: '23 23 23', popover: '255 255 255', popoverFg: '23 23 23', primary: '23 23 23', primaryFg: '245 245 245', secondary: '229 229 229', secondaryFg: '23 23 23', muted: '229 229 229', mutedFg: '82 82 82', border: '212 212 212' }),
             dark: createPalette({ bg: '23 23 23', fg: '245 245 245', card: '38 38 38', cardFg: '245 245 245', popover: '38 38 38', popoverFg: '245 245 245', primary: '245 245 245', primaryFg: '23 23 23', secondary: '64 64 64', secondaryFg: '245 245 245', muted: '64 64 64', mutedFg: '163 163 163', border: '82 82 82' }),
         }
-    }
+    },
+    {
+        id: 'cosmic', name: 'Cosmic',
+        palette: {
+            dark: createPalette({ bg: '16 16 24', fg: '224 224 255', card: '24 24 36', cardFg: '224 224 255', popover: '20 20 28', popoverFg: '224 224 255', primary: '128 90 213', primaryFg: '240 240 255', secondary: '36 36 54', secondaryFg: '224 224 255', muted: '36 36 54', mutedFg: '160 160 200', border: '48 48 72' }),
+            light: createPalette({ bg: '240 240 255', fg: '16 16 24', card: '255 255 255', cardFg: '16 16 24', popover: '255 255 255', popoverFg: '16 16 24', primary: '128 90 213', primaryFg: '255 255 255', secondary: '224 224 255', secondaryFg: '16 16 24', muted: '224 224 255', mutedFg: '96 96 128', border: '208 208 240' }),
+        }
+    },
+    {
+        id: 'sunset', name: 'Sunset',
+        palette: {
+            dark: createPalette({ bg: '28 10 3', fg: '255 229 204', card: '56 21 7', cardFg: '255 229 204', popover: '40 15 5', popoverFg: '255 229 204', primary: '255 94 38', primaryFg: '28 10 3', secondary: '84 31 10', secondaryFg: '255 229 204', muted: '84 31 10', mutedFg: '255 163 102', border: '112 42 14' }),
+            light: createPalette({ bg: '255 244 239', fg: '84 31 10', card: '255 255 255', cardFg: '84 31 10', popover: '255 255 255', popoverFg: '84 31 10', primary: '255 94 38', primaryFg: '255 255 255', secondary: '255 229 216', secondaryFg: '84 31 10', muted: '255 229 216', mutedFg: '168 62 21', border: '255 204 188' }),
+        }
+    },
 ];
 
 export const ACCENT_COLORS = [

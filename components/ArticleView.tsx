@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Article, User, Ad } from '../types';
 import * as newsService from '../services/newsService';
 import { useTTS } from '../hooks/useTTS';
+import { useSettings } from '../hooks/useSettings';
 import { BookmarkIcon } from './icons/BookmarkIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { ArrowLeftIcon } from './icons/ArrowLeftIcon';
+import { TranslateIcon } from './icons/TranslateIcon';
 import SocialShareBar from './SocialShareBar';
 import AIAssistantPanel from './AIAssistantPanel';
 import Aside from './Aside';
@@ -22,10 +24,13 @@ interface ArticleViewProps {
   onArticleClick: (article: Article) => void;
   onUpgradeClick: () => void;
   onLoginClick: () => void;
+  toggleSaveArticle: (article: Article) => void;
   customAds?: Ad[];
 }
 
-const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onArticleClick, onUpgradeClick, onLoginClick, customAds = [] }) => {
+const ArticleView: React.FC<ArticleViewProps> = (props) => {
+  const { article, user, onBack, onArticleClick, onUpgradeClick, onLoginClick, toggleSaveArticle, customAds = [] } = props;
+  
   const [summary, setSummary] = useState<string>('');
   const [keyPoints, setKeyPoints] = useState<string[]>([]);
   const [isSummaryLoading, setSummaryLoading] = useState(false);
@@ -34,15 +39,12 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onArti
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
   const [isRelatedLoading, setIsRelatedLoading] = useState(true);
 
+  const [translatedContent, setTranslatedContent] = useState<{ title: string; body: string; language: string } | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+
   const { isPlaying, isSupported, speak, stop, pause } = useTTS();
-  
-  const [isSaved, setIsSaved] = useState(false); // Local state for immediate feedback
-  // A real app would use a context or props for this. This is a simplified example.
-  useEffect(() => {
-    setIsSaved(user?.savedArticles.includes(article.id) ?? false);
-  }, [user, article.id]);
-
-
+  const { settings } = useSettings();
+  const isSaved = user?.savedArticles.includes(article.id) ?? false;
   const isPremium = user?.subscription === 'premium' || user?.subscription === 'pro';
   
   const inArticleAd = customAds && customAds.length > 0
@@ -50,12 +52,13 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onArti
     : null;
 
   useEffect(() => {
-    // Reset states when the article changes
     setSummary('');
     setKeyPoints([]);
     stop();
     setAIAssistantOpen(false);
     setIsRelatedLoading(true);
+    setTranslatedContent(null);
+    setIsTranslating(false);
 
     const fetchRelated = async () => {
       try {
@@ -68,7 +71,19 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onArti
       }
     };
     fetchRelated();
+
+    if (user && isPremium && settings.reading.defaultSummaryView) {
+        handleGenerateSummary();
+    }
   }, [article, stop]);
+
+    useEffect(() => {
+    if (user && isPremium && settings.reading.autoPlayAudio && isSupported && article) {
+      const textToSpeak = summary || `${article.title}. ${article.description}. ${article.body}`;
+      speak(textToSpeak);
+    }
+  }, [summary, article, user, isPremium, settings.reading.autoPlayAudio, isSupported, speak]);
+
 
   const handleGenerateSummary = async () => {
     if (!isPremium) return;
@@ -104,14 +119,27 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onArti
           onLoginClick();
           return;
       }
-      // newsService.toggleSaveArticle(article) would be ideal
-      setIsSaved(!isSaved); 
+      toggleSaveArticle(article);
   }
 
+  const handleTranslate = async (language: string) => {
+    if (!isPremium) {
+        onUpgradeClick();
+        return;
+    }
+    setIsTranslating(true);
+    const result = await newsService.translateArticle(article.body, article.title, language);
+    setTranslatedContent({ ...result, language });
+    setIsTranslating(false);
+  };
+
+  const currentTitle = translatedContent?.title || article.title;
+  const currentBody = translatedContent?.body || article.body;
+
   return (
-    <div className="animate-fade-in">
+    <div className={settings.reading.justifyText ? 'text-justify' : ''}>
       <ReadingProgressBar />
-      <button onClick={onBack} className="flex items-center space-x-2 text-yellow-500 hover:underline mb-6 font-semibold">
+      <button onClick={onBack} className="flex items-center space-x-2 text-accent hover:underline mb-6 font-semibold">
         <ArrowLeftIcon className="h-5 w-5" />
         <span>Back to News</span>
       </button>
@@ -120,9 +148,9 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onArti
         <main className="md:col-span-8">
           <article>
             <header className="mb-6">
-              <span className="text-sm font-semibold text-yellow-600 dark:text-yellow-400 uppercase">{article.category}</span>
-              <h1 className="text-3xl md:text-4xl font-bold my-2 text-gray-900 dark:text-white leading-tight">{article.title}</h1>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between text-sm text-gray-500 dark:text-gray-400 mt-3">
+              <span className="text-sm font-semibold text-accent uppercase">{article.category}</span>
+              <h1 className="text-3xl md:text-4xl font-bold my-2 leading-tight">{currentTitle}</h1>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between text-sm text-muted-foreground mt-3">
                 <span>By {article.author} | {article.source.name}</span>
                 <span>{new Date(article.publishedAt).toLocaleString()}</span>
               </div>
@@ -138,24 +166,44 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onArti
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 space-y-4 sm:space-y-0">
                 <div className="flex items-center space-x-4">
-                    <button onClick={handleToggleSave} className={`flex items-center space-x-2 transition-colors ${isSaved ? 'text-yellow-500' : 'text-gray-600 dark:text-gray-300 hover:text-yellow-500'}`}>
+                    <button onClick={handleToggleSave} className={`flex items-center space-x-2 transition-colors ${isSaved ? 'text-accent' : 'text-muted-foreground hover:text-accent'}`}>
                         <BookmarkIcon className="h-5 w-5" />
                         <span>{isSaved ? 'Saved' : 'Save Article'}</span>
                     </button>
                     {isSupported && (
-                        <button onClick={handlePlayAudio} className={`flex items-center space-x-2 ${isPremium ? 'text-gray-600 dark:text-gray-300 hover:text-yellow-500' : 'text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}>
+                        <button onClick={handlePlayAudio} className={`flex items-center space-x-2 ${isPremium ? 'text-muted-foreground hover:text-accent' : 'text-muted-foreground/50 cursor-not-allowed'}`}>
                            {isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
                            <span>{isPlaying ? 'Pause' : 'Listen'}</span>
                         </button>
                     )}
+                     <div className="relative group">
+                        <button disabled={isTranslating} className={`flex items-center space-x-2 ${isPremium ? 'text-muted-foreground hover:text-accent' : 'text-muted-foreground/50 cursor-not-allowed'}`}>
+                           <TranslateIcon />
+                           <span>{isTranslating ? 'Translating...' : 'Translate'}</span>
+                        </button>
+                        {isPremium && (
+                             <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-popover text-popover-foreground rounded-md shadow-lg border border-border py-1">
+                                <button onClick={() => handleTranslate('Spanish')} className="block w-full text-left px-4 py-2 text-sm hover:bg-secondary">Spanish</button>
+                                <button onClick={() => handleTranslate('French')} className="block w-full text-left px-4 py-2 text-sm hover:bg-secondary">French</button>
+                                <button onClick={() => handleTranslate('German')} className="block w-full text-left px-4 py-2 text-sm hover:bg-secondary">German</button>
+                             </div>
+                        )}
+                    </div>
                 </div>
                  <SocialShareBar url={article.url} title={article.title} />
             </div>
+            
+            {translatedContent && (
+                <div className="mb-6 p-3 bg-secondary rounded-md text-sm">
+                    Translated to {translatedContent.language} by Gemini. 
+                    <button onClick={() => setTranslatedContent(null)} className="ml-2 font-semibold text-accent hover:underline">Show Original</button>
+                </div>
+            )}
 
             <div className="prose dark:prose-invert max-w-none text-lg">
                 <p className="lead font-semibold">{article.description}</p>
                  <ImageGallery images={article.galleryImages} />
-                {article.body.split('\n').map((paragraph, index) => (
+                {currentBody.split('\n').map((paragraph, index) => (
                     <p key={index}>{paragraph}</p>
                 ))}
             </div>
@@ -165,7 +213,7 @@ const ArticleView: React.FC<ArticleViewProps> = ({ article, user, onBack, onArti
         <div className="md:col-span-4">
             <div className="sticky top-24 space-y-8">
                 <div>
-                     <button onClick={() => setAIAssistantOpen(true)} className="w-full flex items-center justify-center p-3 mb-6 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors shadow-lg">
+                     <button onClick={() => setAIAssistantOpen(true)} className="w-full flex items-center justify-center p-3 mb-6 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 font-semibold transition-colors shadow-lg">
                         <SparklesIcon className="h-6 w-6 mr-2" />
                         AI Companion
                     </button>

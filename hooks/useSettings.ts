@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Settings, ThemeSettings, FontSettings, LayoutSettings, UiSettings } from '../types';
+import { Settings, ThemeSettings, FontSettings, LayoutSettings, UiSettings, ReadingSettings } from '../types';
 import { ALL_CATEGORIES, THEMES, ACCENT_COLORS, FONTS, FONT_WEIGHTS } from '../constants';
 
 const defaultSettings: Settings = {
@@ -7,6 +7,7 @@ const defaultSettings: Settings = {
     font: { family: 'Inter', weight: '400' },
     layout: { homepage: 'grid', density: 'comfortable', infiniteScroll: false },
     ui: { cardStyle: 'standard', borderRadius: 'rounded' },
+    reading: { autoPlayAudio: false, defaultSummaryView: false, lineHeight: 1.6, letterSpacing: 0, justifyText: false },
     fontSize: 'small',
     highContrast: false,
     reduceMotion: false,
@@ -89,7 +90,6 @@ const applySettingsToDOM = async (settings: Settings) => {
     }
     
     Object.entries(palette).forEach(([key, value]) => {
-        // FIX: Cast the value to a string to match the setProperty method signature.
         root.style.setProperty(`--color-${key}`, String(value));
     });
 
@@ -116,6 +116,12 @@ const applySettingsToDOM = async (settings: Settings) => {
     }
     root.style.setProperty('--font-body', `"${font.family}"`);
     root.style.setProperty('--font-weight-body', fontWeight);
+
+    // --- READING EXPERIENCE ---
+    root.style.setProperty('--line-height', String(settings.reading.lineHeight));
+    root.style.setProperty('--letter-spacing', `${settings.reading.letterSpacing}px`);
+    document.body.classList.toggle('text-justify', settings.reading.justifyText);
+
 
     // --- UI SETTINGS (Card style, border radius) ---
     const radii = { sharp: '0rem', rounded: '0.5rem', pill: '9999px' };
@@ -152,6 +158,7 @@ export const useSettings = () => {
                         font: { ...defaultSettings.font, ...(parsed.font || {}) },
                         layout: { ...defaultSettings.layout, ...(parsed.layout || {}) },
                         ui: { ...defaultSettings.ui, ...(parsed.ui || {}) },
+                        reading: { ...defaultSettings.reading, ...(parsed.reading || {}) },
                         notifications: { ...defaultSettings.notifications, ...(parsed.notifications || {}) },
                     };
                 }
@@ -166,16 +173,19 @@ export const useSettings = () => {
         loadAndApplySettings();
     }, []);
 
-    const updateSettings = useCallback((newSettings: Partial<Settings> | ((s: Settings) => Settings)) => {
+    const updateSettings = useCallback((newSettings: Partial<Settings> | ((s: Settings) => Partial<Settings>)) => {
         setSettings(prevSettings => {
-            const updated = typeof newSettings === 'function' ? newSettings(prevSettings) : {
+            const updates = typeof newSettings === 'function' ? newSettings(prevSettings) : newSettings;
+            
+            const updated: Settings = {
                 ...prevSettings,
-                ...newSettings,
-                theme: { ...prevSettings.theme, ...(newSettings.theme || {}) },
-                font: { ...prevSettings.font, ...(newSettings.font || {}) },
-                layout: { ...prevSettings.layout, ...(newSettings.layout || {}) },
-                ui: { ...prevSettings.ui, ...(newSettings.ui || {}) },
-                notifications: { ...prevSettings.notifications, ...(newSettings.notifications || {}) },
+                ...updates,
+                theme: { ...prevSettings.theme, ...(updates.theme || {}) },
+                font: { ...prevSettings.font, ...(updates.font || {}) },
+                layout: { ...prevSettings.layout, ...(updates.layout || {}) },
+                ui: { ...prevSettings.ui, ...(updates.ui || {}) },
+                reading: { ...prevSettings.reading, ...(updates.reading || {}) },
+                notifications: { ...prevSettings.notifications, ...(updates.notifications || {}) },
             };
 
             try {

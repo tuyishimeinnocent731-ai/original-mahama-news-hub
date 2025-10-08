@@ -13,6 +13,7 @@ export interface Article {
     category: string;
     galleryImages?: { src: string; alt: string }[];
     isOffline?: boolean;
+    scheduledFor?: string; // ISO date string for future publishing
 }
 
 export type SubscriptionPlan = 'free' | 'standard' | 'premium' | 'pro';
@@ -40,6 +41,11 @@ export interface User {
     email: string;
     avatar: string;
     bio?: string;
+    socials?: {
+        twitter?: string;
+        linkedin?: string;
+        github?: string;
+    };
     subscription: SubscriptionPlan;
     savedArticles: string[]; // array of article IDs
     searchHistory: string[];
@@ -59,7 +65,7 @@ export interface NavLink {
     sublinks?: NavLink[];
 }
 
-export type ThemeName = 'default' | 'midnight' | 'latte' | 'forest' | 'oceanic' | 'rose' | 'slate' | 'sandstone' | 'nebula' | 'cyberpunk' | 'solaris' | 'monochrome' | 'image';
+export type ThemeName = 'default' | 'midnight' | 'latte' | 'forest' | 'oceanic' | 'rose' | 'slate' | 'sandstone' | 'nebula' | 'cyberpunk' | 'solaris' | 'monochrome' | 'cosmic' | 'sunset' | 'image';
 export type AccentColor = 'yellow' | 'blue' | 'green' | 'red' | 'purple' | 'pink' | 'indigo' | 'teal';
 export type FontWeight = '300' | '400' | '500' | '600' | '700';
 export type CardStyle = 'standard' | 'elevated' | 'outline';
@@ -87,11 +93,20 @@ export interface UiSettings {
     borderRadius: BorderRadius;
 }
 
+export interface ReadingSettings {
+    autoPlayAudio: boolean;
+    defaultSummaryView: boolean;
+    lineHeight: number;
+    letterSpacing: number;
+    justifyText: boolean;
+}
+
 export interface Settings {
     theme: ThemeSettings;
     font: FontSettings;
     layout: LayoutSettings;
     ui: UiSettings;
+    reading: ReadingSettings;
     fontSize: 'small' | 'medium' | 'large';
     highContrast: boolean;
     reduceMotion: boolean;

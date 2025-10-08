@@ -1,7 +1,6 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { Ad, Article } from '../types';
 
-// FIX: Initializing Gemini AI Client according to guidelines
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // --- LocalStorage Persistence ---
@@ -26,11 +25,21 @@ const saveToStorage = <T>(key: string, value: T): void => {
 // --- Data Stores (loaded from localStorage) ---
 let articles: Article[] = loadFromStorage<Article[]>('articles', []);
 let ads: Ad[] = loadFromStorage<Ad[]>('ads', []);
+let offlineArticleIds: string[] = loadFromStorage<string[]>('offline-articles', []);
 
+const updateOfflineStatus = (article: Article): Article => ({
+    ...article,
+    isOffline: offlineArticleIds.includes(article.id)
+});
 
 // --- Article Service Functions ---
 export const getAllArticles = async (): Promise<Article[]> => {
-    return Promise.resolve(articles);
+    const now = new Date();
+    // Filter out scheduled articles for non-admins and update offline status
+    const visibleArticles = articles
+        .filter(a => !a.scheduledFor || new Date(a.scheduledFor) <= now)
+        .map(updateOfflineStatus);
+    return Promise.resolve(visibleArticles);
 };
 
 export const deleteArticle = (articleId: string): void => {
@@ -50,20 +59,31 @@ export const updateArticle = (articleId: string, articleData: Partial<Omit<Artic
 
 export const getArticles = async (category: string = 'World'): Promise<Article[]> => {
     console.log(`Fetching articles for category: ${category}`);
+    const now = new Date();
     const lowerCategory = category.toLowerCase();
+
     const filtered = articles.filter(article => {
+        // Exclude future-scheduled articles
+        if (article.scheduledFor && new Date(article.scheduledFor) > now) {
+            return false;
+        }
+
         if (lowerCategory === 'world') return ['world', 'europe', 'asia', 'americas', 'africa'].includes(article.category.toLowerCase());
         if (lowerCategory === 'business') return ['business', 'markets', 'companies', 'economy'].includes(article.category.toLowerCase());
         if (lowerCategory === 'technology') return ['technology', 'ai', 'gadgets', 'innovation'].includes(article.category.toLowerCase());
         if (lowerCategory === 'entertainment') return ['entertainment', 'movies', 'music', 'gaming'].includes(article.category.toLowerCase());
         return article.category.toLowerCase() === lowerCategory;
-    });
+    }).map(updateOfflineStatus);
+    
     return Promise.resolve(filtered);
 };
 
 export const getTopStories = async (): Promise<Article[]> => {
-    const sorted = [...articles].sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-    return Promise.resolve(sorted.slice(0, 4));
+    const now = new Date();
+    const sorted = [...articles]
+        .filter(a => !a.scheduledFor || new Date(a.scheduledFor) <= now)
+        .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+    return Promise.resolve(sorted.slice(0, 4).map(updateOfflineStatus));
 }
 
 export const addArticle = (articleData: Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>): Article => {
@@ -80,16 +100,23 @@ export const addArticle = (articleData: Omit<Article, 'id' | 'publishedAt' | 'so
 };
 
 export const getFeaturedArticleForCategory = (category: string): Article | null => {
-    return articles.find(a => a.category.toLowerCase() === category.toLowerCase()) || articles[0] || null;
+    const now = new Date();
+    return articles
+        .filter(a => !a.scheduledFor || new Date(a.scheduledFor) <= now)
+        .find(a => a.category.toLowerCase() === category.toLowerCase()) 
+        || articles[0] 
+        || null;
 };
 
 export const getArticlesForMegaMenu = (category: string, count: number = 2): Article[] => {
+    const now = new Date();
+    const availableArticles = articles.filter(a => !a.scheduledFor || new Date(a.scheduledFor) <= now);
     const lowerCategory = category.toLowerCase();
-    const allCategoryArticles = articles.filter(article => article.category.toLowerCase() === lowerCategory);
+    
+    const allCategoryArticles = availableArticles.filter(article => article.category.toLowerCase() === lowerCategory);
     if (allCategoryArticles.length > 0) return allCategoryArticles.slice(0, count);
 
-    // Fallback for parent categories
-    const subCategoryArticles = articles.filter(article => {
+    const subCategoryArticles = availableArticles.filter(article => {
         if (lowerCategory === 'world') return ['africa', 'americas', 'asia', 'europe'].includes(article.category.toLowerCase());
         if (lowerCategory === 'business') return ['markets', 'companies'].includes(article.category.toLowerCase());
         if (lowerCategory === 'technology') return ['ai', 'gadgets', 'innovation'].includes(article.category.toLowerCase());
@@ -104,32 +131,62 @@ export const searchArticles = async (query: string): Promise<Article[]> => {
     console.log(`Searching for: ${query}`);
     if (!query) return [];
     const lowercasedQuery = query.toLowerCase();
+    const now = new Date();
     return Promise.resolve(articles.filter(a => 
-        a.title.toLowerCase().includes(lowercasedQuery) || 
+        (!a.scheduledFor || new Date(a.scheduledFor) <= now) &&
+        (a.title.toLowerCase().includes(lowercasedQuery) || 
         a.description.toLowerCase().includes(lowercasedQuery) ||
-        a.body.toLowerCase().includes(lowercasedQuery)
-    ));
+        a.body.toLowerCase().includes(lowercasedQuery))
+    ).map(updateOfflineStatus));
+};
+
+export const getSearchSuggestions = async (query: string): Promise<Article[]> => {
+    if (!query) return [];
+    const lowercasedQuery = query.toLowerCase();
+    const now = new Date();
+    return Promise.resolve(
+        articles.filter(a => 
+            (!a.scheduledFor || new Date(a.scheduledFor) <= now) &&
+            a.title.toLowerCase().includes(lowercasedQuery)
+        ).slice(0, 5).map(updateOfflineStatus)
+    );
 };
 
 export const getRelatedArticles = async (currentArticleId: string, category: string): Promise<Article[]> => {
-    const relatedInCategory = articles.filter(a =>
+    const now = new Date();
+    const availableArticles = articles.filter(a => !a.scheduledFor || new Date(a.scheduledFor) <= now);
+    
+    const relatedInCategory = availableArticles.filter(a =>
         a.id !== currentArticleId && a.category.toLowerCase() === category.toLowerCase()
     );
 
     if (relatedInCategory.length >= 4) {
-        return Promise.resolve(relatedInCategory.slice(0, 4));
+        return Promise.resolve(relatedInCategory.slice(0, 4).map(updateOfflineStatus));
     }
 
-    // Get other articles to fill up, excluding current article and ones already selected.
-    const otherArticles = articles.filter(a => {
+    const otherArticles = availableArticles.filter(a => {
         if (a.id === currentArticleId) return false;
         if (relatedInCategory.some(r => r.id === a.id)) return false;
         return true;
     });
     
     const combined = [...relatedInCategory, ...otherArticles];
-    return Promise.resolve(combined.slice(0, 4));
+    return Promise.resolve(combined.slice(0, 4).map(updateOfflineStatus));
 };
+
+// --- Offline Functionality ---
+export const saveArticleForOffline = (articleId: string) => {
+    if (!offlineArticleIds.includes(articleId)) {
+        offlineArticleIds.push(articleId);
+        saveToStorage('offline-articles', offlineArticleIds);
+    }
+};
+
+export const removeArticleFromOffline = (articleId: string) => {
+    offlineArticleIds = offlineArticleIds.filter(id => id !== articleId);
+    saveToStorage('offline-articles', offlineArticleIds);
+};
+
 
 // --- Ad Service Functions ---
 export const getAds = async (): Promise<Ad[]> => {
@@ -172,7 +229,6 @@ export const summarizeArticle = async (body: string, title: string): Promise<str
             model: 'gemini-2.5-flash',
             contents: prompt,
         });
-        // FIX: Using .text property to get the response text, as per guidelines
         return response.text;
     } catch (error) {
         console.error("Error summarizing article:", error);
@@ -186,15 +242,48 @@ export const getKeyPoints = async (body: string): Promise<string[]> => {
 
     try {
         const response = await ai.models.generateContent({
-            // FIX: Corrected typo in model name
             model: 'gemini-2.5-flash',
             contents: prompt,
         });
-        // FIX: Using .text property to get the response text and parsing it, as per guidelines
         const text = response.text;
         return text.split('\n').map(p => p.trim()).filter(p => p.length > 0);
     } catch (error) {
         console.error("Error getting key points:", error);
         return ["Could not extract key points at this time."];
+    }
+};
+
+export const translateArticle = async (body: string, title: string, targetLanguage: string): Promise<{ title: string, body: string }> => {
+    const prompt = `Translate the following news article into ${targetLanguage}. Return a JSON object with two keys: "translatedTitle" and "translatedBody". Do not add any other text or markdown formatting outside of the JSON object.
+    Original Title: ${title}
+    Original Body: ${body}`;
+    
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        translatedTitle: { type: Type.STRING },
+                        translatedBody: { type: Type.STRING }
+                    },
+                    required: ["translatedTitle", "translatedBody"]
+                }
+            }
+        });
+        
+        const jsonText = response.text.trim();
+        const parsed = JSON.parse(jsonText);
+        
+        return {
+            title: parsed.translatedTitle,
+            body: parsed.translatedBody,
+        };
+    } catch (error) {
+        console.error(`Error translating article to ${targetLanguage}:`, error);
+        return { title: "Translation Failed", body: "We couldn't translate this article at the moment. Please try again later." };
     }
 };

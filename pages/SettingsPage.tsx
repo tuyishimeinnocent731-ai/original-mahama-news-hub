@@ -10,7 +10,8 @@ import SecuritySettings from '../components/settings/SecuritySettings';
 import IntegrationsSettings from '../components/settings/IntegrationsSettings';
 import BillingSettings from '../components/settings/BillingSettings';
 import LayoutSettings from '../components/settings/LayoutSettings';
-import DataSyncSettings from '../components/settings/DataSyncSettings'; // New
+import DataSyncSettings from '../components/settings/DataSyncSettings';
+import ReadingSettings from '../components/settings/ReadingSettings';
 import { useToast } from '../contexts/ToastContext';
 
 import { UserCircleIcon } from '../components/icons/UserCircleIcon';
@@ -23,16 +24,17 @@ import { LinkIcon } from '../components/icons/LinkIcon';
 import { LockIcon } from '../components/icons/LockIcon';
 import { BillingIcon } from '../components/icons/BillingIcon';
 import { LayoutIcon } from '../components/icons/LayoutIcon';
-import { DataSyncIcon } from '../components/icons/DataSyncIcon'; // New
+import { DataSyncIcon } from '../components/icons/DataSyncIcon';
+import { BookOpenIcon } from '../components/icons/BookOpenIcon';
 
 
-type SettingsTab = 'profile' | 'appearance' | 'layout' | 'accessibility' | 'security' | 'notifications' | 'subscription' | 'privacy' | 'integrations' | 'billing' | 'dataSync';
+type SettingsTab = 'profile' | 'appearance' | 'layout' | 'reading' | 'accessibility' | 'security' | 'notifications' | 'subscription' | 'privacy' | 'integrations' | 'billing' | 'dataSync';
 
 interface SettingsPageProps {
     user: User;
     onUpgradeClick: () => void;
     clearSearchHistory: () => void;
-    updateProfile: (profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar'>>) => void;
+    updateProfile: (profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar' | 'socials'>>) => void;
     toggleTwoFactor: (enabled: boolean) => void;
     validatePassword: (password: string) => Promise<boolean>;
     changePassword: (newPassword: string) => Promise<boolean>;
@@ -47,6 +49,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
         { id: 'profile', label: 'Profile & Account', icon: <UserCircleIcon className="w-5 h-5" /> },
         { id: 'appearance', label: 'Appearance', icon: <PaletteIcon className="w-5 h-5" /> },
         { id: 'layout', label: 'Layout & Content', icon: <LayoutIcon className="w-5 h-5" /> },
+        { id: 'reading', label: 'Reading Experience', icon: <BookOpenIcon className="w-5 h-5" /> },
         { id: 'accessibility', label: 'Accessibility', icon: <AccessibilityIcon className="w-5 h-5" /> },
         { id: 'security', label: 'Sign In & Security', icon: <ShieldCheckIcon className="w-5 h-5" /> },
         { id: 'notifications', label: 'Notifications', icon: <BellIcon className="w-5 h-5" /> },
@@ -65,6 +68,8 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
                 return <AppearanceSettings />;
             case 'layout':
                 return <LayoutSettings />;
+            case 'reading':
+                return <ReadingSettings user={props.user} onUpgradeClick={props.onUpgradeClick} />;
             case 'accessibility':
                 return <AccessibilitySettings user={props.user} onUpgradeClick={props.onUpgradeClick} />;
             case 'security':

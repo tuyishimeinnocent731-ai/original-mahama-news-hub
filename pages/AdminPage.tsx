@@ -21,7 +21,6 @@ import NavigationManager from '../components/admin/NavigationManager';
 
 type ArticleFormData = Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>;
 type AdFormData = Omit<Ad, 'id'>;
-// FIX: Define a specific type for user form data to avoid using 'any'
 type UserFormData = Pick<User, 'name' | 'email' | 'role' | 'subscription'>;
 interface SiteSettings {
   siteName: string;
@@ -29,7 +28,6 @@ interface SiteSettings {
 }
 
 const ContentPieChart: React.FC<{ articles: Article[] }> = ({ articles }) => {
-    // FIX: Typing the accumulator in reduce is a more robust way to ensure type safety.
     const categoryCounts = articles.reduce((acc: Record<string, number>, article) => {
         acc[article.category] = (acc[article.category] || 0) + 1;
         return acc;
@@ -39,7 +37,8 @@ const ContentPieChart: React.FC<{ articles: Article[] }> = ({ articles }) => {
     if (total === 0) return <div className="text-center text-sm text-muted-foreground">No articles to display.</div>;
 
     const colors = ['#FBBF24', '#60A5FA', '#34D399', '#F87171', '#A78BFA', '#F472B6'];
-    const segments = Object.entries(categoryCounts);
+    // FIX: Explicitly type `segments` to ensure `count` is treated as a number in arithmetic operations below.
+    const segments: [string, number][] = Object.entries(categoryCounts);
     let accumulatedOffset = 0;
 
     return (
@@ -60,7 +59,6 @@ const ContentPieChart: React.FC<{ articles: Article[] }> = ({ articles }) => {
                             stroke={colors[index % colors.length]}
                             strokeWidth="50"
                             strokeDasharray={`${percentage} ${100 - percentage}`}
-                            // FIX: Using unary negation `-offset` instead of binary `0 - offset` to resolve the TypeScript error.
                             strokeDashoffset={-offset}
                             className="chart-pie-segment"
                         />
@@ -146,7 +144,7 @@ interface ArticleManagerProps {
 
 const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateArticle, allArticles, onDeleteArticle }) => {
     const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
-    const initialFormState: ArticleFormData = { title: '', description: '', body: '', author: '', category: 'World', urlToImage: '' };
+    const initialFormState: ArticleFormData = { title: '', description: '', body: '', author: '', category: 'World', urlToImage: '', scheduledFor: '' };
     const [formData, setFormData] = useState<ArticleFormData>(initialFormState);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -161,6 +159,7 @@ const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateA
                     author: articleToEdit.author,
                     category: articleToEdit.category,
                     urlToImage: articleToEdit.urlToImage,
+                    scheduledFor: articleToEdit.scheduledFor ? articleToEdit.scheduledFor.slice(0, 16) : ''
                 });
                 setImagePreview(articleToEdit.urlToImage);
             }
@@ -190,10 +189,15 @@ const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateA
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        const dataToSubmit = {
+            ...formData,
+            scheduledFor: formData.scheduledFor ? new Date(formData.scheduledFor).toISOString() : undefined
+        };
+
         if (editingArticleId) {
-            onUpdateArticle(editingArticleId, formData);
+            onUpdateArticle(editingArticleId, dataToSubmit);
         } else {
-            onAddArticle(formData);
+            onAddArticle(dataToSubmit);
         }
         setEditingArticleId(null);
         const fileInput = document.getElementById('image-upload') as HTMLInputElement;
@@ -221,6 +225,10 @@ const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateA
                      <div>
                         <label htmlFor="image-upload" className="block text-sm font-medium mb-1">Featured Image</label>
                         <input type="file" name="image" id="image-upload" onChange={handleImageChange} accept="image/*" className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent/20 file:text-accent hover:file:bg-accent/30" />
+                    </div>
+                     <div>
+                        <label htmlFor="scheduledFor" className="block text-sm font-medium mb-1">Schedule For (Optional)</label>
+                        <input type="datetime-local" name="scheduledFor" id="scheduledFor" value={formData.scheduledFor} onChange={handleChange} className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent" />
                     </div>
                     {imagePreview && <img src={imagePreview} alt="Preview" className="mt-2 rounded-md max-h-48" />}
                     <div className="text-right flex justify-end gap-3">

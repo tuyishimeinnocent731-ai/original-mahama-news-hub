@@ -3,7 +3,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import ArticleCard from './components/ArticleCard';
 import LoadingSpinner from './components/LoadingSpinner';
-import SearchOverlay from './components/SearchOverlay';
+import InteractiveSearchBar from './components/InteractiveSearchBar';
 import MobileMenu from './components/MobileMenu';
 import CommandPalette from './components/CommandPalette';
 import BackToTopButton from './components/BackToTopButton';
@@ -265,6 +265,7 @@ const App: React.FC = () => {
             onUpgradeClick={() => setPremiumModalOpen(true)}
             onLoginClick={() => setAuthModalOpen(true)}
             customAds={allAds}
+            toggleSaveArticle={auth.toggleSaveArticle}
           />
         );
       case 'settings':
@@ -286,7 +287,6 @@ const App: React.FC = () => {
                 onUpdateAd={handleUpdateAd}
                 onDeleteAd={handleDeleteAd}
                 getAllUsers={auth.getAllUsers}
-                // FIX: Pass the correct props `addUser` and `updateUser` instead of `updateUserRole`
                 addUser={auth.addUser}
                 updateUser={auth.updateUser}
                 deleteUser={handleDeleteUser}
@@ -364,7 +364,14 @@ const App: React.FC = () => {
             {renderMainContent()}
         </main>
         <Footer navLinks={navLinks} />
-        <SearchOverlay isOpen={isSearchOpen} onClose={() => setSearchOpen(false)} onSearch={handleSearch} user={auth.user} clearSearchHistory={auth.clearSearchHistory} />
+        <InteractiveSearchBar 
+            isOpen={isSearchOpen} 
+            onClose={() => setSearchOpen(false)} 
+            onSearch={handleSearch} 
+            onArticleSelect={handleArticleClick}
+            user={auth.user} 
+            clearSearchHistory={auth.clearSearchHistory} 
+        />
         <MobileMenu
             isOpen={isMobileMenuOpen}
             onClose={() => setMobileMenuOpen(false)}

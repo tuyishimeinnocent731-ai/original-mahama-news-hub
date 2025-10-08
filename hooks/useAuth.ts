@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { User, Article, Ad, IntegrationId, SubscriptionPlan, PaymentRecord } from '../types';
 import { useToast } from '../contexts/ToastContext';
+import * as newsService from '../services/newsService';
 
 // --- LocalStorage Persistence for Users ---
 const loadUsersFromStorage = (): { [email: string]: User } => {
@@ -19,6 +20,7 @@ const loadUsersFromStorage = (): { [email: string]: User } => {
         email: 'reponsekdz0@gmail.com',
         avatar: `https://i.pravatar.cc/150?u=adminreponse`,
         bio: 'Site Administrator.',
+        socials: { twitter: 'reponse', linkedin: 'reponse' },
         subscription: 'pro',
         savedArticles: [],
         searchHistory: [],
@@ -154,7 +156,14 @@ export const useAuth = () => {
             ? user.savedArticles.filter(id => id !== article.id)
             : [...user.savedArticles, article.id];
         
-        addToast(isSaved ? 'Article removed from saved.' : 'Article saved!', 'success');
+        if (!isSaved) {
+            newsService.saveArticleForOffline(article.id);
+            addToast('Article saved and available offline!', 'success');
+        } else {
+            newsService.removeArticleFromOffline(article.id);
+            addToast('Article removed from saved.', 'info');
+        }
+
         persistUserUpdate({ ...user, savedArticles: newSavedArticles });
     }, [user, addToast]);
     
@@ -169,7 +178,7 @@ export const useAuth = () => {
         persistUserUpdate({ ...user, searchHistory: [] });
     }, [user]);
 
-    const updateProfile = useCallback((profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar'>>) => {
+    const updateProfile = useCallback((profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar' | 'socials'>>) => {
         if (!user) return;
         persistUserUpdate({ ...user, ...profileData });
     }, [user]);
@@ -246,38 +255,35 @@ export const useAuth = () => {
             addToast('You do not have permission for this action.', 'error');
             return false;
         }
-        // FIX: Explicitly type the parameter in the 'find' callback to resolve type inference issues.
         const userToUpdate = Object.values(users).find((u: User) => u.id === userId);
         if (!userToUpdate) {
             addToast('User not found.', 'error');
             return false;
         }
-        // FIX: Add explicit type guard to resolve multiple 'unknown' type errors.
-        if (userData && typeof userData === 'object') {
-            if (userData.email && userData.email !== userToUpdate.email && users[userData.email]) {
-                addToast('An account with the new email already exists.', 'error');
+        // FIX: The type `Partial<User>` already ensures `userData` is an object.
+        // The previous check `if (userData && typeof userData === 'object')` was confusing the type inference,
+        // leading to 'unknown' type errors for properties of `userData` and for the spread operator.
+        if (userData.email && userData.email !== userToUpdate.email && users[userData.email]) {
+            addToast('An account with the new email already exists.', 'error');
+            return false;
+        }
+        
+        if (userData.role && userData.role !== userToUpdate.role) {
+            if (userToUpdate.email === 'reponsekdz0@gmail.com' && userData.role !== 'admin') {
+                addToast('Cannot change the primary admin role.', 'warning');
                 return false;
             }
-            
-            // Business logic for role changes
-            if (userData.role && userData.role !== userToUpdate.role) {
-                if (userToUpdate.email === 'reponsekdz0@gmail.com' && userData.role !== 'admin') {
-                    addToast('Cannot change the primary admin role.', 'warning');
+            if (userData.role === 'sub-admin' && (userData.subscription || userToUpdate.subscription) !== 'pro') {
+                    addToast('Cannot promote to Sub-Admin. User must have a Pro subscription.', 'error');
                     return false;
-                }
-                if (userData.role === 'sub-admin' && (userData.subscription || userToUpdate.subscription) !== 'pro') {
-                     addToast('Cannot promote to Sub-Admin. User must have a Pro subscription.', 'error');
-                     return false;
-                }
             }
-
-            const oldEmail = userToUpdate.email;
-            const updatedUser = { ...userToUpdate, ...userData };
-            persistUserUpdate(updatedUser, oldEmail);
-            addToast(`User ${updatedUser.name} updated successfully.`, 'success');
-            return true;
         }
-        return false;
+
+        const oldEmail = userToUpdate.email;
+        const updatedUser = { ...userToUpdate, ...userData };
+        persistUserUpdate(updatedUser, oldEmail);
+        addToast(`User ${updatedUser.name} updated successfully.`, 'success');
+        return true;
     }, [user, users, addToast]);
 
     const updateUserRole = useCallback((emailToModify: string, newRole: 'admin' | 'sub-admin' | 'user') => {
