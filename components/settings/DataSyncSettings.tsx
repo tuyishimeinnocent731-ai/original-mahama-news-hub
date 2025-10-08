@@ -4,6 +4,7 @@ import React, { useRef } from 'react';
 import { User } from '../../types';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../contexts/ToastContext';
+import * as userService from '../../services/userService';
 
 interface DataSyncSettingsProps {
     user: User;
@@ -14,27 +15,23 @@ const DataSyncSettings: React.FC<DataSyncSettingsProps> = ({ user }) => {
     const { addToast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleExport = () => {
-        const dataToExport = {
-            profile: {
-                name: user.name,
-                bio: user.bio,
-            },
-            settings: settings,
-            savedArticles: user.savedArticles,
-        };
-
-        const dataStr = JSON.stringify(dataToExport, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `mahamanews_backup_${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        addToast('Data exported successfully!', 'success');
+    const handleExport = async () => {
+        try {
+            const dataToExport = await userService.exportUserData();
+            const dataStr = JSON.stringify(dataToExport, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `mahamanews_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            addToast('Data exported successfully!', 'success');
+        } catch (error: any) {
+            addToast(error.message || 'Failed to export data.', 'error');
+        }
     };
 
     const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,10 +50,12 @@ const DataSyncSettings: React.FC<DataSyncSettingsProps> = ({ user }) => {
                     updateSettings(prev => ({...prev, ...importedData.settings}));
                 }
                 
+                // Note: Importing profile and saved articles would require dedicated API endpoints
+                // and is currently just logged to console.
                 console.log("Imported Profile Data:", importedData.profile);
                 console.log("Imported Saved Articles:", importedData.savedArticles);
 
-                addToast('Data imported successfully!', 'success');
+                addToast('Settings imported successfully!', 'success');
             } catch (error) {
                 console.error("Error importing data:", error);
                 addToast('Failed to import data. The file may be corrupt.', 'error');

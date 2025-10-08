@@ -156,7 +156,7 @@ const App: React.FC = () => {
     setCurrentArticle(null);
   }
 
-    const handleSearch = async (query: string, filters: { category?: string; author?: string } = {}, page: number = 1) => {
+    const handleSearch = async (query: string, filters: { category?: string; author?: string; tag?: string } = {}, page: number = 1) => {
         setSearchOpen(false);
         setIsLoading(true);
         setView('home');
@@ -169,6 +169,7 @@ const App: React.FC = () => {
 
             let categoryTitle = `Search Results`;
             if(query) categoryTitle += ` for "${query}"`;
+            if(filters.tag) categoryTitle = `Articles tagged with "${filters.tag}"`;
             
             setCurrentCategory(categoryTitle);
 
@@ -272,7 +273,15 @@ const App: React.FC = () => {
   }
 
   const handleDeleteUser = async (userId: string): Promise<boolean> => {
-      return auth.deleteUser(userId);
+      // FIX: Wrap the call in a try/catch block to handle the promise and return a boolean as expected by the caller.
+      try {
+          await auth.deleteUser(userId);
+          addToast('User deleted successfully.', 'success');
+          return true;
+      } catch (error: any) {
+          addToast(error.message || 'Failed to delete user.', 'error');
+          return false;
+      }
   };
 
   const handleUpdateNavLinks = async (links: NavLink[]) => {
@@ -318,10 +327,11 @@ const App: React.FC = () => {
             onLoginClick={() => setAuthModalOpen(true)}
             customAds={allAdsWithFullUrls}
             toggleSaveArticle={auth.toggleSaveArticle}
+            onTagClick={(tag) => handleSearch('', { tag })}
           />
         );
       case 'settings':
-        return auth.user && <SettingsPage user={auth.user} {...auth} onUpgradeClick={() => setPremiumModalOpen(true)} onManageAdsClick={() => setView('my-ads')} />;
+        return auth.user && <SettingsPage user={auth.user} onUpgradeClick={() => setPremiumModalOpen(true)} onManageAdsClick={() => setView('my-ads')} />;
       case 'saved':
         const savedArticles = allArticlesWithFullUrls.filter(a => auth.isArticleSaved(a.id));
         return <SavedArticlesPage savedArticles={savedArticles} onArticleClick={handleArticleClick} />;
@@ -456,7 +466,7 @@ const App: React.FC = () => {
             onClose={() => setMobileMenuOpen(false)}
             navLinks={navLinks}
             onCategorySelect={handleCategorySelect}
-            onSearch={handleSearch}
+            onSearch={(q) => handleSearch(q, {})}
             user={auth.user}
             onLoginClick={() => setAuthModalOpen(true)}
             onLogout={auth.logout}

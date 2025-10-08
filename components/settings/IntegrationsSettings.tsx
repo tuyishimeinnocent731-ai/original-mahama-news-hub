@@ -4,11 +4,11 @@ import ToggleSwitch from '../ToggleSwitch';
 import { SlackIcon } from '../icons/SlackIcon';
 import { GoogleCalendarIcon } from '../icons/GoogleCalendarIcon';
 import { NotionIcon } from '../icons/NotionIcon';
+import * as userService from '../../services/userService';
+import { useToast } from '../../contexts/ToastContext';
 
 interface IntegrationsSettingsProps {
     user: User;
-    toggleIntegration: (integrationId: IntegrationId) => void;
-    addToast: (message: string, type: 'success' | 'info') => void;
 }
 
 const integrations = [
@@ -32,10 +32,12 @@ const integrations = [
     },
 ];
 
-const IntegrationsSettings: React.FC<IntegrationsSettingsProps> = ({ user, toggleIntegration, addToast }) => {
+const IntegrationsSettings: React.FC<IntegrationsSettingsProps> = ({ user }) => {
+    const { addToast } = useToast();
     
     const handleToggle = (integrationId: IntegrationId, name: string) => {
-        toggleIntegration(integrationId);
+        // In a real app, this would call a service
+        // userService.toggleIntegration(integrationId);
         const isConnected = !user.integrations[integrationId];
         addToast(
             `${name} has been ${isConnected ? 'connected' : 'disconnected'}.`,

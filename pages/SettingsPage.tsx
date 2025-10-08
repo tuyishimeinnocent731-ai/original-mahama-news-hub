@@ -16,6 +16,7 @@ import DataSyncSettings from '../components/settings/DataSyncSettings';
 import ReadingSettings from '../components/settings/ReadingSettings';
 import MyAdsSettings from '../components/settings/MyAdsSettings';
 import ActivityLogSettings from '../components/settings/ActivityLogSettings';
+import ApiKeysSettings from '../components/settings/ApiKeysSettings';
 import { useToast } from '../contexts/ToastContext';
 
 import { UserCircleIcon } from '../components/icons/UserCircleIcon';
@@ -32,19 +33,15 @@ import { DataSyncIcon } from '../components/icons/DataSyncIcon';
 import { BookOpenIcon } from '../components/icons/BookOpenIcon';
 import { MegaphoneIcon } from '../components/icons/MegaphoneIcon';
 import { ActivityIcon } from '../components/icons/ActivityIcon';
+import { CodeBracketIcon } from '../components/icons/CodeBracketIcon';
 
 
-type SettingsTab = 'profile' | 'appearance' | 'layout' | 'reading' | 'accessibility' | 'security' | 'notifications' | 'subscription' | 'billing' | 'privacy' | 'integrations' | 'dataSync' | 'myAds' | 'activityLog';
+type SettingsTab = 'profile' | 'appearance' | 'layout' | 'reading' | 'accessibility' | 'security' | 'notifications' | 'subscription' | 'billing' | 'privacy' | 'integrations' | 'dataSync' | 'myAds' | 'activityLog' | 'apiKeys';
 
 interface SettingsPageProps {
     user: User;
     onUpgradeClick: () => void;
     onManageAdsClick: () => void;
-    clearSearchHistory: () => void;
-    updateProfile: (profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar' | 'socials'>>) => void;
-    toggleTwoFactor: (enabled: boolean) => void;
-    changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
-    toggleIntegration: (integrationId: IntegrationId) => void;
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = (props) => {
@@ -64,6 +61,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
         { id: 'privacy', label: 'Privacy & Data', icon: <LockIcon className="w-5 h-5" /> },
         { id: 'integrations', label: 'Integrations', icon: <LinkIcon className="w-5 h-5" /> },
         { id: 'myAds', label: 'My Ads', icon: <MegaphoneIcon className="w-5 h-5" />, condition: props.user.subscription === 'pro' || props.user.role === 'admin' },
+        { id: 'apiKeys', label: 'Developer API', icon: <CodeBracketIcon className="w-5 h-5" />, condition: props.user.subscription === 'pro' || props.user.role === 'admin' },
         { id: 'activityLog', label: 'Activity Log', icon: <ActivityIcon className="w-5 h-5" /> },
         { id: 'dataSync', label: 'Data & Sync', icon: <DataSyncIcon className="w-5 h-5" /> },
     ];
@@ -71,7 +69,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
     const renderContent = () => {
         switch (activeTab) {
             case 'profile':
-                return <ProfileSettings user={props.user} updateProfile={props.updateProfile} addToast={addToast} />;
+                return <ProfileSettings user={props.user} />;
             case 'appearance':
                 return <AppearanceSettings />;
             case 'layout':
@@ -81,7 +79,7 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
             case 'accessibility':
                 return <AccessibilitySettings user={props.user} onUpgradeClick={props.onUpgradeClick} />;
             case 'security':
-                return <SecuritySettings user={props.user} toggleTwoFactor={props.toggleTwoFactor} addToast={addToast} changePassword={props.changePassword} />;
+                return <SecuritySettings user={props.user} />;
             case 'notifications':
                 return <NotificationSettings />;
             case 'subscription':
@@ -89,11 +87,13 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
             case 'billing':
                 return <BillingSettings user={props.user} />;
             case 'privacy':
-                return <PrivacySettings user={props.user} clearSearchHistory={props.clearSearchHistory} addToast={addToast} />;
+                return <PrivacySettings user={props.user} />;
             case 'integrations':
-                return <IntegrationsSettings user={props.user} toggleIntegration={props.toggleIntegration} addToast={addToast} />;
+                return <IntegrationsSettings user={props.user} />;
             case 'myAds':
                 return <MyAdsSettings user={props.user} onManageAdsClick={props.onManageAdsClick} />;
+            case 'apiKeys':
+                return <ApiKeysSettings />;
             case 'activityLog':
                 return <ActivityLogSettings user={props.user} />;
             case 'dataSync':

@@ -1,10 +1,8 @@
 
 
-
-
-
-import React, { useState } from 'react';
-import { User } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { User, UserSession } from '../../types';
+import * as userService from '../../services/userService';
 import { ShieldCheckIcon } from '../icons/ShieldCheckIcon';
 import { LockIcon } from '../icons/LockIcon';
 import { DeviceMobileIcon } from '../icons/DeviceMobileIcon';
@@ -14,12 +12,12 @@ import { EyeOffIcon } from '../icons/EyeOffIcon';
 import { GlobeAltIcon } from '../icons/GlobeAltIcon';
 import ToggleSwitch from '../ToggleSwitch';
 import Modal from '../Modal';
+import { useToast } from '../../contexts/ToastContext';
+import LoadingSpinner from '../LoadingSpinner';
+
 
 interface SecuritySettingsProps {
     user: User;
-    toggleTwoFactor: (enabled: boolean) => void;
-    addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
-    changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
 }
 
 const TwoFactorModal: React.FC<{onClose: () => void}> = ({ onClose }) => (
@@ -82,20 +80,31 @@ const PasswordInputField: React.FC<{id: string, label: string, value: string, on
     );
 };
 
-const loginHistory = [
-    { device: 'Chrome on Windows', location: 'New York, US', time: 'June 20, 2024 at 8:15 PM', icon: <DesktopComputerIcon className="w-6 h-6"/>, current: true },
-    { device: 'iPhone App', location: 'New York, US', time: 'June 18, 2024 at 10:30 AM', icon: <DeviceMobileIcon className="w-6 h-6"/> },
-    { device: 'Safari on macOS', location: 'Boston, US', time: 'June 15, 2024 at 5:00 PM', icon: <DesktopComputerIcon className="w-6 h-6"/> },
-];
-
-
-const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, toggleTwoFactor, addToast, changePassword }) => {
+const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user }) => {
     const [is2FAModalOpen, set2FAModalOpen] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [sessions, setSessions] = useState<UserSession[]>([]);
+    const [isLoadingSessions, setIsLoadingSessions] = useState(true);
+    const { addToast } = useToast();
+
+    const fetchSessions = async () => {
+        try {
+            const fetchedSessions = await userService.getSessions();
+            setSessions(fetchedSessions);
+        } catch (error: any) {
+            addToast(error.message, 'error');
+        } finally {
+            setIsLoadingSessions(false);
+        }
+    };
+    
+    useEffect(() => {
+        fetchSessions();
+    }, []);
 
     const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -116,15 +125,17 @@ const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, toggleTwoFact
 
         setIsChangingPassword(true);
         
-        const success = await changePassword(currentPassword, newPassword);
-        if (success) {
+        try {
+            await userService.changePassword(currentPassword, newPassword);
             addToast('Password changed successfully!', 'success');
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
+        } catch (error: any) {
+             addToast(error.message, 'error');
+        } finally {
+            setIsChangingPassword(false);
         }
-        
-        setIsChangingPassword(false);
     };
 
     const handle2FAToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,7 +143,8 @@ const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, toggleTwoFact
         if (enabled) {
             set2FAModalOpen(true);
         }
-        toggleTwoFactor(enabled);
+        // Assuming userService.toggleTwoFactor exists and updates the backend
+        // userService.toggleTwoFactor(enabled); 
         if (!enabled) {
             addToast('Two-Factor Authentication disabled.', 'info');
         }
@@ -141,6 +153,18 @@ const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, toggleTwoFact
     const handle2FAModalClose = () => {
         set2FAModalOpen(false);
         addToast('Two-Factor Authentication enabled!', 'success');
+    };
+    
+    const handleTerminateSession = async (sessionId: number) => {
+        if (window.confirm("Are you sure you want to sign out this session?")) {
+            try {
+                await userService.terminateSession(sessionId);
+                addToast('Session terminated.', 'success');
+                fetchSessions(); // Refresh the list
+            } catch (error: any) {
+                addToast(error.message, 'error');
+            }
+        }
     };
 
     return (
@@ -186,24 +210,26 @@ const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, toggleTwoFact
                         <h4 className="text-lg font-semibold">Login History</h4>
                     </div>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Review recent sign-ins to your account.</p>
-                    <ul className="space-y-3">
-                        {loginHistory.map((item, index) => (
-                             <li key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
-                                <div className="flex items-center space-x-3">
-                                    {item.icon}
-                                    <div>
-                                        <p className="font-semibold">{item.device}</p>
-                                        <p className="text-xs text-gray-500">{item.location} - {item.time}</p>
+                     {isLoadingSessions ? <LoadingSpinner /> : (
+                        <ul className="space-y-3">
+                            {sessions.map((session) => (
+                                <li key={session.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
+                                    <div className="flex items-center space-x-3">
+                                        {session.device.toLowerCase().includes('iphone') ? <DeviceMobileIcon className="w-6 h-6"/> : <DesktopComputerIcon className="w-6 h-6"/>}
+                                        <div>
+                                            <p className="font-semibold truncate max-w-xs">{session.device}</p>
+                                            <p className="text-xs text-gray-500">{session.ip_address} - Last active {new Date(session.last_active).toLocaleString()}</p>
+                                        </div>
                                     </div>
-                                </div>
-                                {item.current ? (
-                                    <span className="text-xs text-green-600 dark:text-green-400 font-semibold mt-2 sm:mt-0">Current session</span>
-                                ) : (
-                                    <button className="text-sm text-red-600 hover:underline mt-2 sm:mt-0 self-start sm:self-center">Not you? Secure account</button>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
+                                    {session.is_current ? (
+                                        <span className="text-xs text-green-600 dark:text-green-400 font-semibold mt-2 sm:mt-0">Current session</span>
+                                    ) : (
+                                        <button onClick={() => handleTerminateSession(session.id)} className="text-sm text-red-600 hover:underline mt-2 sm:mt-0 self-start sm:self-center">Sign out</button>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
             </div>
             {is2FAModalOpen && <TwoFactorModal onClose={handle2FAModalClose} />}

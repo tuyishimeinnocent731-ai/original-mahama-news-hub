@@ -18,8 +18,9 @@ interface ArticleManagerProps {
 
 const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateArticle, allArticles, onDeleteArticle }) => {
     const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
-    const initialFormState: ArticleFormData = { title: '', description: '', body: '', author: '', category: 'World', urlToImage: '', scheduledFor: '' };
+    const initialFormState: ArticleFormData = { title: '', description: '', body: '', author: '', category: 'World', urlToImage: '', tags: [], scheduledFor: '' };
     const [formData, setFormData] = useState<ArticleFormData>(initialFormState);
+    const [tagsInput, setTagsInput] = useState('');
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
 
@@ -34,15 +35,23 @@ const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateA
                     author: articleToEdit.author,
                     category: articleToEdit.category,
                     urlToImage: articleToEdit.urlToImage,
+                    tags: articleToEdit.tags || [],
                     scheduledFor: articleToEdit.scheduledFor ? articleToEdit.scheduledFor.slice(0, 16) : ''
                 });
+                setTagsInput((articleToEdit.tags || []).join(', '));
                 setImagePreview(articleToEdit.urlToImage);
             }
         } else {
             setFormData(initialFormState);
+            setTagsInput('');
             setImagePreview(null);
         }
     }, [editingArticleId, allArticles]);
+    
+    useEffect(() => {
+        const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
+        setFormData(prev => ({ ...prev, tags }));
+    }, [tagsInput]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -101,6 +110,10 @@ const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateA
                         <select name="category" value={formData.category} onChange={handleChange} required className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent">
                             {ALL_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
+                    </div>
+                    <div>
+                        <label htmlFor="tags" className="block text-sm font-medium">Tags (comma-separated)</label>
+                        <input type="text" name="tags" id="tags" placeholder="e.g., AI, Innovation, Tech" value={tagsInput} onChange={e => setTagsInput(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent" />
                     </div>
                      <div>
                         <label htmlFor="image-upload" className="block text-sm font-medium mb-1">Featured Image</label>

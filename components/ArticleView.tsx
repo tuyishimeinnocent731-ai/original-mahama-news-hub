@@ -27,11 +27,12 @@ interface ArticleViewProps {
   onUpgradeClick: () => void;
   onLoginClick: () => void;
   toggleSaveArticle: (article: Article) => void;
+  onTagClick: (tag: string) => void;
   customAds?: Ad[];
 }
 
 const ArticleView: React.FC<ArticleViewProps> = (props) => {
-  const { article, user, onBack, onArticleClick, onUpgradeClick, onLoginClick, toggleSaveArticle, customAds = [] } = props;
+  const { article, user, onBack, onArticleClick, onUpgradeClick, onLoginClick, toggleSaveArticle, onTagClick, customAds = [] } = props;
   
   const [summary, setSummary] = useState<string>('');
   const [keyPoints, setKeyPoints] = useState<string[]>([]);
@@ -252,6 +253,23 @@ const ArticleView: React.FC<ArticleViewProps> = (props) => {
                     <p key={index}>{paragraph}</p>
                 ))}
             </div>
+
+            {article.tags && article.tags.length > 0 && (
+                <div className="mt-8 pt-6 border-t border-border">
+                    <h3 className="text-base font-semibold mb-3">Related Topics</h3>
+                    <div className="flex flex-wrap gap-2">
+                        {article.tags.map(tag => (
+                            <button 
+                                key={tag} 
+                                onClick={() => onTagClick(tag)}
+                                className="px-3 py-1 bg-secondary text-secondary-foreground rounded-full text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                            >
+                                #{tag}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <section className="mt-12 pt-8 border-t border-border">
                 <h2 className="text-2xl font-bold mb-6">Comments ({comments.length})</h2>

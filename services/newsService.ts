@@ -16,7 +16,11 @@ export const deleteArticle = async (articleId: string): Promise<void> => {
 export const updateArticle = async (articleId: string, articleData: Partial<Omit<Article, 'id'>>): Promise<Article> => {
     const formData = new FormData();
     Object.entries(articleData).forEach(([key, value]) => {
-        if (value) formData.append(key, value instanceof Blob ? value : String(value));
+        if (key === 'tags' && Array.isArray(value)) {
+            formData.append(key, JSON.stringify(value));
+        } else if (value) {
+            formData.append(key, value instanceof Blob ? value : String(value));
+        }
     });
     // Check if urlToImage is a new upload (base64)
     if (articleData.urlToImage && articleData.urlToImage.startsWith('data:')) {
@@ -41,7 +45,11 @@ export const getTopStories = async (): Promise<Article[]> => {
 export const addArticle = async (articleData: Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>): Promise<Article> => {
     const formData = new FormData();
     Object.entries(articleData).forEach(([key, value]) => {
-         if (value) formData.append(key, value as string);
+         if (key === 'tags' && Array.isArray(value)) {
+            formData.append(key, JSON.stringify(value));
+        } else if (value) {
+             formData.append(key, value as string);
+        }
     });
      // Handle base64 image upload
     if (articleData.urlToImage && articleData.urlToImage.startsWith('data:')) {
@@ -54,11 +62,12 @@ export const addArticle = async (articleData: Omit<Article, 'id' | 'publishedAt'
     return api.postFormData<Article>('/api/articles', formData);
 };
 
-export const searchArticles = async (query: string, filters: { category?: string; author?: string } = {}, page: number = 1): Promise<{ articles: Article[], totalPages: number }> => {
+export const searchArticles = async (query: string, filters: { category?: string; author?: string; tag?: string } = {}, page: number = 1): Promise<{ articles: Article[], totalPages: number }> => {
     const params = new URLSearchParams();
     if (query) params.append('query', query);
     if (filters.category) params.append('category', filters.category);
     if (filters.author) params.append('author', filters.author);
+    if (filters.tag) params.append('tag', filters.tag);
     params.append('page', page.toString());
     params.append('limit', '10');
     const response = await api.get<{ articles: Article[], totalPages: number }>(`/api/articles/search?${params.toString()}`);

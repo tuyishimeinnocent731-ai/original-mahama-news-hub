@@ -1,26 +1,33 @@
 
+
 import React from 'react';
 import { useSettings } from '../../hooks/useSettings';
 import ToggleSwitch from '../ToggleSwitch';
 import { User } from '../../types';
+import * as userService from '../../services/userService';
+import { useToast } from '../../contexts/ToastContext';
 
 interface PrivacySettingsProps {
     user: User;
-    clearSearchHistory: () => void;
-    addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
-const PrivacySettings: React.FC<PrivacySettingsProps> = ({ user, clearSearchHistory, addToast }) => {
+const PrivacySettings: React.FC<PrivacySettingsProps> = ({ user }) => {
     const { settings, updateSettings } = useSettings();
+    const { addToast } = useToast();
 
     const handlePrivacyChange = (key: 'dataSharing' | 'adPersonalization', value: boolean) => {
         updateSettings({ [key]: value });
     };
 
-    const handleClearHistory = () => {
+    const handleClearHistory = async () => {
         if (window.confirm('Are you sure you want to clear your search history? This action cannot be undone.')) {
-            clearSearchHistory();
-            addToast('Search history cleared!', 'success');
+            try {
+                await userService.clearSearchHistory();
+                addToast('Search history cleared!', 'success');
+                // You might need to refetch the user or update the state here
+            } catch (error: any) {
+                addToast(error.message, 'error');
+            }
         }
     };
 

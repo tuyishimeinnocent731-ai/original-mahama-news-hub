@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { User } from '../../types';
+import * as userService from '../../services/userService';
+import { useToast } from '../../contexts/ToastContext';
 
 interface ProfileSettingsProps {
     user: User;
-    updateProfile: (profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar' | 'socials'>>) => void;
-    addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
-const ProfileSettings: React.FC<ProfileSettingsProps> = ({ user, updateProfile, addToast }) => {
+const ProfileSettings: React.FC<ProfileSettingsProps> = ({ user }) => {
     const [name, setName] = useState(user.name);
     const [bio, setBio] = useState(user.bio || '');
     const [avatar, setAvatar] = useState(user.avatar);
     const [socials, setSocials] = useState(user.socials || { twitter: '', linkedin: '', github: '' });
+    const { addToast } = useToast();
 
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -29,10 +30,14 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ user, updateProfile, 
         setSocials(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleProfileSubmit = (e: React.FormEvent) => {
+    const handleProfileSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        updateProfile({ name, bio, avatar, socials });
-        addToast('Profile updated successfully!', 'success');
+        try {
+            await userService.updateProfile({ name, bio, avatar, socials });
+            addToast('Profile updated successfully!', 'success');
+        } catch (error: any) {
+            addToast(error.message || 'Failed to update profile.', 'error');
+        }
     };
 
     return (

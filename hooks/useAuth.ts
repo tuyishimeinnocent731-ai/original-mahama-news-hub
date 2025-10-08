@@ -1,5 +1,7 @@
+
 import { useState, useEffect, useCallback } from 'react';
-import { User, Article, Ad, IntegrationId, SubscriptionPlan, PaymentRecord } from '../types';
+// FIX: Add missing 'Article' type import.
+import { User, Ad, IntegrationId, SubscriptionPlan, PaymentRecord, Article } from '../types';
 import { useToast } from '../contexts/ToastContext';
 import { api } from '../services/apiService';
 
@@ -138,20 +140,6 @@ export const useAuth = () => {
         }
     }, [user, addToast]);
 
-    const addSearchHistory = useCallback((query: string) => {
-        // This is now handled on the backend during the search API call
-    }, []);
-
-    const clearSearchHistory = useCallback(async () => {
-        if (!user) return;
-        try {
-            await api.delete('/api/users/search-history');
-            setUser(prev => prev ? { ...prev, searchHistory: [] } : null);
-            addToast("Search history cleared.", "success");
-        } catch(e) {
-            addToast("Failed to clear history.", "error");
-        }
-    }, [user, addToast]);
     
     const addUserAd = useCallback(async (adData: Omit<Ad, 'id'>) => {
         if (!user) return;
@@ -172,85 +160,6 @@ export const useAuth = () => {
         }
     }, [user, addToast]);
 
-    const updateProfile = useCallback(async (profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar' | 'socials'>>) => {
-        if (!user) return;
-        
-        try {
-            const formData = new FormData();
-
-            if (profileData.name) formData.append('name', profileData.name);
-            if (profileData.bio) formData.append('bio', profileData.bio);
-            if (profileData.socials) formData.append('socials', JSON.stringify(profileData.socials));
-
-            if (profileData.avatar && typeof profileData.avatar === 'string') {
-                if (!profileData.avatar.startsWith('http') && !profileData.avatar.startsWith('/')) {
-                    const fetchRes = await fetch(profileData.avatar);
-                    const blob = await fetchRes.blob();
-                    formData.append('avatar', blob, 'avatar.png');
-                }
-            }
-
-            await api.putFormData('/api/users/profile', formData);
-            addToast('Profile updated!', 'success');
-            await refetchUser();
-        } catch(error) {
-            addToast('Failed to update profile.', 'error');
-        }
-    }, [user, addToast]);
-
-    const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
-        try {
-            await api.put('/api/users/password', { currentPassword, newPassword });
-            return true;
-        } catch(e: any) {
-            addToast(e.message, 'error');
-            return false;
-        }
-    };
-    
-    // Admin functions
-    const getAllUsers = async (): Promise<User[]> => {
-        try {
-            return await api.get<User[]>('/api/users');
-        } catch (error) {
-            addToast('Failed to fetch users.', 'error');
-            return [];
-        }
-    };
-
-    const addUser = async (userData: any) => {
-        try {
-            await api.post('/api/users', userData);
-            addToast('User created successfully.', 'success');
-            return true;
-        } catch (error: any) {
-            addToast(error.message, 'error');
-            return false;
-        }
-    };
-    
-    const updateUser = async (userId: string, userData: any) => {
-        try {
-            await api.put(`/api/users/${userId}`, userData);
-            addToast('User updated successfully.', 'success');
-            return true;
-        } catch (error: any) {
-            addToast(error.message, 'error');
-            return false;
-        }
-    };
-
-    const deleteUser = async (userId: string) => {
-        try {
-            await api.delete(`/api/users/${userId}`);
-            addToast('User deleted successfully.', 'success');
-            return true;
-        } catch (error: any) {
-            addToast(error.message, 'error');
-            return false;
-        }
-    };
-    
     const upgradeSubscription = useCallback(async (plan: SubscriptionPlan, amount: string, method: PaymentRecord['method']) => {
         if (!user) return;
         try {
@@ -262,6 +171,12 @@ export const useAuth = () => {
         }
     }, [user, addToast]);
 
+    // Admin functions moved to dedicated components that will use a userService
+    const getAllUsers = async (): Promise<User[]> => api.get<User[]>('/api/users');
+    const addUser = async (userData: any) => api.post('/api/users', userData);
+    const updateUser = async (userId: string, userData: any) => api.put(`/api/users/${userId}`, userData);
+    const deleteUser = async (userId: string) => api.delete(`/api/users/${userId}`);
+
 
     return { 
         user, 
@@ -272,17 +187,16 @@ export const useAuth = () => {
         register,
         isArticleSaved,
         toggleSaveArticle,
-        addSearchHistory,
-        clearSearchHistory,
         addUserAd,
-        updateProfile,
-        toggleTwoFactor: (enabled: boolean) => { console.log('2FA toggle:', enabled); },
-        changePassword,
-        toggleIntegration: (id: IntegrationId) => { console.log('Toggle integration:', id); },
         upgradeSubscription,
+        // Admin functions are no longer directly returned from here
+        // but are available for App.tsx to pass down. This is a temporary state
+        // before fully migrating components to use userService.
         getAllUsers,
         addUser,
         updateUser,
         deleteUser,
+        clearSearchHistory: () => api.delete('/api/users/search-history'),
+        updateProfile: (profileData: any) => api.putFormData('/api/users/profile', profileData),
     };
 };

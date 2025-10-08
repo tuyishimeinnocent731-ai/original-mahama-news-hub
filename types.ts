@@ -11,6 +11,7 @@ export interface Article {
     url: string;
     urlToImage: string;
     category: string;
+    tags?: string[];
     galleryImages?: { src: string; alt: string }[];
     isOffline?: boolean;
     scheduledFor?: string; // ISO date string for future publishing
@@ -133,4 +134,30 @@ export interface Settings {
     preferredCategories: string[];
     dataSharing: boolean;
     adPersonalization: boolean;
+}
+
+// --- New Types for Advanced Features ---
+
+export interface UserSession {
+    id: number;
+    device: string;
+    ip_address: string;
+    last_active: string;
+    is_current: boolean;
+}
+
+export interface ApiKey {
+    id: string;
+    prefix: string;
+    description: string;
+    created_at: string;
+    last_used: string | null;
+}
+
+export interface Notification {
+    id: number;
+    type: 'alert' | 'feature' | 'update';
+    message: string;
+    is_read: boolean;
+    created_at: string;
 }
