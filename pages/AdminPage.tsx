@@ -3,30 +3,20 @@ import { User, Article, Ad, SubscriptionPlan, NavLink } from '../types';
 import { NewspaperIcon } from '../components/icons/NewspaperIcon';
 import { UserGroupIcon } from '../components/icons/UserGroupIcon';
 import { TrashIcon } from '../components/icons/TrashIcon';
-import { ArrowUpCircleIcon } from '../components/icons/ArrowUpCircleIcon';
-import { ArrowDownCircleIcon } from '../components/icons/ArrowDownCircleIcon';
 import { ChartPieIcon } from '../components/icons/ChartPieIcon';
 import { MegaphoneIcon } from '../components/icons/MegaphoneIcon';
-import { ALL_CATEGORIES } from '../constants';
 import { SettingsIcon } from '../components/icons/SettingsIcon';
 import { PencilIcon } from '../components/icons/PencilIcon';
-import ToggleSwitch from '../components/ToggleSwitch';
 import { BillingIcon } from '../components/icons/BillingIcon';
 import Modal from '../components/Modal';
-import { SearchIcon } from '../components/icons/SearchIcon';
-import { CloseIcon } from '../components/icons/CloseIcon';
 import { PlusCircleIcon } from '../components/icons/PlusCircleIcon';
 import { BookOpenIcon } from '../components/icons/BookOpenIcon';
 import NavigationManager from '../components/admin/NavigationManager';
+import SiteSettingsManager from '../components/admin/SiteSettingsManager';
+import ArticleManager, { ArticleFormData } from '../components/admin/ArticleManager';
 
-type ArticleFormData = Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>;
 type AdFormData = Omit<Ad, 'id'>;
 type UserFormData = Pick<User, 'name' | 'email' | 'role' | 'subscription'> & { password?: string };
-
-interface SiteSettings {
-  siteName: string;
-  maintenanceMode: boolean;
-}
 
 const ContentPieChart: React.FC<{ articles: Article[] }> = ({ articles }) => {
     const categoryCounts = articles.reduce((acc: Record<string, number>, article) => {
@@ -38,7 +28,6 @@ const ContentPieChart: React.FC<{ articles: Article[] }> = ({ articles }) => {
     if (total === 0) return <div className="text-center text-sm text-muted-foreground">No articles to display.</div>;
 
     const colors = ['#FBBF24', '#60A5FA', '#34D399', '#F87171', '#A78BFA', '#F472B6'];
-    // FIX: Explicitly type `segments` to ensure `count` is treated as a number in arithmetic operations below.
     const segments: [string, number][] = Object.entries(categoryCounts);
     let accumulatedOffset = 0;
 
@@ -130,141 +119,6 @@ const Dashboard: React.FC<DashboardProps> = ({ users, articles, ads }) => {
                     <h4 className="text-lg font-semibold mb-4">User Roles</h4>
                      <p>Coming Soon</p>
                 </div>
-            </div>
-        </div>
-    );
-};
-
-
-interface ArticleManagerProps {
-    onAddArticle: (data: ArticleFormData) => void;
-    onUpdateArticle: (id: string, data: ArticleFormData) => void;
-    allArticles: Article[];
-    onDeleteArticle: (id: string) => void;
-}
-
-const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateArticle, allArticles, onDeleteArticle }) => {
-    const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
-    const initialFormState: ArticleFormData = { title: '', description: '', body: '', author: '', category: 'World', urlToImage: '', scheduledFor: '' };
-    const [formData, setFormData] = useState<ArticleFormData>(initialFormState);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (editingArticleId) {
-            const articleToEdit = allArticles.find(a => a.id === editingArticleId);
-            if (articleToEdit) {
-                setFormData({
-                    title: articleToEdit.title,
-                    description: articleToEdit.description,
-                    body: articleToEdit.body,
-                    author: articleToEdit.author,
-                    category: articleToEdit.category,
-                    urlToImage: articleToEdit.urlToImage,
-                    scheduledFor: articleToEdit.scheduledFor ? articleToEdit.scheduledFor.slice(0, 16) : ''
-                });
-                setImagePreview(articleToEdit.urlToImage);
-            }
-        } else {
-            setFormData(initialFormState);
-            setImagePreview(null);
-        }
-    }, [editingArticleId, allArticles]);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64String = reader.result as string;
-                setFormData(prev => ({ ...prev, urlToImage: base64String }));
-                setImagePreview(base64String);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const dataToSubmit = {
-            ...formData,
-            scheduledFor: formData.scheduledFor ? new Date(formData.scheduledFor).toISOString() : undefined
-        };
-
-        if (editingArticleId) {
-            onUpdateArticle(editingArticleId, dataToSubmit);
-        } else {
-            onAddArticle(dataToSubmit);
-        }
-        setEditingArticleId(null);
-        const fileInput = document.getElementById('image-upload') as HTMLInputElement;
-        if (fileInput) fileInput.value = '';
-    };
-
-    const handleCancelEdit = () => {
-        setEditingArticleId(null);
-    };
-
-    return (
-        <div className="space-y-12">
-            <div>
-                <h3 className="text-2xl font-bold mb-4">{editingArticleId ? 'Edit Article' : 'Upload New Article'}</h3>
-                <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg border-border">
-                    <input type="text" name="title" placeholder="Title" value={formData.title} onChange={handleChange} required className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent" />
-                    <textarea name="description" placeholder="Description" value={formData.description} onChange={handleChange} required rows={3} className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent" />
-                    <textarea name="body" placeholder="Body" value={formData.body} onChange={handleChange} required rows={6} className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent" />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input type="text" name="author" placeholder="Author" value={formData.author} onChange={handleChange} required className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent" />
-                        <select name="category" value={formData.category} onChange={handleChange} required className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent">
-                            {ALL_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                        </select>
-                    </div>
-                     <div>
-                        <label htmlFor="image-upload" className="block text-sm font-medium mb-1">Featured Image</label>
-                        <input type="file" name="image" id="image-upload" onChange={handleImageChange} accept="image/*" className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent/20 file:text-accent hover:file:bg-accent/30" />
-                    </div>
-                     <div>
-                        <label htmlFor="scheduledFor" className="block text-sm font-medium mb-1">Schedule For (Optional)</label>
-                        <input type="datetime-local" name="scheduledFor" id="scheduledFor" value={formData.scheduledFor} onChange={handleChange} className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent" />
-                    </div>
-                    {imagePreview && <img src={imagePreview} alt="Preview" className="mt-2 rounded-md max-h-48" />}
-                    <div className="text-right flex justify-end gap-3">
-                        {editingArticleId && (
-                            <button type="button" onClick={handleCancelEdit} className="px-5 py-2.5 bg-secondary text-secondary-foreground rounded-md hover:bg-muted font-semibold">Cancel</button>
-                        )}
-                        <button type="submit" className="px-5 py-2.5 bg-accent text-accent-foreground rounded-md hover:bg-accent/90 font-semibold">{editingArticleId ? 'Update Article' : 'Publish Article'}</button>
-                    </div>
-                </form>
-            </div>
-            <div>
-                 <h3 className="text-2xl font-bold mb-4">Existing Articles</h3>
-                 <div className="overflow-x-auto border rounded-lg border-border">
-                     <table className="min-w-full divide-y divide-border">
-                        <thead className="bg-secondary">
-                            <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Title</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider hidden md:table-cell">Category</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                         <tbody className="bg-card divide-y divide-border">
-                            {allArticles.map(article => (
-                                <tr key={article.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm font-medium max-w-xs truncate">{article.title}</div></td>
-                                    <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell text-sm">{article.category}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-4">
-                                        <button onClick={() => setEditingArticleId(article.id)} className="text-primary hover:text-primary/80"><PencilIcon /></button>
-                                        <button onClick={() => { if(window.confirm('Are you sure?')) onDeleteArticle(article.id); }} className="text-destructive hover:text-destructive/80"><TrashIcon /></button>
-                                    </td>
-                                </tr>
-                            ))}
-                         </tbody>
-                     </table>
-                 </div>
             </div>
         </div>
     );
@@ -612,54 +466,6 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ getAllUsers }
     );
 };
 
-
-interface SiteSettingsManagerProps {
-    settings: SiteSettings;
-    onUpdateSettings: (newSettings: Partial<SiteSettings>) => void;
-}
-
-const SiteSettingsManager: React.FC<SiteSettingsManagerProps> = ({ settings, onUpdateSettings }) => {
-    const [localSettings, setLocalSettings] = useState(settings);
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setLocalSettings(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, checked } = e.target;
-        setLocalSettings(prev => ({ ...prev, [name]: checked }));
-    };
-
-    const handleSave = () => {
-        onUpdateSettings(localSettings);
-    };
-
-    return (
-        <div>
-            <h3 className="text-2xl font-bold mb-4">Site Settings</h3>
-            <div className="space-y-6 max-w-lg">
-                <div className="p-4 border rounded-lg border-border">
-                    <label htmlFor="siteName" className="block text-sm font-medium mb-1">Site Name</label>
-                    <input type="text" name="siteName" id="siteName" value={localSettings.siteName} onChange={handleChange} className="block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent" />
-                </div>
-                <div className="p-4 border border-yellow-500/50 rounded-lg bg-yellow-500/10">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <label htmlFor="maintenanceMode" className="font-medium text-yellow-800 dark:text-yellow-200">Maintenance Mode</label>
-                            <p className="text-xs text-yellow-700 dark:text-yellow-300">Puts up a banner and restricts site access for non-admins.</p>
-                        </div>
-                        <ToggleSwitch id="maintenanceMode" name="maintenanceMode" checked={localSettings.maintenanceMode} onChange={handleToggle} />
-                    </div>
-                </div>
-                 <div className="text-right">
-                    <button onClick={handleSave} className="px-5 py-2.5 bg-accent text-accent-foreground rounded-md hover:bg-accent/90 font-semibold">Save Settings</button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 type AdminTab = 'dashboard' | 'articles' | 'ads' | 'users' | 'navigation' | 'settings' | 'subscriptions';
 
 interface AdminPageProps {
@@ -668,7 +474,7 @@ interface AdminPageProps {
     allAds: Ad[];
     navLinks: NavLink[];
     onAddArticle: (data: ArticleFormData) => void;
-    onUpdateArticle: (id: string, data: ArticleFormData) => void;
+    onUpdateArticle: (id: string, data: Partial<Omit<Article, 'id'>>) => void;
     onDeleteArticle: (id: string) => void;
     onAddAd: (data: AdFormData) => void;
     onUpdateAd: (id: string, data: AdFormData) => void;
@@ -677,8 +483,8 @@ interface AdminPageProps {
     addUser: (userData: UserFormData) => boolean;
     updateUser: (userId: string, userData: Partial<User>) => boolean;
     deleteUser: (email: string) => boolean;
-    siteSettings: SiteSettings;
-    onUpdateSiteSettings: (newSettings: Partial<SiteSettings>) => void;
+    siteSettings: { siteName: string; maintenanceMode: boolean; };
+    onUpdateSiteSettings: (newSettings: Partial<{ siteName: string; maintenanceMode: boolean; }>) => void;
     onUpdateNavLinks: (links: NavLink[]) => void;
 }
 

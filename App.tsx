@@ -17,6 +17,7 @@ import TopStoriesBanner from './components/TopStoriesBanner';
 import TopStoriesDrawer from './components/TopStoriesDrawer';
 import ArticleCardSkeleton from './components/ArticleCardSkeleton';
 import AdminPage from './pages/AdminPage';
+import SubAdminPage from './pages/SubAdminPage';
 import Aside from './components/Aside';
 import { NewspaperIcon } from './components/icons/NewspaperIcon';
 import PaymentModal from './components/PaymentModal';
@@ -31,7 +32,7 @@ import { useSettings } from './hooks/useSettings';
 import { useToast } from './contexts/ToastContext';
 import { Article, Ad, SubscriptionPlan, PaymentRecord, NavLink } from './types';
 
-type View = 'home' | 'article' | 'settings' | 'saved' | 'admin' | 'video' | 'my-ads';
+type View = 'home' | 'article' | 'settings' | 'saved' | 'admin' | 'video' | 'my-ads' | 'sub-admin-management';
 
 interface SiteSettings {
   siteName: string;
@@ -310,6 +311,16 @@ const App: React.FC = () => {
                 onUpdateNavLinks={handleUpdateNavLinks}
             />
         );
+       case 'sub-admin-management':
+          return (auth.user?.role === 'admin') && (
+              <SubAdminPage
+                  allArticles={allArticles}
+                  onAddArticle={handleAddArticle}
+                  onUpdateArticle={handleUpdateArticle}
+                  onDeleteArticle={handleDeleteArticle}
+                  onBack={() => setView('admin')}
+              />
+          );
        case 'video':
           return <VideoPage allArticles={allArticles} onArticleClick={handleArticleClick} />;
        case 'my-ads':
@@ -379,6 +390,7 @@ const App: React.FC = () => {
             onSavedClick={() => setView('saved')}
             onPremiumClick={() => setPremiumModalOpen(true)}
             onAdminClick={() => setView('admin')}
+            onSubAdminClick={() => setView('sub-admin-management')}
         />
         <main className="container mx-auto p-4 sm:p-6 lg:p-8">
             {renderMainContent()}

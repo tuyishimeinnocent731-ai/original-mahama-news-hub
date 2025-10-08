@@ -272,10 +272,7 @@ export const useAuth = () => {
             addToast('You do not have permission for this action.', 'error');
             return false;
         }
-        // FIX: Explicitly type the parameter 'u' as 'User' in the .find() callback.
-        // This ensures that `userToUpdate` is correctly typed as `User | undefined` instead of `unknown`.
-        // The `unknown` type was being inferred because some TypeScript configurations do not strictly type the return value of `Object.values()`.
-        // This fix allows for safe property access on `userToUpdate` after the existence check.
+        // Fix: Explicitly type the parameter 'u' as 'User' to correctly type `userToUpdate` and allow property access.
         const userToUpdate = Object.values(users).find((u: User) => u.id === userId);
         if (!userToUpdate) {
             addToast('User not found.', 'error');

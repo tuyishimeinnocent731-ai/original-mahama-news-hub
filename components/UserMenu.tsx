@@ -6,6 +6,7 @@ import { StarIcon } from './icons/StarIcon';
 import { MegaphoneIcon } from './icons/MegaphoneIcon';
 import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
 import { User, SubscriptionPlan } from '../types';
+import { UserGroupIcon } from './icons/UserGroupIcon';
 
 interface UserMenuProps {
     user: User;
@@ -14,6 +15,7 @@ interface UserMenuProps {
     onSavedClick: () => void;
     onPremiumClick: () => void;
     onAdminClick: () => void;
+    onSubAdminClick: () => void;
 }
 
 const SubscriptionBadge: React.FC<{ plan: SubscriptionPlan }> = ({ plan }) => {
@@ -31,7 +33,7 @@ const SubscriptionBadge: React.FC<{ plan: SubscriptionPlan }> = ({ plan }) => {
 };
 
 
-const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onSettingsClick, onSavedClick, onPremiumClick, onAdminClick }) => {
+const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onSettingsClick, onSavedClick, onPremiumClick, onAdminClick, onSubAdminClick }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -85,10 +87,16 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout, onSettingsClick, on
                         <SubscriptionBadge plan={user.subscription} />
                     </button>
                     <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                     {user.role === 'admin' && (
+                     {(user.role === 'admin' || user.role === 'sub-admin') && (
                         <button onClick={() => handleAction(onAdminClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
                             <ShieldCheckIcon />
-                            <span className="ml-3">Admin Panel</span>
+                            <span className="ml-3">{user.role === 'admin' ? 'Full Admin Panel' : 'Management Panel'}</span>
+                        </button>
+                    )}
+                    {user.role === 'admin' && (
+                        <button onClick={() => handleAction(onSubAdminClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                            <UserGroupIcon className="w-5 h-5"/>
+                            <span className="ml-3">Sub-Admin Management</span>
                         </button>
                     )}
                     <button onClick={() => handleAction(onSettingsClick)} className="w-full text-left flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">

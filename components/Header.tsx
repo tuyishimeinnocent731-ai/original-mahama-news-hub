@@ -25,6 +25,7 @@ interface HeaderProps {
     onSavedClick: () => void;
     onPremiumClick: () => void;
     onAdminClick: () => void;
+    onSubAdminClick: () => void;
     onCategorySelect: (category: string) => void;
     onArticleClick: (article: Article) => void;
     siteName: string;
@@ -106,6 +107,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                                 onSavedClick={props.onSavedClick}
                                 onPremiumClick={props.onPremiumClick}
                                 onAdminClick={props.onAdminClick}
+                                onSubAdminClick={props.onSubAdminClick}
                             />
                         ) : (
                             <button onClick={props.onLoginClick} className="hidden sm:block px-4 py-2 text-sm font-semibold bg-accent text-accent-foreground rounded-md hover:bg-accent/90 transition-colors">
@@ -125,17 +127,6 @@ const Header: React.FC<HeaderProps> = (props) => {
                                     <div className="mega-menu-backdrop bg-popover/80 rounded-lg shadow-2xl p-6 grid grid-cols-3 gap-6">
                                        {link.name === 'World' ? (
                                            <>
-                                                <div className="col-span-2 grid grid-cols-2 gap-4">
-                                                    {getArticlesForMegaMenu(link.name, 2).map(article => (
-                                                        <div key={article.id} onClick={() => onArticleClick(article)} className="cursor-pointer group/article">
-                                                            <div className="overflow-hidden rounded-md">
-                                                            <img src={article.urlToImage} alt={article.title} className="w-full h-32 object-cover mb-2 transition-transform duration-300 group-hover/article:scale-105" />
-                                                            </div>
-                                                            <h4 className="text-sm font-semibold text-popover-foreground line-clamp-2 mt-2 group-hover/article:text-accent transition-colors">{article.title}</h4>
-                                                            <p className="text-xs text-muted-foreground mt-1">{new Date(article.publishedAt).toLocaleDateString()}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
                                                 <div className="col-span-1">
                                                     <h3 className="font-bold text-popover-foreground mb-4 border-b-2 border-accent pb-2">{link.name}</h3>
                                                     <ul className="space-y-2">
@@ -147,6 +138,17 @@ const Header: React.FC<HeaderProps> = (props) => {
                                                             </li>
                                                         ))}
                                                     </ul>
+                                                </div>
+                                                <div className="col-span-2 grid grid-cols-2 gap-4">
+                                                    {getArticlesForMegaMenu(link.name, 2).map(article => (
+                                                        <div key={article.id} onClick={() => onArticleClick(article)} className="cursor-pointer group/article">
+                                                            <div className="overflow-hidden rounded-md">
+                                                            <img src={article.urlToImage} alt={article.title} className="w-full h-32 object-cover mb-2 transition-transform duration-300 group-hover/article:scale-105" />
+                                                            </div>
+                                                            <h4 className="text-sm font-semibold text-popover-foreground line-clamp-2 mt-2 group-hover/article:text-accent transition-colors">{article.title}</h4>
+                                                            <p className="text-xs text-muted-foreground mt-1">{new Date(article.publishedAt).toLocaleDateString()}</p>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                            </>
                                        ) : (
