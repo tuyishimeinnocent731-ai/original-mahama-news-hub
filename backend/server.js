@@ -10,8 +10,14 @@ const adRoutes = require('./routes/adRoutes');
 const siteRoutes = require('./routes/siteRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const paymentController = require('./controllers/paymentController');
 
 const app = express();
+
+// Stripe webhook needs raw body
+app.post('/api/payments/webhook', express.raw({type: 'application/json'}), paymentController.handleWebhook);
+
 
 // Middleware
 app.use(cors());
@@ -37,6 +43,8 @@ app.use('/api/ads', adRoutes);
 app.use('/api/site', siteRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/payments', paymentRoutes);
+
 
 // Root endpoint
 app.get('/', (req, res) => {

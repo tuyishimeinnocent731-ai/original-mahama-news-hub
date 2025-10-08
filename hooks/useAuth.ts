@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect, useCallback } from 'react';
 // FIX: Add missing 'Article' type import.
 import { User, Ad, IntegrationId, SubscriptionPlan, PaymentRecord, Article } from '../types';
@@ -185,6 +186,8 @@ export const useAuth = () => {
         login, 
         logout,
         register,
+        // FIX: Expose refetchUser function to be used after events like successful payment.
+        refetchUser,
         isArticleSaved,
         toggleSaveArticle,
         addUserAd,

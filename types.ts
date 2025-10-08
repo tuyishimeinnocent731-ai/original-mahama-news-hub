@@ -32,7 +32,7 @@ export interface PaymentRecord {
     date: string;
     plan: SubscriptionPlan;
     amount: string;
-    method: 'Credit Card' | 'PayPal' | 'MTN Mobile Money';
+    method: 'Credit Card' | 'PayPal' | 'MTN Mobile Money' | 'Stripe';
     status: 'succeeded' | 'pending' | 'failed';
 }
 
@@ -59,6 +59,9 @@ export interface User {
     role?: 'admin' | 'sub-admin' | 'user';
     paymentHistory: PaymentRecord[];
     settings?: Settings; // Added for full settings sync
+    stripe_customer_id?: string;
+    stripe_subscription_id?: string;
+    stripe_subscription_status?: string;
 }
 
 export interface NavLink {

@@ -15,7 +15,10 @@ CREATE TABLE IF NOT EXISTS users (
     subscription ENUM('free', 'standard', 'premium', 'pro') DEFAULT 'free',
     two_factor_enabled BOOLEAN DEFAULT FALSE,
     role ENUM('admin', 'sub-admin', 'user') DEFAULT 'user',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    stripe_customer_id VARCHAR(255) UNIQUE,
+    stripe_subscription_id VARCHAR(255) UNIQUE,
+    stripe_subscription_status VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS articles (

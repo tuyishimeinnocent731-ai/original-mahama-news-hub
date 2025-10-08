@@ -7,7 +7,7 @@ import { SubscriptionPlan } from '../types';
 interface PremiumModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubscribeClick: (plan: SubscriptionPlan, price: string) => void;
+  onSubscribeClick: (plan: SubscriptionPlan) => void;
 }
 
 const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose, onSubscribeClick }) => {
@@ -40,7 +40,7 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ isOpen, onClose, onSubscrib
                             ))}
                         </ul>
                         <button 
-                          onClick={() => onSubscribeClick(plan.id, plan.price)}
+                          onClick={() => onSubscribeClick(plan.id)}
                           className={`w-full py-2 rounded-lg font-semibold ${plan.id === 'standard' ? 'bg-yellow-500 text-white hover:bg-yellow-600' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'}`}>
                             Subscribe Now
                         </button>

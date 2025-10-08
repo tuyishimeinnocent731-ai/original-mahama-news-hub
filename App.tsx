@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -23,7 +24,6 @@ import AdminPage from './pages/AdminPage';
 import SubAdminPage from './pages/SubAdminPage';
 import Aside from './components/Aside';
 import { NewspaperIcon } from './components/icons/NewspaperIcon';
-import PaymentModal from './components/PaymentModal';
 import VideoPage from './pages/VideoPage';
 import LiveAssistantModal from './components/LiveAssistantModal';
 import MyAdsPage from './pages/MyAdsPage';
@@ -31,21 +31,24 @@ import Pagination from './components/Pagination';
 import NotificationsPage from './pages/NotificationsPage';
 import AboutUsPage from './pages/AboutUsPage';
 import ContactUsPage from './pages/ContactUsPage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
+import PaymentCancelPage from './pages/PaymentCancelPage';
 
 import * as newsService from './services/newsService';
 import * as navigationService from './services/navigationService';
 import * as userService from './services/userService';
+import * as paymentService from './services/paymentService';
 import { useAuth } from './hooks/useAuth';
 import { useSettings } from './hooks/useSettings';
 import { useToast } from './contexts/ToastContext';
-import { Article, Ad, SubscriptionPlan, PaymentRecord, NavLink, Notification, User } from './types';
+import { Article, Ad, SubscriptionPlan, NavLink, Notification, User } from './types';
 import { API_URL } from './services/apiService';
 
 // To fix type error for AdminPage props, define UserFormData here.
 // This is defined in AdminPage.tsx but not exported.
 type UserFormData = Pick<User, 'name' | 'email' | 'role' | 'subscription'> & { password?: string };
 
-type View = 'home' | 'article' | 'settings' | 'saved' | 'admin' | 'video' | 'my-ads' | 'sub-admin-management' | 'notifications' | 'about-us' | 'contact-us';
+type View = 'home' | 'article' | 'settings' | 'saved' | 'admin' | 'video' | 'my-ads' | 'sub-admin-management' | 'notifications' | 'about-us' | 'contact-us' | 'payment-success' | 'payment-cancel';
 
 interface SiteSettings {
   siteName: string;
@@ -81,10 +84,8 @@ const App: React.FC = () => {
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [isPremiumModalOpen, setPremiumModalOpen] = useState(false);
   const [isTopStoriesDrawerOpen, setTopStoriesDrawerOpen] = useState(false);
-  const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
   const [isLiveAssistantOpen, setLiveAssistantOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<{plan: SubscriptionPlan, price: string} | null>(null);
-
+  
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({
       siteName: 'Mahama News Hub',
       maintenanceMode: false
@@ -93,6 +94,15 @@ const App: React.FC = () => {
   const auth = useAuth();
   useSettings();
   const { addToast } = useToast();
+
+  useEffect(() => {
+    const currentUrl = new URL(window.location.href);
+    if (currentUrl.pathname.includes('/payment/success')) {
+      setView('payment-success');
+    } else if (currentUrl.pathname.includes('/payment/cancel')) {
+      setView('payment-cancel');
+    }
+  }, []);
 
   const updateSiteSettings = async (newSettings: Partial<SiteSettings>) => {
       await navigationService.saveSiteSettings(newSettings);
@@ -236,22 +246,17 @@ const App: React.FC = () => {
     }
   };
 
-  const handleOpenPaymentModal = (plan: SubscriptionPlan, price: string) => {
+  const handleSubscriptionClick = async (plan: SubscriptionPlan) => {
     if (!auth.user) {
         setAuthModalOpen(true);
         addToast('Please log in to subscribe.', 'info');
         return;
     }
-    setSelectedPlan({ plan, price });
     setPremiumModalOpen(false);
-    setPaymentModalOpen(true);
-  };
-
-  const handleSubscriptionUpgrade = async (method: PaymentRecord['method']) => {
-    if (selectedPlan) {
-        await auth.upgradeSubscription(selectedPlan.plan, selectedPlan.price, method);
-        setPaymentModalOpen(false);
-        setSelectedPlan(null);
+    try {
+        await paymentService.createCheckoutSession(plan);
+    } catch(err: any) {
+        addToast(err.message || 'Could not initiate subscription.', 'error');
     }
   };
 
@@ -424,6 +429,10 @@ const App: React.FC = () => {
         return <AboutUsPage />;
       case 'contact-us':
         return <ContactUsPage />;
+      case 'payment-success':
+        return <PaymentSuccessPage onContinue={() => { auth.refetchUser(); handleViewChange('home'); }} />;
+      case 'payment-cancel':
+        return <PaymentCancelPage onBack={handleBackToHome} onTryAgain={() => setPremiumModalOpen(true)} />;
       case 'home':
       default:
         return (
@@ -547,17 +556,8 @@ const App: React.FC = () => {
         <PremiumModal 
             isOpen={isPremiumModalOpen} 
             onClose={() => setPremiumModalOpen(false)} 
-            onSubscribeClick={handleOpenPaymentModal}
+            onSubscribeClick={handleSubscriptionClick}
         />
-        {selectedPlan && (
-            <PaymentModal
-                isOpen={isPaymentModalOpen}
-                onClose={() => setPaymentModalOpen(false)}
-                planName={selectedPlan.plan.charAt(0).toUpperCase() + selectedPlan.plan.slice(1)}
-                price={selectedPlan.price}
-                onPaymentSuccess={handleSubscriptionUpgrade}
-            />
-        )}
         <LiveAssistantModal
             isOpen={isLiveAssistantOpen}
             onClose={() => setLiveAssistantOpen(false)}
