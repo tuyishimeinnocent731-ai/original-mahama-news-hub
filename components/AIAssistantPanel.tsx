@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import LoadingSpinner from './LoadingSpinner';
 import { CloseIcon } from './icons/CloseIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
@@ -9,10 +9,13 @@ interface AIAssistantPanelProps {
     onClose: () => void;
     summary: string;
     keyPoints: string[];
+    answer: string;
     isSummaryLoading: boolean;
     isKeyPointsLoading: boolean;
+    isAnswering: boolean;
     onGenerateSummary: () => void;
     onGenerateKeyPoints: () => void;
+    onAskQuestion: (question: string) => void;
     isPremium: boolean;
     onUpgradeClick: () => void;
 }
@@ -22,13 +25,25 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({
     onClose,
     summary,
     keyPoints,
+    answer,
     isSummaryLoading,
     isKeyPointsLoading,
+    isAnswering,
     onGenerateSummary,
     onGenerateKeyPoints,
+    onAskQuestion,
     isPremium,
     onUpgradeClick,
 }) => {
+    const [question, setQuestion] = useState('');
+
+    const handleQuestionSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (question.trim()) {
+            onAskQuestion(question.trim());
+        }
+    };
+
     return (
         <>
             {/* Overlay */}
@@ -101,6 +116,34 @@ const AIAssistantPanel: React.FC<AIAssistantPanelProps> = ({
                                         </div>
                                     </div>
                                 )}
+                                
+                                {/* New "Ask a question" feature */}
+                                <div className="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-4">
+                                    <h3 className="text-lg font-semibold">Ask About This Article</h3>
+                                    <form onSubmit={handleQuestionSubmit} className="space-y-3">
+                                        <textarea
+                                            value={question}
+                                            onChange={(e) => setQuestion(e.target.value)}
+                                            placeholder="e.g., 'What was the main outcome of the summit?'"
+                                            rows={3}
+                                            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-accent focus:outline-none"
+                                        />
+                                        <button type="submit" disabled={isAnswering} className="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed font-semibold">
+                                            {isAnswering ? 'Thinking...' : 'Get Answer'}
+                                        </button>
+                                    </form>
+                                    
+                                    {isAnswering && <div className="py-6 flex justify-center"><LoadingSpinner /></div>}
+                                    
+                                    {answer && (
+                                        <div className="pt-4 animate-fade-in">
+                                            <h4 className="font-semibold mb-2">Answer:</h4>
+                                            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                                                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap prose dark:prose-invert max-w-none">{answer}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </>
                         )}
                     </div>

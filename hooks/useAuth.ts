@@ -18,6 +18,7 @@ const loadUsersFromStorage = (): { [email: string]: User } => {
         id: 'admin-001',
         name: 'Admin Reponse',
         email: 'reponsekdz0@gmail.com',
+        password: '2025', // Add default password
         avatar: `https://i.pravatar.cc/150?u=adminreponse`,
         bio: 'Site Administrator.',
         socials: { twitter: 'reponse', linkedin: 'reponse' },
@@ -80,22 +81,27 @@ export const useAuth = () => {
 
     const login = useCallback((email: string, password?: string) => {
         const potentialUser = users[email];
-
+        
         if (potentialUser) {
-            // In a real app, you'd check the password hash
-            // For admins, we have a special password
-            if ((potentialUser.role === 'admin' || potentialUser.role === 'sub-admin') && password === '2025') {
-                 setUser(potentialUser);
-                 localStorage.setItem('loggedInUser', email);
-                 addToast(`Welcome back, ${potentialUser.role} ${potentialUser.name.split(' ')[0]}!`, 'success');
-                 return true;
+            let passwordIsValid = false;
+            if (potentialUser.password) {
+                // New users created by admin will have a password
+                passwordIsValid = potentialUser.password === password;
+            } else {
+                // Backwards compatibility for demo purposes for pre-existing users
+                if ((potentialUser.role === 'admin' || potentialUser.role === 'sub-admin') && password === '2025') {
+                    passwordIsValid = true;
+                } else if (!potentialUser.role || potentialUser.role === 'user') {
+                    passwordIsValid = true; // Allow any password for old regular users
+                }
             }
-            // For regular users, any password works for this mock setup
-            if (potentialUser.role === 'user' || !potentialUser.role) {
-                 setUser(potentialUser);
-                 localStorage.setItem('loggedInUser', email);
-                 addToast(`Welcome back, ${potentialUser.name.split(' ')[0]}!`, 'success');
-                 return true;
+            
+            if (passwordIsValid) {
+                setUser(potentialUser);
+                localStorage.setItem('loggedInUser', email);
+                const welcomeRole = (potentialUser.role === 'admin' || potentialUser.role === 'sub-admin') ? `${potentialUser.role} ` : '';
+                addToast(`Welcome back, ${welcomeRole}${potentialUser.name.split(' ')[0]}!`, 'success');
+                return true;
             }
         }
         
@@ -119,6 +125,7 @@ export const useAuth = () => {
             id: `user-${Date.now()}`,
             name: email.split('@')[0],
             email: email,
+            password: password,
             avatar: `https://i.pravatar.cc/150?u=${email}`,
             subscription: 'free',
             savedArticles: [],
@@ -189,19 +196,20 @@ export const useAuth = () => {
     }, [user]);
     
     const validatePassword = async (password: string): Promise<boolean> => {
-        // Mock validation for any password for regular users, specific for admin
         return new Promise(resolve => setTimeout(() => {
-            if (user?.role === 'admin' || user?.role === 'sub-admin') {
+             if (user?.password) {
+                resolve(password === user.password);
+            } else if (user?.role === 'admin' || user?.role === 'sub-admin') {
                 resolve(password === '2025');
             } else {
-                resolve(true); // Allow any password for demo purposes
+                resolve(true); // Allow any password for demo purposes for users without one set
             }
         }, 500));
     };
 
     const changePassword = async (newPassword: string): Promise<boolean> => {
-        // Mock password change
-        console.log(`Password for ${user?.email} changed to ${newPassword}`);
+        if (!user) return false;
+        persistUserUpdate({ ...user, password: newPassword });
         return new Promise(resolve => setTimeout(() => resolve(true), 500));
     };
 
@@ -220,7 +228,7 @@ export const useAuth = () => {
         return Object.values(users);
     }, [users]);
 
-    const addUser = useCallback((userData: Pick<User, 'name' | 'email' | 'role' | 'subscription'>) => {
+    const addUser = useCallback((userData: Pick<User, 'name' | 'email' | 'role' | 'subscription' | 'password'>) => {
          if (user?.role !== 'admin') {
             addToast('You do not have permission for this action.', 'error');
             return false;
@@ -234,6 +242,7 @@ export const useAuth = () => {
             id: `user-${Date.now()}`,
             name: userData.name,
             email: userData.email,
+            password: userData.password,
             avatar: `https://i.pravatar.cc/150?u=${userData.email}`,
             subscription: userData.subscription,
             savedArticles: [],
@@ -255,14 +264,17 @@ export const useAuth = () => {
             addToast('You do not have permission for this action.', 'error');
             return false;
         }
-        const userToUpdate = Object.values(users).find((u: User) => u.id === userId);
+        // FIX: All errors stemmed from 'userToUpdate' being inferred as 'unknown'.
+        // Removing the explicit type annotation `(u: User)` from the `find` callback
+        // allows TypeScript to correctly infer the type of `u` as `User` from the `users` state array.
+        // This ensures `userToUpdate` is correctly typed as `User | undefined`, which is then
+        // narrowed to `User` after the existence check, resolving all subsequent property access and spread operator errors.
+        const userToUpdate = Object.values(users).find(u => u.id === userId);
         if (!userToUpdate) {
             addToast('User not found.', 'error');
             return false;
         }
-        // FIX: The type `Partial<User>` already ensures `userData` is an object.
-        // The previous check `if (userData && typeof userData === 'object')` was confusing the type inference,
-        // leading to 'unknown' type errors for properties of `userData` and for the spread operator.
+        
         if (userData.email && userData.email !== userToUpdate.email && users[userData.email]) {
             addToast('An account with the new email already exists.', 'error');
             return false;

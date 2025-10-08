@@ -253,6 +253,26 @@ export const getKeyPoints = async (body: string): Promise<string[]> => {
     }
 };
 
+export const askAboutArticle = async (body: string, title: string, question: string): Promise<string> => {
+    const prompt = `Based on the following article, please answer the user's question. If the answer is not in the article, say that you cannot find the information in the provided text.
+    
+    Title: ${title}
+    Article: ${body}
+    
+    Question: ${question}`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+        return response.text;
+    } catch (error) {
+        console.error("Error answering question about article:", error);
+        return "Sorry, I encountered an error while trying to answer your question.";
+    }
+};
+
 export const translateArticle = async (body: string, title: string, targetLanguage: string): Promise<{ title: string, body: string }> => {
     const prompt = `Translate the following news article into ${targetLanguage}. Return a JSON object with two keys: "translatedTitle" and "translatedBody". Do not add any other text or markdown formatting outside of the JSON object.
     Original Title: ${title}

@@ -5,8 +5,7 @@ import { SunIcon } from './icons/SunIcon';
 import { MoonIcon } from './icons/MoonIcon';
 import { MenuIcon } from './icons/MenuIcon';
 import UserMenu from './UserMenu';
-import FeaturedArticleCard from './FeaturedArticleCard';
-import { getFeaturedArticleForCategory, getArticlesForMegaMenu } from '../services/newsService';
+import { getArticlesForMegaMenu } from '../services/newsService';
 import { CommandIcon } from './icons/CommandIcon';
 import { TrendingUpIcon } from './icons/TrendingUpIcon';
 
@@ -112,14 +111,14 @@ const Header: React.FC<HeaderProps> = (props) => {
                                 {link.name}
                             </button>
                             {link.sublinks && link.sublinks.length > 0 && (
-                                <div className="absolute left-1/2 -translate-x-1/2 top-full pt-3 hidden group-hover:block w-screen max-w-4xl">
-                                    <div className="mega-menu-backdrop bg-popover/80 rounded-lg shadow-2xl p-6 grid grid-cols-4 gap-6">
+                                <div className="absolute left-1/2 -translate-x-1/2 top-full pt-3 hidden group-hover:block w-screen max-w-3xl">
+                                    <div className="mega-menu-backdrop bg-popover/80 rounded-lg shadow-2xl p-6 grid grid-cols-3 gap-6">
                                         <div className="col-span-1">
-                                            <h3 className="font-bold text-popover-foreground mb-4">{link.name}</h3>
+                                            <h3 className="font-bold text-popover-foreground mb-4 border-b-2 border-accent pb-2">{link.name}</h3>
                                             <ul className="space-y-2">
                                                 {link.sublinks.map(sublink => (
                                                     <li key={sublink.id}>
-                                                        <button onClick={() => onCategorySelect(sublink.name)} className="text-sm text-muted-foreground hover:text-accent">
+                                                        <button onClick={() => onCategorySelect(sublink.name)} className="text-sm text-muted-foreground hover:text-accent transition-colors">
                                                             {sublink.name}
                                                         </button>
                                                     </li>
@@ -129,18 +128,13 @@ const Header: React.FC<HeaderProps> = (props) => {
                                         <div className="col-span-2 grid grid-cols-2 gap-4">
                                             {getArticlesForMegaMenu(link.name, 2).map(article => (
                                                 <div key={article.id} onClick={() => onArticleClick(article)} className="cursor-pointer group/article">
-                                                    <img src={article.urlToImage} alt={article.title} className="w-full h-24 object-cover rounded-md mb-2" />
-                                                    <h4 className="text-xs font-semibold text-popover-foreground line-clamp-2 group-hover/article:text-accent">{article.title}</h4>
+                                                    <div className="overflow-hidden rounded-md">
+                                                      <img src={article.urlToImage} alt={article.title} className="w-full h-32 object-cover mb-2 transition-transform duration-300 group-hover/article:scale-105" />
+                                                    </div>
+                                                    <h4 className="text-sm font-semibold text-popover-foreground line-clamp-2 mt-2 group-hover/article:text-accent transition-colors">{article.title}</h4>
+                                                    <p className="text-xs text-muted-foreground mt-1">{new Date(article.publishedAt).toLocaleDateString()}</p>
                                                 </div>
                                             ))}
-                                        </div>
-                                        <div className="col-span-1">
-                                            {getFeaturedArticleForCategory(link.name) && (
-                                                <FeaturedArticleCard 
-                                                    article={getFeaturedArticleForCategory(link.name)!} 
-                                                    onArticleClick={onArticleClick}
-                                                />
-                                            )}
                                         </div>
                                     </div>
                                 </div>

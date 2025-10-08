@@ -38,6 +38,9 @@ const ArticleView: React.FC<ArticleViewProps> = (props) => {
   const [isAIAssistantOpen, setAIAssistantOpen] = useState(false);
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
   const [isRelatedLoading, setIsRelatedLoading] = useState(true);
+  
+  const [answer, setAnswer] = useState('');
+  const [isAnswering, setIsAnswering] = useState(false);
 
   const [translatedContent, setTranslatedContent] = useState<{ title: string; body: string; language: string } | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -54,6 +57,7 @@ const ArticleView: React.FC<ArticleViewProps> = (props) => {
   useEffect(() => {
     setSummary('');
     setKeyPoints([]);
+    setAnswer('');
     stop();
     setAIAssistantOpen(false);
     setIsRelatedLoading(true);
@@ -99,6 +103,15 @@ const ArticleView: React.FC<ArticleViewProps> = (props) => {
     const generatedKeyPoints = await newsService.getKeyPoints(article.body);
     setKeyPoints(generatedKeyPoints);
     setKeyPointsLoading(false);
+  };
+  
+  const handleAskQuestion = async (question: string) => {
+    if (!isPremium || !question) return;
+    setIsAnswering(true);
+    setAnswer('');
+    const generatedAnswer = await newsService.askAboutArticle(article.body, article.title, question);
+    setAnswer(generatedAnswer);
+    setIsAnswering(false);
   };
 
   const handlePlayAudio = () => {
@@ -242,10 +255,13 @@ const ArticleView: React.FC<ArticleViewProps> = (props) => {
         onClose={() => setAIAssistantOpen(false)}
         summary={summary}
         keyPoints={keyPoints}
+        answer={answer}
         isSummaryLoading={isSummaryLoading}
         isKeyPointsLoading={isKeyPointsLoading}
+        isAnswering={isAnswering}
         onGenerateSummary={handleGenerateSummary}
         onGenerateKeyPoints={handleGenerateKeyPoints}
+        onAskQuestion={handleAskQuestion}
         isPremium={isPremium}
         onUpgradeClick={onUpgradeClick}
       />

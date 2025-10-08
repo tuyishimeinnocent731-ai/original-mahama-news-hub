@@ -21,7 +21,8 @@ import NavigationManager from '../components/admin/NavigationManager';
 
 type ArticleFormData = Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>;
 type AdFormData = Omit<Ad, 'id'>;
-type UserFormData = Pick<User, 'name' | 'email' | 'role' | 'subscription'>;
+type UserFormData = Pick<User, 'name' | 'email' | 'role' | 'subscription'> & { password?: string };
+
 interface SiteSettings {
   siteName: string;
   maintenanceMode: boolean;
@@ -388,7 +389,7 @@ interface UserFormModalProps {
 
 const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSubmit, userToEdit }) => {
     const [formData, setFormData] = useState<UserFormData>({
-        name: '', email: '', role: 'user', subscription: 'free'
+        name: '', email: '', role: 'user', subscription: 'free', password: ''
     });
 
     useEffect(() => {
@@ -397,10 +398,11 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSubmit
                 name: userToEdit.name,
                 email: userToEdit.email,
                 role: userToEdit.role || 'user',
-                subscription: userToEdit.subscription
+                subscription: userToEdit.subscription,
+                password: ''
             });
         } else {
-            setFormData({ name: '', email: '', role: 'user', subscription: 'free' });
+            setFormData({ name: '', email: '', role: 'user', subscription: 'free', password: '' });
         }
     }, [userToEdit, isOpen]);
 
@@ -421,6 +423,9 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSubmit
                 <h3 className="text-lg font-semibold">{userToEdit ? 'Edit User' : 'Add New User'}</h3>
                 <input type="text" name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
                 <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
+                {!userToEdit && (
+                     <input type="password" name="password" placeholder="Set Initial Password" value={formData.password} onChange={handleChange} required className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
+                )}
                 <select name="role" value={formData.role} onChange={handleChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
                     <option value="user">End User</option>
                     <option value="sub-admin">Sub-Admin</option>
@@ -445,7 +450,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSubmit
 interface UserManagerProps {
     currentUser: User;
     getAllUsers: () => User[];
-    addUser: (userData: Pick<User, 'name' | 'email' | 'role' | 'subscription'>) => boolean;
+    addUser: (userData: UserFormData) => boolean;
     updateUser: (userId: string, userData: Partial<User>) => boolean;
     deleteUser: (email: string) => boolean;
 }
@@ -480,7 +485,8 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, add
 
     const handleFormSubmit = (userData: UserFormData, userId?: string) => {
         if (userId) { // Editing
-            return updateUser(userId, userData);
+            const { password, ...restOfData } = userData; // Don't pass password on edit
+            return updateUser(userId, restOfData);
         } else { // Adding
             return addUser(userData);
         }
@@ -668,7 +674,7 @@ interface AdminPageProps {
     onUpdateAd: (id: string, data: AdFormData) => void;
     onDeleteAd: (id: string) => void;
     getAllUsers: () => User[];
-    addUser: (userData: Pick<User, 'name' | 'email' | 'role' | 'subscription'>) => boolean;
+    addUser: (userData: UserFormData) => boolean;
     updateUser: (userId: string, userData: Partial<User>) => boolean;
     deleteUser: (email: string) => boolean;
     siteSettings: SiteSettings;
