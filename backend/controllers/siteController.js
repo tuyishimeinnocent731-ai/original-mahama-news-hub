@@ -1,6 +1,41 @@
 const pool = require('../config/db');
-const { NAV_LINKS } = require('../../constants'); // We'll borrow this from frontend for default structure
 const { v4: uuidv4 } = require('uuid');
+
+// Define NAV_LINKS locally to decouple from frontend
+const NAV_LINKS = [
+    { name: "World", href: "#", sublinks: [
+        { name: "Africa", href: "#" },
+        { name: "Americas", href: "#" },
+        { name: "Asia", href: "#" },
+        { name: "Europe", href: "#" },
+    ]},
+    { name: "Politics", href: "#" },
+    { name: "Business", href: "#", sublinks: [
+        { name: "Markets", href: "#" },
+        { name: "Companies", href: "#" },
+    ]},
+    { name: "Economy", href: "#" },
+    { name: "Technology", href: "#", sublinks: [
+        { name: "AI", href: "#" },
+        { name: "Gadgets", href: "#" },
+        { name: "Innovation", href: "#" },
+    ]},
+    { name: "Sport", href: "#", sublinks: [
+        { name: "Football", href: "#" },
+        { name: "Basketball", href: "#" },
+        { name: "Tennis", href: "#" },
+    ]},
+    { name: "Entertainment", href: "#", sublinks: [
+        { name: "Movies", href: "#" },
+        { name: "Music", href: "#" },
+        { name: "Gaming", href: "#" },
+    ]},
+    { name: "Video", href: "#" },
+    { name: "Films & TV", href: "#" },
+    { name: "Arts", href: "#" },
+    { name: "History", href: "#" },
+];
+
 
 // In a real app, this would be in a shared lib or config
 const addIds = (links, parentId = 'nav') => {

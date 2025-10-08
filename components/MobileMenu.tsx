@@ -62,10 +62,10 @@ const MobileMenuItem: React.FC<{
     };
 
     return (
-        <div className="py-2 border-b border-blue-700 dark:border-gray-700 mobile-menu-item" style={{ animationDelay: `${delay}ms` }}>
+        <div className="py-2 border-b border-primary-foreground/10 mobile-menu-item" style={{ animationDelay: `${delay}ms` }}>
             <button
                 onClick={handleToggle}
-                className="w-full flex justify-between items-center text-lg text-white hover:text-yellow-300 focus:outline-none"
+                className="w-full flex justify-between items-center text-lg text-primary-foreground hover:text-accent focus:outline-none"
             >
                 <span className="flex items-center space-x-3">
                     {categoryIcons[link.name] || <WorldIcon/>}
@@ -82,7 +82,7 @@ const MobileMenuItem: React.FC<{
                             <button
                                 key={sublink.id}
                                 onClick={() => handleSelect(sublink.name)}
-                                className="text-left text-base text-gray-300 hover:text-yellow-300"
+                                className="text-left text-base text-primary-foreground/80 hover:text-accent"
                             >
                                 {sublink.name}
                             </button>
@@ -127,12 +127,12 @@ const MobileMenu: React.FC<MobileMenuProps> = (props) => {
   return (
     <div className="lg:hidden fixed inset-0 bg-black bg-opacity-60 z-50" onClick={onClose} role="dialog" aria-modal="true">
       <div 
-        className="fixed top-0 left-0 h-full w-4/5 max-w-sm bg-blue-800 dark:bg-gray-900 shadow-xl flex flex-col animate-slide-in-left"
+        className="fixed top-0 left-0 h-full w-4/5 max-w-sm bg-primary shadow-xl flex flex-col animate-slide-in-left"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-4 p-4 border-b border-blue-700 dark:border-gray-700">
-            <h2 className="text-xl font-bold text-yellow-400">Menu</h2>
-            <button onClick={onClose} aria-label="Close menu" className="text-white p-2 rounded-full hover:bg-blue-700">
+        <div className="flex justify-between items-center mb-4 p-4 border-b border-primary-foreground/20">
+            <h2 className="text-xl font-bold text-accent">Menu</h2>
+            <button onClick={onClose} aria-label="Close menu" className="text-primary-foreground p-2 rounded-full hover:bg-primary-foreground/10">
                 <CloseIcon />
             </button>
         </div>
@@ -144,7 +144,7 @@ const MobileMenu: React.FC<MobileMenuProps> = (props) => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search news..."
-                    className="w-full bg-blue-900/80 border border-blue-700 rounded-md py-2 pl-10 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    className="w-full bg-primary-foreground/10 border border-primary-foreground/20 rounded-md py-2 pl-10 pr-4 text-primary-foreground placeholder-primary-foreground/60 focus:outline-none focus:ring-2 focus:ring-accent"
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <SearchIcon />
@@ -158,29 +158,29 @@ const MobileMenu: React.FC<MobileMenuProps> = (props) => {
           ))}
         </nav>
         
-        <div className="p-4 mt-auto border-t border-blue-700 dark:border-gray-700">
+        <div className="p-4 mt-auto border-t border-primary-foreground/20">
             {user ? (
                 <div className="flex items-center justify-between">
-                    <button onClick={() => { onSettingsClick(); onClose(); }} className="flex flex-col items-center space-y-1 text-white hover:text-yellow-300 text-sm">
+                    <button onClick={() => { onSettingsClick(); onClose(); }} className="flex flex-col items-center space-y-1 text-primary-foreground hover:text-accent text-sm">
                         <SettingsIcon />
                         <span>Settings</span>
                     </button>
-                    <button onClick={toggleTheme} className="flex flex-col items-center space-y-1 text-white hover:text-yellow-300 text-sm p-2 rounded-full">
+                    <button onClick={toggleTheme} className="flex flex-col items-center space-y-1 text-primary-foreground hover:text-accent text-sm p-2 rounded-full">
                          {isDark ? <SunIcon /> : <MoonIcon />}
                          <span>{isDark ? 'Light' : 'Dark'}</span>
                     </button>
-                    <button onClick={() => { onLogout(); onClose(); }} className="flex flex-col items-center space-y-1 text-white hover:text-yellow-300 text-sm">
+                    <button onClick={() => { onLogout(); onClose(); }} className="flex flex-col items-center space-y-1 text-primary-foreground hover:text-accent text-sm">
                         <LogoutIcon />
                         <span>Logout</span>
                     </button>
                 </div>
             ) : (
                  <div className="flex items-center justify-between">
-                    <button onClick={() => { onLoginClick(); onClose(); }} className="w-full flex items-center justify-center space-x-2 py-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600">
+                    <button onClick={() => { onLoginClick(); onClose(); }} className="w-full flex items-center justify-center space-x-2 py-3 bg-accent text-accent-foreground font-semibold rounded-lg hover:bg-accent/90">
                         <LoginIcon />
                         <span>Login / Register</span>
                     </button>
-                     <button onClick={toggleTheme} className="p-3 ml-2 rounded-lg bg-blue-700 text-white hover:bg-blue-600">
+                     <button onClick={toggleTheme} className="p-3 ml-2 rounded-lg bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20">
                          {isDark ? <SunIcon /> : <MoonIcon />}
                     </button>
                 </div>
