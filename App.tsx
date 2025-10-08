@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -37,8 +38,12 @@ import * as userService from './services/userService';
 import { useAuth } from './hooks/useAuth';
 import { useSettings } from './hooks/useSettings';
 import { useToast } from './contexts/ToastContext';
-import { Article, Ad, SubscriptionPlan, PaymentRecord, NavLink, Notification } from './types';
+import { Article, Ad, SubscriptionPlan, PaymentRecord, NavLink, Notification, User } from './types';
 import { API_URL } from './services/apiService';
+
+// To fix type error for AdminPage props, define UserFormData here.
+// This is defined in AdminPage.tsx but not exported.
+type UserFormData = Pick<User, 'name' | 'email' | 'role' | 'subscription'> & { password?: string };
 
 type View = 'home' | 'article' | 'settings' | 'saved' | 'admin' | 'video' | 'my-ads' | 'sub-admin-management' | 'notifications' | 'about-us' | 'contact-us';
 
@@ -291,6 +296,29 @@ const App: React.FC = () => {
       addToast('Your advertisement has been created!', 'success');
   }
 
+  // FIX: Create handler functions for adding and updating users to return boolean and show toast, matching AdminPage prop types.
+  const handleAdminAddUser = async (userData: UserFormData): Promise<boolean> => {
+    try {
+        await auth.addUser(userData);
+        addToast('User created successfully!', 'success');
+        return true;
+    } catch (error: any) {
+        addToast(error.message || 'Failed to add user.', 'error');
+        return false;
+    }
+  };
+
+  const handleAdminUpdateUser = async (userId: string, userData: Partial<User>): Promise<boolean> => {
+      try {
+          await auth.updateUser(userId, userData);
+          addToast('User updated successfully!', 'success');
+          return true;
+      } catch (error: any) {
+          addToast(error.message || 'Failed to update user.', 'error');
+          return false;
+      }
+  };
+
   const handleDeleteUser = async (userId: string): Promise<boolean> => {
       // FIX: Wrap the call in a try/catch block to handle the promise and return a boolean as expected by the caller.
       try {
@@ -368,8 +396,8 @@ const App: React.FC = () => {
                 onUpdateAd={handleUpdateAd}
                 onDeleteAd={handleDeleteAd}
                 getAllUsers={auth.getAllUsers}
-                addUser={auth.addUser}
-                updateUser={auth.updateUser}
+                addUser={handleAdminAddUser}
+                updateUser={handleAdminUpdateUser}
                 deleteUser={handleDeleteUser}
                 siteSettings={siteSettings}
                 onUpdateSiteSettings={updateSiteSettings}
