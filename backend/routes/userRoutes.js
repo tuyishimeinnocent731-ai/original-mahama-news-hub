@@ -20,6 +20,7 @@ const {
     deleteNotification,
     getUserApplications,
     deleteUserAccount,
+    getUserActivityLog,
 } = require('../controllers/userController');
 const { protect, admin, proUser } = require('../middleware/authMiddleware');
 const { upload } = require('../controllers/articleController'); // Re-use image upload logic
@@ -27,6 +28,7 @@ const { upload } = require('../controllers/articleController'); // Re-use image 
 // Admin routes
 router.route('/').get(protect, admin, getAllUsers).post(protect, admin, createUser);
 router.route('/:id').put(protect, admin, updateUser).delete(protect, admin, deleteUser);
+router.get('/:id/activity', protect, admin, getUserActivityLog);
 
 // Profile routes for logged-in user
 router.route('/profile')

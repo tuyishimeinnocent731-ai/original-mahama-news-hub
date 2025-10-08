@@ -11,9 +11,11 @@ const {
     getSuggestions,
     getRelatedArticles,
     getCommentsForArticle,
-    createComment
+    createComment,
+    getAllComments,
+    deleteComment,
 } = require('../controllers/articleController');
-const { protect, subAdmin } = require('../middleware/authMiddleware');
+const { protect, subAdmin, admin } = require('../middleware/authMiddleware');
 const { upload } = require('../controllers/articleController');
 
 router.route('/')
@@ -34,5 +36,10 @@ router.get('/:id/related', getRelatedArticles);
 router.route('/:id/comments')
     .get(getCommentsForArticle)
     .post(protect, createComment);
+
+// Admin comment management
+router.get('/comments/all', protect, admin, getAllComments);
+router.delete('/comments/:id', protect, admin, deleteComment);
+
 
 module.exports = router;

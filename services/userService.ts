@@ -1,5 +1,5 @@
 import { api } from './apiService';
-import { User, UserSession, ApiKey, Notification, JobApplication } from '../types';
+import { User, UserSession, ApiKey, Notification, JobApplication, ActivityLog } from '../types';
 
 // Profile & Settings
 export const updateProfile = async (profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar' | 'socials'>>) => {
@@ -78,4 +78,9 @@ export const exportUserData = async (): Promise<any> => {
 // Job Applications
 export const getMyApplications = async (): Promise<JobApplication[]> => {
     return api.get<JobApplication[]>('/api/users/me/applications');
+};
+
+// Admin
+export const getUserActivity = async (userId: string): Promise<ActivityLog[]> => {
+    return api.get<ActivityLog[]>(`/api/users/${userId}/activity`);
 };

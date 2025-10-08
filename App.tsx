@@ -218,12 +218,14 @@ const App: React.FC = () => {
   const handleLoginSuccess = async (email: string, password?: string) => {
     if (await auth.login(email, password)) {
       setAuthModalOpen(false);
+      handleCategorySelect('World');
     }
   };
   
   const handleRegisterSuccess = async (email: string, password?: string) => {
     if (await auth.register(email, password)) {
       setAuthModalOpen(false);
+      handleCategorySelect('World');
     }
   };
   

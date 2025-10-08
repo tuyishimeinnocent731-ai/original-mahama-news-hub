@@ -81,6 +81,7 @@ export interface Comment {
     author_name: string;
     author_avatar: string;
     replies: Comment[];
+    article_title?: string; // Joined for admin panel
 }
 
 export type ThemeName = 'default' | 'midnight' | 'latte' | 'forest' | 'oceanic' | 'rose' | 'slate' | 'sandstone' | 'nebula' | 'cyberpunk' | 'solaris' | 'monochrome' | 'cosmic' | 'sunset' | 'image';
@@ -205,4 +206,13 @@ export interface JobApplication {
     applied_at: string;
     // Joined from job_postings table
     job_title?: string;
+}
+
+export interface ActivityLog {
+    id: number;
+    user_id: string;
+    action_type: string;
+    details: any;
+    ip_address: string;
+    created_at: string;
 }

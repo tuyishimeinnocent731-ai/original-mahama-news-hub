@@ -330,6 +330,18 @@ const deleteUser = async (req, res, next) => {
     }
 };
 
+const getUserActivityLog = async (req, res, next) => {
+    try {
+        const [logs] = await pool.query(
+            'SELECT * FROM activity_log WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
+            [req.params.id]
+        );
+        res.json(logs);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = { 
     getAllUsers, createUser, updateUser, deleteUser,
     getUserProfile, updateUserProfile, updateUserSettings,
@@ -337,4 +349,5 @@ module.exports = {
     changePassword, deleteUserAccount, addUserAd, upgradeSubscription,
     getNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification,
     getUserApplications,
+    getUserActivityLog,
 };

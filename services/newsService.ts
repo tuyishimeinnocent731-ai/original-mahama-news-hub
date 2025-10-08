@@ -128,6 +128,15 @@ export const postComment = async (articleId: string, body: string, parentId?: st
     return api.post<Comment>(`/api/articles/${articleId}/comments`, { articleId, body, parentId });
 };
 
+export const getAllComments = async (): Promise<Comment[]> => {
+    return api.get<Comment[]>('/api/comments');
+}
+
+export const deleteComment = async (commentId: string): Promise<void> => {
+    await api.delete(`/api/comments/${commentId}`);
+}
+
+
 // --- Dashboard Service Functions ---
 export const getDashboardStats = async (): Promise<any> => {
     return api.get<any>('/api/dashboard/stats');

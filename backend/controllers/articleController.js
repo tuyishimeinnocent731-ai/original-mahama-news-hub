@@ -308,6 +308,31 @@ const getCommentsForArticle = async (req, res, next) => {
     }
 };
 
+// Admin comment functions
+const getAllComments = async (req, res, next) => {
+    try {
+        const [comments] = await pool.query(`
+            SELECT c.*, u.name as author_name, a.title as article_title
+            FROM comments c
+            JOIN users u ON c.user_id = u.id
+            JOIN articles a ON c.article_id = a.id
+            ORDER BY c.created_at DESC
+        `);
+        res.json(comments);
+    } catch (error) {
+        next(error);
+    }
+};
+
+const deleteComment = async (req, res, next) => {
+    try {
+        await pool.query('DELETE FROM comments WHERE id = ?', [req.params.id]);
+        res.json({ message: 'Comment deleted successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
-    getAllArticles, getArticleById, createArticle, updateArticle, deleteArticle, searchArticles, getTopStories, getSuggestions, getRelatedArticles, upload, createComment, getCommentsForArticle
+    getAllArticles, getArticleById, createArticle, updateArticle, deleteArticle, searchArticles, getTopStories, getSuggestions, getRelatedArticles, upload, createComment, getCommentsForArticle, getAllComments, deleteComment
 };
