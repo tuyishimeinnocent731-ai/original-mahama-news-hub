@@ -94,18 +94,12 @@ const App: React.FC = () => {
       } catch(e) { console.error("Could not load site settings", e)}
   }, []);
 
-  const fetchArticles = useCallback(async (category: string, isSearch: boolean = false) => {
+  const fetchArticles = useCallback(async (category: string) => {
     setIsLoading(true);
     setView('home');
     setCurrentArticle(null);
     try {
-      let fetchedArticles;
-      if (isSearch) {
-        fetchedArticles = await newsService.searchArticles(category);
-        auth.addSearchHistory(category);
-      } else {
-        fetchedArticles = await newsService.getArticles(category);
-      }
+      const fetchedArticles = await newsService.getArticles(category);
       setArticles(fetchedArticles);
       setCurrentCategory(category);
     } catch (error) {
@@ -114,7 +108,7 @@ const App: React.FC = () => {
       setIsLoading(false);
       window.scrollTo(0, 0);
     }
-  }, [auth]);
+  }, []);
 
   const fetchAllContent = useCallback(async () => {
     setIsLoading(true);
@@ -154,10 +148,34 @@ const App: React.FC = () => {
     setCurrentArticle(null);
   }
 
-  const handleSearch = (query: string) => {
-    setSearchOpen(false);
-    fetchArticles(query, true);
-  };
+    const handleSearch = (query: string, filters: { category?: string; author?: string } = {}) => {
+        setSearchOpen(false);
+
+        const executeSearch = async () => {
+            setIsLoading(true);
+            setView('home');
+            setCurrentArticle(null);
+            try {
+                const fetchedArticles = await newsService.searchArticles(query, filters);
+                setArticles(fetchedArticles);
+
+                const filterText = [filters.category, filters.author].filter(Boolean).join(', ');
+                let categoryTitle = `Search Results`;
+                if(query) categoryTitle += ` for "${query}"`;
+                if(filterText) categoryTitle += ` (${filterText})`;
+
+                setCurrentCategory(categoryTitle);
+                if(query) auth.addSearchHistory(query);
+
+            } catch (error) {
+                console.error("Error searching articles:", error);
+            } finally {
+                setIsLoading(false);
+                window.scrollTo(0, 0);
+            }
+        }
+        executeSearch();
+    };
   
   const handleLoginSuccess = (email: string, password?: string) => {
     if (auth.login(email, password)) {
@@ -347,9 +365,9 @@ const App: React.FC = () => {
                     ) : (
                         <div className="text-center py-20 bg-secondary rounded-lg col-span-full">
                             <NewspaperIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-                            <h2 className="text-xl font-semibold">No Articles Published Yet</h2>
+                            <h2 className="text-xl font-semibold">No Articles Found</h2>
                             <p className="text-muted-foreground mt-2">
-                                Admins are working on it. Please check back later for the latest news.
+                                Try adjusting your search or check back later for new content.
                             </p>
                         </div>
                     )}
@@ -403,7 +421,8 @@ const App: React.FC = () => {
             onArticleSelect={handleArticleClick}
             topStories={topStories}
             user={auth.user} 
-            clearSearchHistory={auth.clearSearchHistory} 
+            clearSearchHistory={auth.clearSearchHistory}
+            allArticles={allArticles}
         />
         <MobileMenu
             isOpen={isMobileMenuOpen}

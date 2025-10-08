@@ -3,6 +3,8 @@ import { Article } from '../../types';
 import { ALL_CATEGORIES } from '../../constants';
 import { PencilIcon } from '../icons/PencilIcon';
 import { TrashIcon } from '../icons/TrashIcon';
+import ImageGeneratorModal from './ImageGeneratorModal';
+import { SparklesIcon } from '../icons/SparklesIcon';
 
 export type ArticleFormData = Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>;
 
@@ -18,6 +20,7 @@ const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateA
     const initialFormState: ArticleFormData = { title: '', description: '', body: '', author: '', category: 'World', urlToImage: '', scheduledFor: '' };
     const [formData, setFormData] = useState<ArticleFormData>(initialFormState);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
 
     useEffect(() => {
         if (editingArticleId) {
@@ -57,6 +60,11 @@ const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateA
             reader.readAsDataURL(file);
         }
     };
+    
+    const handleImageFromGenerator = (base64Image: string) => {
+        setFormData(prev => ({...prev, urlToImage: base64Image}));
+        setImagePreview(base64Image);
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -95,7 +103,13 @@ const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateA
                     </div>
                      <div>
                         <label htmlFor="image-upload" className="block text-sm font-medium mb-1">Featured Image</label>
-                        <input type="file" name="image" id="image-upload" onChange={handleImageChange} accept="image/*" className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent/20 file:text-accent hover:file:bg-accent/30" />
+                        <div className="flex gap-2 items-center">
+                            <input type="file" name="image" id="image-upload" onChange={handleImageChange} accept="image/*" className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-accent/20 file:text-accent hover:file:bg-accent/30" />
+                            <button type="button" onClick={() => setIsGeneratorOpen(true)} className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-md hover:bg-primary/20 text-sm font-semibold">
+                                <SparklesIcon className="w-4 h-4" />
+                                AI
+                            </button>
+                        </div>
                     </div>
                      <div>
                         <label htmlFor="scheduledFor" className="block text-sm font-medium mb-1">Schedule For (Optional)</label>
@@ -110,6 +124,14 @@ const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateA
                     </div>
                 </form>
             </div>
+            
+            <ImageGeneratorModal
+                isOpen={isGeneratorOpen}
+                onClose={() => setIsGeneratorOpen(false)}
+                onImageSelect={handleImageFromGenerator}
+                initialPrompt={formData.title}
+            />
+
             <div>
                  <h3 className="text-2xl font-bold mb-4">Existing Articles</h3>
                  <div className="overflow-x-auto border rounded-lg border-border">

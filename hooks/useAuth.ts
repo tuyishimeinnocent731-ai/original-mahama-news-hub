@@ -272,7 +272,7 @@ export const useAuth = () => {
             addToast('You do not have permission for this action.', 'error');
             return false;
         }
-        // Fix: Explicitly type the parameter 'u' as 'User' to correctly type `userToUpdate` and allow property access.
+        // FIX: Explicitly type the parameter 'u' as 'User' to ensure `userToUpdate` is correctly typed, resolving subsequent property access errors.
         const userToUpdate = Object.values(users).find((u: User) => u.id === userId);
         if (!userToUpdate) {
             addToast('User not found.', 'error');

@@ -127,17 +127,27 @@ export const getArticlesForMegaMenu = (category: string, count: number = 2): Art
     return subCategoryArticles.slice(0, count);
 };
 
-export const searchArticles = async (query: string): Promise<Article[]> => {
-    console.log(`Searching for: ${query}`);
-    if (!query) return [];
+export const searchArticles = async (query: string, filters: { category?: string; author?: string } = {}): Promise<Article[]> => {
+    console.log(`Searching for: ${query} with filters:`, filters);
     const lowercasedQuery = query.toLowerCase();
     const now = new Date();
-    return Promise.resolve(articles.filter(a => 
-        (!a.scheduledFor || new Date(a.scheduledFor) <= now) &&
-        (a.title.toLowerCase().includes(lowercasedQuery) || 
-        a.description.toLowerCase().includes(lowercasedQuery) ||
-        a.body.toLowerCase().includes(lowercasedQuery))
-    ).map(updateOfflineStatus));
+    
+    return Promise.resolve(articles.filter(a => {
+        if (a.scheduledFor && new Date(a.scheduledFor) > now) {
+            return false;
+        }
+
+        const queryMatch = !query || (
+            a.title.toLowerCase().includes(lowercasedQuery) || 
+            a.description.toLowerCase().includes(lowercasedQuery) ||
+            a.body.toLowerCase().includes(lowercasedQuery)
+        );
+
+        const categoryMatch = !filters.category || a.category.toLowerCase() === filters.category.toLowerCase();
+        const authorMatch = !filters.author || a.author.toLowerCase() === filters.author.toLowerCase();
+
+        return queryMatch && categoryMatch && authorMatch;
+    }).map(updateOfflineStatus));
 };
 
 export const getSearchSuggestions = async (query: string): Promise<Article[]> => {
@@ -270,6 +280,29 @@ export const askAboutArticle = async (body: string, title: string, question: str
     } catch (error) {
         console.error("Error answering question about article:", error);
         return "Sorry, I encountered an error while trying to answer your question.";
+    }
+};
+
+export const generateImageForArticle = async (prompt: string): Promise<string> => {
+    try {
+        const response = await ai.models.generateImages({
+            model: 'imagen-4.0-generate-001',
+            prompt: `News article illustration, professional digital art style. ${prompt}`,
+            config: {
+                numberOfImages: 1,
+                outputMimeType: 'image/jpeg',
+                aspectRatio: '16:9',
+            },
+        });
+
+        if (response.generatedImages && response.generatedImages.length > 0) {
+            const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
+            return `data:image/jpeg;base64,${base64ImageBytes}`;
+        }
+        throw new Error("No image was generated.");
+    } catch (error) {
+        console.error("Error generating image:", error);
+        throw new Error("Sorry, we couldn't generate an image at this time.");
     }
 };
 

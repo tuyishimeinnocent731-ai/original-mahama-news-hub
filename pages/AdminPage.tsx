@@ -14,6 +14,8 @@ import { BookOpenIcon } from '../components/icons/BookOpenIcon';
 import NavigationManager from '../components/admin/NavigationManager';
 import SiteSettingsManager from '../components/admin/SiteSettingsManager';
 import ArticleManager, { ArticleFormData } from '../components/admin/ArticleManager';
+import AnalyticsDashboard from '../components/admin/AnalyticsDashboard';
+import { ChartBarIcon } from '../components/icons/ChartBarIcon';
 
 type AdFormData = Omit<Ad, 'id'>;
 type UserFormData = Pick<User, 'name' | 'email' | 'role' | 'subscription'> & { password?: string };
@@ -466,7 +468,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ getAllUsers }
     );
 };
 
-type AdminTab = 'dashboard' | 'articles' | 'ads' | 'users' | 'navigation' | 'settings' | 'subscriptions';
+type AdminTab = 'dashboard' | 'articles' | 'ads' | 'users' | 'navigation' | 'settings' | 'subscriptions' | 'analytics';
 
 interface AdminPageProps {
     user: User;
@@ -498,6 +500,7 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
         { id: 'ads', label: 'Manage Ads', icon: <MegaphoneIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'users', label: 'Manage Users', icon: <UserGroupIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'subscriptions', label: 'Subscriptions', icon: <BillingIcon className="w-5 h-5" />, roles: ['admin'] },
+        { id: 'analytics', label: 'Analytics', icon: <ChartBarIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'settings', label: 'Site Settings', icon: <SettingsIcon />, roles: ['admin'] },
     ];
     
@@ -523,6 +526,8 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
                 return <UserManager currentUser={props.user} getAllUsers={props.getAllUsers} addUser={props.addUser} updateUser={props.updateUser} deleteUser={props.deleteUser} />;
             case 'subscriptions':
                 return <SubscriptionManager getAllUsers={props.getAllUsers} />;
+            case 'analytics':
+                return <AnalyticsDashboard users={props.getAllUsers()} articles={props.allArticles} />;
             case 'settings':
                 return <SiteSettingsManager settings={props.siteSettings} onUpdateSettings={props.onUpdateSiteSettings} />;
             default:
