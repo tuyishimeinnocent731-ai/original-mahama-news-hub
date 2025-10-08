@@ -32,7 +32,7 @@ interface SettingsPageProps {
     user: User;
     onUpgradeClick: () => void;
     clearSearchHistory: () => void;
-    updateProfile: (profileData: Partial<Pick<User, 'name' | 'bio'>>) => void;
+    updateProfile: (profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar'>>) => void;
     toggleTwoFactor: (enabled: boolean) => void;
     validatePassword: (password: string) => Promise<boolean>;
     changePassword: (newPassword: string) => Promise<boolean>;

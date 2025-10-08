@@ -21,6 +21,8 @@ import NavigationManager from '../components/admin/NavigationManager';
 
 type ArticleFormData = Omit<Article, 'id' | 'publishedAt' | 'source' | 'url' | 'isOffline'>;
 type AdFormData = Omit<Ad, 'id'>;
+// FIX: Define a specific type for user form data to avoid using 'any'
+type UserFormData = Pick<User, 'name' | 'email' | 'role' | 'subscription'>;
 interface SiteSettings {
   siteName: string;
   maintenanceMode: boolean;
@@ -372,12 +374,12 @@ const AdManager: React.FC<AdManagerProps> = ({ onAddAd, onUpdateAd, allAds, onDe
 interface UserFormModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (userData: any, userId?: string) => boolean;
+    onSubmit: (userData: UserFormData, userId?: string) => boolean;
     userToEdit?: User | null;
 }
 
 const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSubmit, userToEdit }) => {
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<UserFormData>({
         name: '', email: '', role: 'user', subscription: 'free'
     });
 
@@ -395,7 +397,7 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSubmit
     }, [userToEdit, isOpen]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value as any }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -468,7 +470,7 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, add
         }
     };
 
-    const handleFormSubmit = (userData: any, userId?: string) => {
+    const handleFormSubmit = (userData: UserFormData, userId?: string) => {
         if (userId) { // Editing
             return updateUser(userId, userData);
         } else { // Adding

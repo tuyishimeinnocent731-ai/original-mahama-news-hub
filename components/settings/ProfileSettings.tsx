@@ -3,17 +3,29 @@ import { User } from '../../types';
 
 interface ProfileSettingsProps {
     user: User;
-    updateProfile: (profileData: Partial<Pick<User, 'name' | 'bio'>>) => void;
+    updateProfile: (profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar'>>) => void;
     addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
 const ProfileSettings: React.FC<ProfileSettingsProps> = ({ user, updateProfile, addToast }) => {
     const [name, setName] = useState(user.name);
     const [bio, setBio] = useState(user.bio || '');
+    const [avatar, setAvatar] = useState(user.avatar);
+
+    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setAvatar(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleProfileSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        updateProfile({ name, bio });
+        updateProfile({ name, bio, avatar });
         addToast('Profile updated successfully!', 'success');
     };
 
@@ -23,12 +35,12 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ user, updateProfile, 
             <p className="text-gray-500 dark:text-gray-400 mb-6">Update your account's profile information and email address.</p>
             <form onSubmit={handleProfileSubmit} className="space-y-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-                    <img src={user.avatar} alt="User Avatar" className="h-24 w-24 rounded-full" />
+                    <img src={avatar} alt="User Avatar" className="h-24 w-24 rounded-full object-cover" />
                     <div>
                         <label htmlFor="avatar-upload" className="cursor-pointer px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700">
                             Change Avatar
                         </label>
-                        <input id="avatar-upload" name="avatar-upload" type="file" className="sr-only" />
+                        <input id="avatar-upload" name="avatar-upload" type="file" className="sr-only" onChange={handleAvatarChange} accept="image/*" />
                         <p className="text-xs text-gray-500 mt-2">JPG, GIF or PNG. 1MB max.</p>
                     </div>
                 </div>

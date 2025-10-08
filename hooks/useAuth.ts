@@ -169,7 +169,7 @@ export const useAuth = () => {
         persistUserUpdate({ ...user, searchHistory: [] });
     }, [user]);
 
-    const updateProfile = useCallback((profileData: Partial<Pick<User, 'name' | 'bio'>>) => {
+    const updateProfile = useCallback((profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar'>>) => {
         if (!user) return;
         persistUserUpdate({ ...user, ...profileData });
     }, [user]);
@@ -252,16 +252,32 @@ export const useAuth = () => {
             addToast('User not found.', 'error');
             return false;
         }
-        if (userData.email && userData.email !== userToUpdate.email && users[userData.email]) {
-            addToast('An account with the new email already exists.', 'error');
-            return false;
+        // FIX: Add explicit type guard to resolve multiple 'unknown' type errors.
+        if (userData && typeof userData === 'object') {
+            if (userData.email && userData.email !== userToUpdate.email && users[userData.email]) {
+                addToast('An account with the new email already exists.', 'error');
+                return false;
+            }
+            
+            // Business logic for role changes
+            if (userData.role && userData.role !== userToUpdate.role) {
+                if (userToUpdate.email === 'reponsekdz0@gmail.com' && userData.role !== 'admin') {
+                    addToast('Cannot change the primary admin role.', 'warning');
+                    return false;
+                }
+                if (userData.role === 'sub-admin' && (userData.subscription || userToUpdate.subscription) !== 'pro') {
+                     addToast('Cannot promote to Sub-Admin. User must have a Pro subscription.', 'error');
+                     return false;
+                }
+            }
+
+            const oldEmail = userToUpdate.email;
+            const updatedUser = { ...userToUpdate, ...userData };
+            persistUserUpdate(updatedUser, oldEmail);
+            addToast(`User ${updatedUser.name} updated successfully.`, 'success');
+            return true;
         }
-        
-        const oldEmail = userToUpdate.email;
-        const updatedUser = { ...userToUpdate, ...userData };
-        persistUserUpdate(updatedUser, oldEmail);
-        addToast(`User ${updatedUser.name} updated successfully.`, 'success');
-        return true;
+        return false;
     }, [user, users, addToast]);
 
     const updateUserRole = useCallback((emailToModify: string, newRole: 'admin' | 'sub-admin' | 'user') => {

@@ -30,6 +30,7 @@
         --font-dyslexic: 'Atkinson Hyperlegible', sans-serif;
         --font-body: var(--font-sans);
         --font-weight-body: 400;
+        --radius: 0.5rem;
       }
 
       body {
@@ -109,6 +110,19 @@
       .chart-pie-segment {
         transition: stroke-dashoffset 0.5s ease-out;
       }
+
+      /* Custom background image theme */
+      body.bg-image-active {
+          background-image: var(--bg-image);
+          background-size: cover;
+          background-position: center;
+          background-attachment: fixed;
+      }
+      body.bg-image-active #root > div:first-child {
+          background-color: rgba(var(--color-background), 0.85);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+      }
     </style>
     <script>
       // Enable class-based dark mode and extend theme with CSS variables
@@ -116,6 +130,12 @@
         darkMode: 'class',
         theme: {
           extend: {
+            borderRadius: {
+              DEFAULT: 'var(--radius)',
+              sm: 'calc(var(--radius) - 0.2rem)',
+              lg: 'calc(var(--radius) + 0.2rem)',
+              xl: 'calc(var(--radius) + 0.4rem)',
+            },
             colors: {
               border: 'rgb(var(--color-border) / <alpha-value>)',
               background: 'rgb(var(--color-background) / <alpha-value>)',
