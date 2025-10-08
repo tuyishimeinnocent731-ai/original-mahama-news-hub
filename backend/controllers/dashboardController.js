@@ -40,7 +40,7 @@ const getDashboardStats = async (req, res) => {
             },
             articles: {
                 total: articleStats[0].totalArticles,
-                totalViews: articleStats[0].totalViews || 0,
+                totalViews: parseInt(articleStats[0].totalViews) || 0,
             },
             ads: {
                 total: adStats[0].totalAds

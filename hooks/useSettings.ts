@@ -78,7 +78,6 @@ export const useSettings = () => {
             if (isLoggedIn) {
                 try {
                     const user = JSON.parse(authData!).user;
-                    // User object from login might contain settings
                     if (user.settings && Object.keys(user.settings).length > 0) {
                          effectiveSettings = { ...defaultSettings, ...user.settings };
                     }
@@ -86,8 +85,7 @@ export const useSettings = () => {
                     console.error("Failed to load settings from auth data", error);
                 }
             } else {
-                 // Load from localStorage for guests
-                const storedSettings = localStorage.getItem('guest-settings');
+                 const storedSettings = localStorage.getItem('guest-settings');
                 if (storedSettings) {
                     effectiveSettings = { ...defaultSettings, ...JSON.parse(storedSettings) };
                 }
@@ -107,11 +105,9 @@ export const useSettings = () => {
             applySettingsToDOM(updated);
             
             if (isLoggedIn) {
-                // Debounce API call
                 const timer = setTimeout(() => {
                     api.put('/api/users/settings', { settings: updated }).catch(e => console.error("Failed to save settings to backend", e));
                 }, 1000);
-                // In a real app, manage this timer to avoid multiple updates
             } else {
                 localStorage.setItem('guest-settings', JSON.stringify(updated));
             }
@@ -132,6 +128,5 @@ export const useSettings = () => {
     }, [settings, isInitialized]);
 
 
-    // FIX: Renamed returned property from `setSettings` to `updateSettings` to match usage in components.
     return { settings, updateSettings, isInitialized, allCategories: ALL_CATEGORIES };
 };

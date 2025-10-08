@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -83,9 +84,8 @@ const App: React.FC = () => {
   const { addToast } = useToast();
 
   const updateSiteSettings = async (newSettings: Partial<SiteSettings>) => {
-      // In real app, this would be an API call
-      const updatedSettings = { ...siteSettings, ...newSettings };
-      setSiteSettings(updatedSettings);
+      await navigationService.saveSiteSettings(newSettings);
+      setSiteSettings(prev => ({ ...prev, ...newSettings }));
       addToast('Site settings updated!', 'success');
   };
 
@@ -112,11 +112,12 @@ const App: React.FC = () => {
     setIsTopStoriesLoading(true);
 
     try {
-        const [stories, ads, links, categoryArticlesData] = await Promise.all([
+        const [stories, ads, links, categoryArticlesData, settings] = await Promise.all([
             newsService.getTopStories(),
             newsService.getAds(),
             navigationService.getNavLinks(),
             newsService.getArticles(currentCategory, 1),
+            navigationService.getSiteSettings(),
         ]);
         
         setTopStories(stories);
@@ -125,6 +126,7 @@ const App: React.FC = () => {
         setArticles(categoryArticlesData.articles);
         setTotalPages(categoryArticlesData.totalPages);
         setCurrentPage(1);
+        setSiteSettings(settings);
 
     } catch(err) {
         addToast("Failed to load initial content.", "error");
@@ -268,9 +270,8 @@ const App: React.FC = () => {
       await auth.addUserAd(adData);
       addToast('Your advertisement has been created!', 'success');
   }
-// FIX: Changed parameter from email to userId to match the implementation in useAuth hook.
+
   const handleDeleteUser = async (userId: string): Promise<boolean> => {
-      // This is now based on ID in useAuth hook for safety
       return auth.deleteUser(userId);
   };
 
@@ -282,7 +283,6 @@ const App: React.FC = () => {
   
   const inFeedAd = allAds.length > 0 ? allAds[Math.floor(Math.random() * allAds.length)] : null;
   
-  // Prepend base URL to image paths
   const processUrl = (url: string) => (url.startsWith('http') || url.startsWith('data:')) ? url : `${API_URL}${url}`;
   
   const articlesWithFullUrls = articles.map(a => ({...a, urlToImage: processUrl(a.urlToImage)}));

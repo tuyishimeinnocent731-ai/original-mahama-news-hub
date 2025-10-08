@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { User, Article, SubscriptionPlan } from '../../types';
 import { UserGroupIcon } from '../icons/UserGroupIcon';
@@ -8,7 +9,6 @@ import { StarIcon } from '../icons/StarIcon';
 import LoadingSpinner from '../LoadingSpinner';
 
 interface AnalyticsDashboardProps {
-    // FIX: Changed users prop to an async function to fetch users.
     getAllUsers: () => Promise<User[]>;
     articles: Article[];
 }
@@ -48,7 +48,6 @@ const SimpleBarChart: React.FC<{ data: { label: string; value: number }[]; title
 };
 
 const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ getAllUsers, articles }) => {
-    // FIX: Added state and effect for fetching users asynchronously.
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -86,7 +85,6 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ getAllUsers, ar
                 <StatCard title="Total Article Views" value={totalViews.toLocaleString()} icon={<EyeIcon />} />
                 <StatCard title="Total Articles" value={articles.length.toString()} icon={<NewspaperIcon />} />
                 <StatCard title="Total Users" value={users.length.toString()} icon={<UserGroupIcon />} />
-                {/* FIX: Use fallback `|| 0` to prevent arithmetic operations on undefined if a subscription plan has no users. */}
                 <StatCard title="Premium Users" value={((subscriptions.premium || 0) + (subscriptions.pro || 0)).toString()} icon={<StarIcon />} />
             </div>
             

@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { User, IntegrationId } from '../types';
 import ProfileSettings from '../components/settings/ProfileSettings';
@@ -42,7 +43,6 @@ interface SettingsPageProps {
     clearSearchHistory: () => void;
     updateProfile: (profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar' | 'socials'>>) => void;
     toggleTwoFactor: (enabled: boolean) => void;
-    // FIX: Updated changePassword to accept current and new password. Removed redundant validatePassword.
     changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
     toggleIntegration: (integrationId: IntegrationId) => void;
 }
@@ -81,7 +81,6 @@ const SettingsPage: React.FC<SettingsPageProps> = (props) => {
             case 'accessibility':
                 return <AccessibilitySettings user={props.user} onUpgradeClick={props.onUpgradeClick} />;
             case 'security':
-                // FIX: Removed validatePassword prop as it's handled by changePassword.
                 return <SecuritySettings user={props.user} toggleTwoFactor={props.toggleTwoFactor} addToast={addToast} changePassword={props.changePassword} />;
             case 'notifications':
                 return <NotificationSettings />;

@@ -8,11 +8,28 @@ interface AuthState {
     token: string | null;
 }
 
+const parseUser = (user: any): User => {
+    return {
+        ...user,
+        settings: typeof user.settings === 'string' ? JSON.parse(user.settings || '{}') : user.settings,
+        socials: typeof user.socials === 'string' ? JSON.parse(user.socials || '{}') : user.socials,
+        savedArticles: user.savedArticles || [],
+        searchHistory: user.searchHistory || [],
+        userAds: user.userAds || [],
+        paymentHistory: user.paymentHistory || [],
+        integrations: user.integrations || {},
+    };
+}
+
 const loadAuthFromStorage = (): AuthState | null => {
     try {
         const storedAuth = localStorage.getItem('auth');
         if (storedAuth) {
-            return JSON.parse(storedAuth);
+            const auth = JSON.parse(storedAuth);
+            if(auth.user) {
+                auth.user = parseUser(auth.user);
+            }
+            return auth;
         }
     } catch (error) {
         console.error("Error loading auth from storage", error);
@@ -39,21 +56,20 @@ export const useAuth = () => {
         if (authData && authData.token) {
             setUser(authData.user);
             setToken(authData.token);
-            // Optional: verify token with backend on initial load
         }
         setLoading(false);
     }, []);
 
     const handleAuthSuccess = (data: any) => {
         const { token, ...userData } = data;
-        setUser(userData);
+        const parsed = parseUser(userData);
+        setUser(parsed);
         setToken(token);
-        saveAuthToStorage({ user: userData, token });
+        saveAuthToStorage({ user: parsed, token });
     };
 
     const login = useCallback(async (email: string, password?: string) => {
         try {
-            // FIX: Specify the expected return type from the API call to resolve the 'unknown' type error.
             const data = await api.post<User & { token: string }>('/api/auth/login', { email, password });
             handleAuthSuccess(data);
             addToast(`Welcome back, ${data.name.split(' ')[0]}!`, 'success');
@@ -73,9 +89,7 @@ export const useAuth = () => {
 
     const register = useCallback(async (email: string, password?: string) => {
         try {
-            // The name is derived from email on backend, but we can pass it
             const name = email.split('@')[0];
-            // FIX: Specify the expected return type from the API call to resolve the 'unknown' type error.
             const data = await api.post<User & { token: string }>('/api/auth/register', { email, password, name });
             handleAuthSuccess(data);
             addToast('Registration successful! Welcome.', 'success');
@@ -90,8 +104,9 @@ export const useAuth = () => {
         if (!token) return;
         try {
             const userData = await api.get<User>('/api/users/profile');
-            setUser(userData);
-            saveAuthToStorage({ user: userData, token });
+            const parsed = parseUser(userData);
+            setUser(parsed);
+            saveAuthToStorage({ user: parsed, token });
         } catch (error) {
             console.error("Failed to refetch user", error);
             logout(); // Token might be invalid
@@ -145,7 +160,6 @@ export const useAuth = () => {
             formData.append(key, value);
         });
         
-        // This assumes adData.image is a base64 string, need to convert to blob
         const fetchRes = await fetch(adData.image);
         const blob = await fetchRes.blob();
         formData.set('image', blob);
@@ -158,7 +172,6 @@ export const useAuth = () => {
         }
     }, [user, addToast]);
 
-    // FIX: Refactored to correctly handle async avatar uploads and prevent type errors.
     const updateProfile = useCallback(async (profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar' | 'socials'>>) => {
         if (!user) return;
         
@@ -169,16 +182,11 @@ export const useAuth = () => {
             if (profileData.bio) formData.append('bio', profileData.bio);
             if (profileData.socials) formData.append('socials', JSON.stringify(profileData.socials));
 
-            // Handle avatar separately to manage async logic and type safety
             if (profileData.avatar && typeof profileData.avatar === 'string') {
-                if (!profileData.avatar.startsWith('http')) {
-                    // It's a new base64 image, convert to blob
+                if (!profileData.avatar.startsWith('http') && !profileData.avatar.startsWith('/')) {
                     const fetchRes = await fetch(profileData.avatar);
                     const blob = await fetchRes.blob();
                     formData.append('avatar', blob, 'avatar.png');
-                } else {
-                    // It's an existing URL, append as is
-                    formData.append('avatar', profileData.avatar);
                 }
             }
 
@@ -268,17 +276,13 @@ export const useAuth = () => {
         clearSearchHistory,
         addUserAd,
         updateProfile,
-        // The following are stubs or need full implementation
         toggleTwoFactor: (enabled: boolean) => { console.log('2FA toggle:', enabled); },
-        validatePassword: async (password: string) => { console.log('Validating pw'); return true; },
         changePassword,
         toggleIntegration: (id: IntegrationId) => { console.log('Toggle integration:', id); },
         upgradeSubscription,
-        // Admin functions
         getAllUsers,
         addUser,
         updateUser,
         deleteUser,
-        updateUserRole: (email: string, role: string) => { console.log('Update role'); return false; },
     };
 };

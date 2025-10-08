@@ -1,6 +1,8 @@
 
 
 
+
+
 import React, { useState } from 'react';
 import { User } from '../../types';
 import { ShieldCheckIcon } from '../icons/ShieldCheckIcon';
@@ -17,7 +19,6 @@ interface SecuritySettingsProps {
     user: User;
     toggleTwoFactor: (enabled: boolean) => void;
     addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
-    // FIX: Corrected changePassword signature and removed validatePassword.
     changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
 }
 
@@ -115,8 +116,6 @@ const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, toggleTwoFact
 
         setIsChangingPassword(true);
         
-        // FIX: Removed call to validatePassword and now call changePassword with both arguments.
-        // The useAuth hook's changePassword function handles backend validation and shows a toast on error.
         const success = await changePassword(currentPassword, newPassword);
         if (success) {
             addToast('Password changed successfully!', 'success');
@@ -124,7 +123,7 @@ const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, toggleTwoFact
             setNewPassword('');
             setConfirmPassword('');
         }
-        // If not successful, the useAuth hook will have already displayed an error toast.
+        
         setIsChangingPassword(false);
     };
 

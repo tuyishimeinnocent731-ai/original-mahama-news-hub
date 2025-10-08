@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, Article, Ad, SubscriptionPlan, NavLink } from '../types';
 import { NewspaperIcon } from '../components/icons/NewspaperIcon';
@@ -246,7 +247,6 @@ const AdManager: React.FC<AdManagerProps> = ({ onAddAd, onUpdateAd, allAds, onDe
 interface UserFormModalProps {
     isOpen: boolean;
     onClose: () => void;
-    // FIX: Updated onSubmit to return a Promise<boolean> to handle async operations.
     onSubmit: (userData: UserFormData, userId?: string) => Promise<boolean>;
     userToEdit?: User | null;
 }
@@ -274,7 +274,6 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSubmit
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value as any }));
     };
 
-    // FIX: Made handleSubmit async to await the result of the async onSubmit prop.
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const success = await onSubmit(formData, userToEdit?.id);
@@ -315,7 +314,6 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSubmit
 
 interface UserManagerProps {
     currentUser: User;
-    // FIX: Updated function signatures to be async.
     getAllUsers: () => Promise<User[]>;
     addUser: (userData: UserFormData) => Promise<boolean>;
     updateUser: (userId: string, userData: Partial<User>) => Promise<boolean>;
@@ -326,11 +324,15 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, add
     const [isModalOpen, setModalOpen] = useState(false);
     const [userToEdit, setUserToEdit] = useState<User | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
-    // FIX: Replaced synchronous useMemo with useState and useEffect for async data fetching.
     const [users, setUsers] = useState<User[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        getAllUsers().then(setUsers);
+        setIsLoading(true);
+        getAllUsers().then(fetchedUsers => {
+            setUsers(fetchedUsers);
+            setIsLoading(false);
+        });
     }, [getAllUsers, refreshKey]);
 
     const handleAction = async (action: (...args: any[]) => Promise<boolean>, ...args: any[]) => {
@@ -350,14 +352,12 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, add
         setModalOpen(true);
     }
     
-    // FIX: Changed parameter from email to userId to match the deleteUser function signature.
     const handleDeleteUser = (userId: string, name: string) => {
         if (window.confirm(`Are you sure you want to delete user ${name}? This action cannot be undone.`)) {
             handleAction(deleteUser, userId);
         }
     };
 
-    // FIX: Made function async and to return a Promise<boolean> for the modal.
     const handleFormSubmit = async (userData: UserFormData, userId?: string): Promise<boolean> => {
         let success: boolean;
         if (userId) { // Editing
@@ -384,63 +384,68 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, add
 
             <UserFormModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} onSubmit={handleFormSubmit} userToEdit={userToEdit} />
 
-            <div className="overflow-x-auto border rounded-lg border-border">
-                <table className="min-w-full divide-y divide-border">
-                    <thead className="bg-secondary">
-                        <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">User</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Role</th>
-                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Subscription</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-card divide-y divide-border">
-                        {users.map(user => (
-                             <tr key={user.id}>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                        <img className="h-10 w-10 rounded-full" src={user.avatar} alt={user.name} />
-                                        <div className="ml-4">
-                                            <div className="text-sm font-medium">{user.name}</div>
-                                            <div className="text-sm text-muted-foreground">{user.email}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : user.role === 'sub-admin' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'}`}>
-                                        {user.role}
-                                    </span>
-                                </td>
-                                 <td className="px-6 py-4 whitespace-nowrap text-sm capitalize">{user.subscription}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                    {user.email !== 'reponsekdz0@gmail.com' && (
-                                        <>
-                                            <button onClick={() => handleEditUser(user)} className="text-primary hover:text-primary/80"><PencilIcon className="w-5 h-5"/></button>
-                                            {/* FIX: Passed user.id instead of user.email to handleDeleteUser. */}
-                                            <button onClick={() => handleDeleteUser(user.id, user.name)} className="text-destructive hover:text-destructive/80"><TrashIcon className="w-5 h-5"/></button>
-                                        </>
-                                    )}
-                                </td>
+            {isLoading ? <div className="flex justify-center p-8"><LoadingSpinner /></div> : (
+                <div className="overflow-x-auto border rounded-lg border-border">
+                    <table className="min-w-full divide-y divide-border">
+                        <thead className="bg-secondary">
+                            <tr>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">User</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Role</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Subscription</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody className="bg-card divide-y divide-border">
+                            {users.map(user => (
+                                <tr key={user.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center">
+                                            <img className="h-10 w-10 rounded-full" src={user.avatar} alt={user.name} />
+                                            <div className="ml-4">
+                                                <div className="text-sm font-medium">{user.name}</div>
+                                                <div className="text-sm text-muted-foreground">{user.email}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : user.role === 'sub-admin' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200'}`}>
+                                            {user.role}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm capitalize">{user.subscription}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                        {user.email !== 'reponsekdz0@gmail.com' && (
+                                            <>
+                                                <button onClick={() => handleEditUser(user)} className="text-primary hover:text-primary/80"><PencilIcon className="w-5 h-5"/></button>
+                                                <button onClick={() => handleDeleteUser(user.id, user.name)} className="text-destructive hover:text-destructive/80"><TrashIcon className="w-5 h-5"/></button>
+                                            </>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 };
 
 
 interface SubscriptionManagerProps {
-    // FIX: Updated to expect an async function.
     getAllUsers: () => Promise<User[]>;
 }
 
 const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ getAllUsers }) => {
-    // FIX: Replaced synchronous call with async fetching via useEffect.
     const [users, setUsers] = useState<User[]>([]);
+     const [isLoading, setIsLoading] = useState(true);
+
     useEffect(() => {
-        getAllUsers().then(setUsers);
+        setIsLoading(true);
+        getAllUsers().then(fetchedUsers => {
+            setUsers(fetchedUsers);
+            setIsLoading(false);
+        });
     }, [getAllUsers]);
     
     const planColors: Record<SubscriptionPlan, string> = {
@@ -453,47 +458,49 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ getAllUsers }
     return (
          <div>
             <h3 className="text-2xl font-bold mb-4">Subscriptions & Payments</h3>
-            <div className="overflow-x-auto border rounded-lg border-border">
-                <table className="min-w-full divide-y divide-border">
-                    <thead className="bg-secondary">
-                         <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">User</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Subscription</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Last Payment</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-card divide-y divide-border">
-                        {users.map(user => (
-                            <tr key={user.id}>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                        <img className="h-10 w-10 rounded-full" src={user.avatar} alt="" />
-                                        <div className="ml-4">
-                                            <div className="text-sm font-medium">{user.name}</div>
-                                            <div className="text-sm text-muted-foreground">{user.email}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full capitalize ${planColors[user.subscription]}`}>
-                                        {user.subscription}
-                                    </span>
-                                </td>
-                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                                    {user.paymentHistory.length > 0 ? (
-                                        <div>
-                                            <span>{user.paymentHistory[0].amount}</span>
-                                            <span className="ml-2">({new Date(user.paymentHistory[0].date).toLocaleDateString()})</span>
-                                        </div>
-                                    ) : (
-                                        <span>N/A</span>
-                                    )}
-                                </td>
+            {isLoading ? <div className="flex justify-center p-8"><LoadingSpinner /></div> : (
+                <div className="overflow-x-auto border rounded-lg border-border">
+                    <table className="min-w-full divide-y divide-border">
+                        <thead className="bg-secondary">
+                            <tr>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">User</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Subscription</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Last Payment</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody className="bg-card divide-y divide-border">
+                            {users.map(user => (
+                                <tr key={user.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center">
+                                            <img className="h-10 w-10 rounded-full" src={user.avatar} alt="" />
+                                            <div className="ml-4">
+                                                <div className="text-sm font-medium">{user.name}</div>
+                                                <div className="text-sm text-muted-foreground">{user.email}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full capitalize ${planColors[user.subscription]}`}>
+                                            {user.subscription}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                                        {user.paymentHistory && user.paymentHistory.length > 0 ? (
+                                            <div>
+                                                <span>{user.paymentHistory[0].amount}</span>
+                                                <span className="ml-2">({new Date(user.paymentHistory[0].date).toLocaleDateString()})</span>
+                                            </div>
+                                        ) : (
+                                            <span>N/A</span>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 };
@@ -511,7 +518,6 @@ interface AdminPageProps {
     onAddAd: (data: AdFormData) => void;
     onUpdateAd: (id: string, data: AdFormData) => void;
     onDeleteAd: (id: string) => void;
-    // FIX: Updated all function prop types to be async and return Promises. Changed deleteUser to accept userId.
     getAllUsers: () => Promise<User[]>;
     addUser: (userData: UserFormData) => Promise<boolean>;
     updateUser: (userId: string, userData: Partial<User>) => Promise<boolean>;
@@ -558,7 +564,6 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
             case 'subscriptions':
                 return <SubscriptionManager getAllUsers={props.getAllUsers} />;
             case 'analytics':
-                // FIX: Passed getAllUsers as a prop instead of synchronously calling it.
                 return <AnalyticsDashboard getAllUsers={props.getAllUsers} articles={props.allArticles} />;
             case 'settings':
                 return <SiteSettingsManager settings={props.siteSettings} onUpdateSettings={props.onUpdateSiteSettings} />;

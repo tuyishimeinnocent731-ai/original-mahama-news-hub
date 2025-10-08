@@ -17,25 +17,13 @@ const addIds = (links, parentId = 'nav') => {
 
 const getNavLinks = async (req, res) => {
     try {
-        const [links] = await pool.query('SELECT * FROM nav_links ORDER BY parent_id, sort_order');
-        
+        // This is a simplified implementation. A real one would reconstruct the hierarchy.
+        // For now, we rely on the frontend constants as the source of truth if DB is empty.
+        const [links] = await pool.query('SELECT * FROM nav_links');
         if (links.length === 0) {
-            // First time running, populate from constants
-            const defaultNavLinks = addIds(NAV_LINKS.map(l => ({ ...l, id: uuidv4() }))); // temp Ids
-            const flattenedLinks = [];
-            const flatten = (links, parentId = null) => {
-                links.forEach((link, index) => {
-                    const { sublinks, ...rest } = link;
-                    flattenedLinks.push({ ...rest, parent_id: parentId, sort_order: index, id: uuidv4() });
-                    if (sublinks) flatten(sublinks, link.id);
-                });
-            }
-            // This is complex, let's just insert a default JSON for now if empty.
-            res.json(addIds(NAV_LINKS));
-            return;
+            return res.json(addIds(NAV_LINKS));
         }
 
-        // Reconstruct hierarchy from flat list
         const linkMap = {};
         links.forEach(link => linkMap[link.id] = { ...link, sublinks: [] });
         const topLevelLinks = [];
@@ -49,7 +37,6 @@ const getNavLinks = async (req, res) => {
         res.json(topLevelLinks);
     } catch (error) {
         console.error(error);
-        // Fallback to constants on error
         res.json(addIds(NAV_LINKS));
     }
 };

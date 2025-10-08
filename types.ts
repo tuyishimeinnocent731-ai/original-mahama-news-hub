@@ -57,6 +57,7 @@ export interface User {
     };
     role?: 'admin' | 'sub-admin' | 'user';
     paymentHistory: PaymentRecord[];
+    settings?: Settings; // Added for full settings sync
 }
 
 export interface NavLink {

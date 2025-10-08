@@ -1,4 +1,5 @@
 
+
 import React, { useRef } from 'react';
 import { User } from '../../types';
 import { useSettings } from '../../hooks/useSettings';
@@ -9,7 +10,6 @@ interface DataSyncSettingsProps {
 }
 
 const DataSyncSettings: React.FC<DataSyncSettingsProps> = ({ user }) => {
-    // FIX: Changed setSettings to updateSettings to match the hook's return value.
     const { settings, updateSettings } = useSettings();
     const { addToast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,13 +49,10 @@ const DataSyncSettings: React.FC<DataSyncSettingsProps> = ({ user }) => {
                 
                 const importedData = JSON.parse(text);
 
-                // Here you would typically validate the importedData structure
                 if (importedData.settings) {
-                    // FIX: Changed setSettings to updateSettings.
                     updateSettings(prev => ({...prev, ...importedData.settings}));
                 }
-                // In a real app with a backend, you would update profile and saved articles
-                // For this frontend-only demo, we'll just show a success message.
+                
                 console.log("Imported Profile Data:", importedData.profile);
                 console.log("Imported Saved Articles:", importedData.savedArticles);
 
@@ -64,7 +61,6 @@ const DataSyncSettings: React.FC<DataSyncSettingsProps> = ({ user }) => {
                 console.error("Error importing data:", error);
                 addToast('Failed to import data. The file may be corrupt.', 'error');
             } finally {
-                // Reset file input
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }

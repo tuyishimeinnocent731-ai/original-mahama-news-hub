@@ -6,7 +6,7 @@ const getUserProfile = async (req, res) => {
     try {
         const [rows] = await pool.query(`
             SELECT u.*, 
-                   (SELECT JSON_ARRAYAGG(JSON_OBJECT('id', sh.id, 'query', sh.query, 'created_at', sh.created_at)) FROM (SELECT * FROM search_history WHERE user_id = u.id ORDER BY created_at DESC LIMIT 5) sh) as searchHistory,
+                   (SELECT JSON_ARRAYAGG(sh.query) FROM (SELECT query FROM search_history WHERE user_id = u.id ORDER BY created_at DESC LIMIT 5) sh) as searchHistory,
                    (SELECT JSON_ARRAYAGG(sa.article_id) FROM saved_articles sa WHERE sa.user_id = u.id) as savedArticles,
                    (SELECT JSON_ARRAYAGG(JSON_OBJECT('id', ad.id, 'headline', ad.headline, 'image', ad.image, 'url', ad.url)) FROM ads ad WHERE ad.user_id = u.id) as userAds,
                    (SELECT JSON_ARRAYAGG(JSON_OBJECT('id', ph.id, 'date', ph.date, 'plan', ph.plan, 'amount', ph.amount, 'method', ph.method, 'status', ph.status)) FROM payment_history ph WHERE ph.user_id = u.id ORDER BY ph.date DESC) as paymentHistory
