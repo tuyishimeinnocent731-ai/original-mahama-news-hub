@@ -27,16 +27,20 @@ import VideoPage from './pages/VideoPage';
 import LiveAssistantModal from './components/LiveAssistantModal';
 import MyAdsPage from './pages/MyAdsPage';
 import Pagination from './components/Pagination';
+import NotificationsPage from './pages/NotificationsPage';
+import AboutUsPage from './pages/AboutUsPage';
+import ContactUsPage from './pages/ContactUsPage';
 
 import * as newsService from './services/newsService';
 import * as navigationService from './services/navigationService';
+import * as userService from './services/userService';
 import { useAuth } from './hooks/useAuth';
 import { useSettings } from './hooks/useSettings';
 import { useToast } from './contexts/ToastContext';
-import { Article, Ad, SubscriptionPlan, PaymentRecord, NavLink } from './types';
+import { Article, Ad, SubscriptionPlan, PaymentRecord, NavLink, Notification } from './types';
 import { API_URL } from './services/apiService';
 
-type View = 'home' | 'article' | 'settings' | 'saved' | 'admin' | 'video' | 'my-ads' | 'sub-admin-management';
+type View = 'home' | 'article' | 'settings' | 'saved' | 'admin' | 'video' | 'my-ads' | 'sub-admin-management' | 'notifications' | 'about-us' | 'contact-us';
 
 interface SiteSettings {
   siteName: string;
@@ -63,6 +67,8 @@ const App: React.FC = () => {
   
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   const [isSearchOpen, setSearchOpen] = useState(false);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -112,13 +118,19 @@ const App: React.FC = () => {
     setIsTopStoriesLoading(true);
 
     try {
-        const [stories, ads, links, categoryArticlesData, settings] = await Promise.all([
+        const promises: any[] = [
             newsService.getTopStories(),
             newsService.getAds(),
             navigationService.getNavLinks(),
             newsService.getArticles(currentCategory, 1),
             navigationService.getSiteSettings(),
-        ]);
+        ];
+        
+        if (auth.isLoggedIn) {
+            promises.push(userService.getNotifications());
+        }
+
+        const [stories, ads, links, categoryArticlesData, settings, notifications] = await Promise.all(promises);
         
         setTopStories(stories);
         setAllAds(ads);
@@ -127,6 +139,9 @@ const App: React.FC = () => {
         setTotalPages(categoryArticlesData.totalPages);
         setCurrentPage(1);
         setSiteSettings(settings);
+        if (notifications) {
+            setUnreadNotifications(notifications.filter((n: Notification) => !n.is_read).length);
+        }
 
     } catch(err) {
         addToast("Failed to load initial content.", "error");
@@ -138,28 +153,32 @@ const App: React.FC = () => {
     // Fetch all articles in background for admin panel/search filters
     newsService.getAllArticles().then(setAllArticles).catch(() => {});
 
-  }, [currentCategory, addToast]);
+  }, [currentCategory, addToast, auth.isLoggedIn]);
 
 
   useEffect(() => {
     fetchAllContent();
   }, [auth.isLoggedIn]); // Refetch content on login/logout
+  
+  const handleViewChange = (newView: View) => {
+      setView(newView);
+      window.scrollTo(0,0);
+  }
 
   const handleArticleClick = (article: Article) => {
     setCurrentArticle(article);
-    setView('article');
-    window.scrollTo(0, 0);
+    handleViewChange('article');
   };
   
   const handleBackToHome = () => {
-    setView('home');
+    handleViewChange('home');
     setCurrentArticle(null);
   }
 
     const handleSearch = async (query: string, filters: { category?: string; author?: string; tag?: string } = {}, page: number = 1) => {
         setSearchOpen(false);
         setIsLoading(true);
-        setView('home');
+        handleViewChange('home');
         setCurrentArticle(null);
         try {
             const { articles: fetchedArticles, totalPages: fetchedTotalPages } = await newsService.searchArticles(query, filters, page);
@@ -195,7 +214,7 @@ const App: React.FC = () => {
   
   const handleCategorySelect = (category: string) => {
       if (category.toLowerCase() === 'video') {
-          setView('video');
+          handleViewChange('video');
           setCurrentArticle(null);
           setCurrentCategory('Video');
       } else {
@@ -331,7 +350,7 @@ const App: React.FC = () => {
           />
         );
       case 'settings':
-        return auth.user && <SettingsPage user={auth.user} onUpgradeClick={() => setPremiumModalOpen(true)} onManageAdsClick={() => setView('my-ads')} />;
+        return auth.user && <SettingsPage user={auth.user} onUpgradeClick={() => setPremiumModalOpen(true)} onManageAdsClick={() => handleViewChange('my-ads')} />;
       case 'saved':
         const savedArticles = allArticlesWithFullUrls.filter(a => auth.isArticleSaved(a.id));
         return <SavedArticlesPage savedArticles={savedArticles} onArticleClick={handleArticleClick} />;
@@ -364,13 +383,19 @@ const App: React.FC = () => {
                   onAddArticle={handleAddArticle}
                   onUpdateArticle={handleUpdateArticle}
                   onDeleteArticle={handleDeleteArticle}
-                  onBack={() => setView('admin')}
+                  onBack={() => handleViewChange('admin')}
               />
           );
        case 'video':
           return <VideoPage allArticles={allArticlesWithFullUrls} onArticleClick={handleArticleClick} />;
        case 'my-ads':
           return <MyAdsPage user={auth.user} onBack={handleBackToHome} onCreateAd={handleAddUserAd} />
+      case 'notifications':
+        return auth.user && <NotificationsPage onNotificationCountChange={setUnreadNotifications} />;
+      case 'about-us':
+        return <AboutUsPage />;
+      case 'contact-us':
+        return <ContactUsPage />;
       case 'home':
       default:
         return (
@@ -432,6 +457,7 @@ const App: React.FC = () => {
             navLinks={navLinks}
             user={auth.user}
             isLoggedIn={auth.isLoggedIn}
+            unreadNotifications={unreadNotifications}
             onLoginClick={() => setAuthModalOpen(true)}
             onLogout={auth.logout}
             onSearchClick={() => setSearchOpen(true)}
@@ -441,16 +467,21 @@ const App: React.FC = () => {
             onLiveAssistantClick={() => setLiveAssistantOpen(true)}
             onCategorySelect={handleCategorySelect}
             onArticleClick={handleArticleClick}
-            onSettingsClick={() => setView('settings')}
-            onSavedClick={() => setView('saved')}
+            onSettingsClick={() => handleViewChange('settings')}
+            onSavedClick={() => handleViewChange('saved')}
+            onNotificationsClick={() => handleViewChange('notifications')}
             onPremiumClick={() => setPremiumModalOpen(true)}
-            onAdminClick={() => setView('admin')}
-            onSubAdminClick={() => setView('sub-admin-management')}
+            onAdminClick={() => handleViewChange('admin')}
+            onSubAdminClick={() => handleViewChange('sub-admin-management')}
         />
         <main className="container mx-auto p-4 sm:p-6 lg:p-8">
             {renderMainContent()}
         </main>
-        <Footer navLinks={navLinks} />
+        <Footer 
+            navLinks={navLinks} 
+            onAboutClick={() => handleViewChange('about-us')}
+            onContactClick={() => handleViewChange('contact-us')}
+        />
         <InteractiveSearchBar 
             isOpen={isSearchOpen} 
             onClose={() => setSearchOpen(false)} 
@@ -470,12 +501,12 @@ const App: React.FC = () => {
             user={auth.user}
             onLoginClick={() => setAuthModalOpen(true)}
             onLogout={auth.logout}
-            onSettingsClick={() => setView('settings')}
+            onSettingsClick={() => handleViewChange('settings')}
         />
         <CommandPalette 
             isOpen={isCommandPaletteOpen} 
             onClose={() => setCommandPaletteOpen(false)}
-            onOpenSettings={() => { setView('settings'); }}
+            onOpenSettings={() => { handleViewChange('settings'); }}
             onOpenPremium={() => { setPremiumModalOpen(true); }}
             onOpenSearch={() => { setSearchOpen(true); }}
         />

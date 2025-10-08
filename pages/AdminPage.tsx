@@ -19,7 +19,11 @@ import ArticleManager, { ArticleFormData } from '../components/admin/ArticleMana
 import AnalyticsDashboard from '../components/admin/AnalyticsDashboard';
 import { ChartBarIcon } from '../components/icons/ChartBarIcon';
 import * as newsService from '../services/newsService';
+import * as navigationService from '../services/navigationService';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { EnvelopeIcon } from '../components/icons/EnvelopeIcon';
+import PageManager from '../components/admin/PageManager';
+import MessageViewer from '../components/admin/MessageViewer';
 
 
 type AdFormData = Omit<Ad, 'id'>;
@@ -336,6 +340,7 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, add
     }, [getAllUsers, refreshKey]);
 
     const handleAction = async (action: (...args: any[]) => Promise<boolean>, ...args: any[]) => {
+// FIX: Removed incorrect type annotation from function call arguments.
         const success = await action(...args);
         if (success) {
             setRefreshKey(k => k + 1);
@@ -505,7 +510,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ getAllUsers }
     );
 };
 
-type AdminTab = 'dashboard' | 'articles' | 'ads' | 'users' | 'navigation' | 'settings' | 'subscriptions' | 'analytics';
+type AdminTab = 'dashboard' | 'articles' | 'ads' | 'users' | 'navigation' | 'pages' | 'messages' | 'settings' | 'subscriptions' | 'analytics';
 
 interface AdminPageProps {
     user: User;
@@ -534,7 +539,9 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
         { id: 'dashboard', label: 'Dashboard', icon: <ChartPieIcon className="w-5 h-5" />, roles: ['admin', 'sub-admin'] },
         { id: 'articles', label: 'Manage Articles', icon: <NewspaperIcon className="w-5 h-5" />, roles: ['admin', 'sub-admin'] },
         { id: 'navigation', label: 'Navigation', icon: <BookOpenIcon className="w-5 h-5" />, roles: ['admin'] },
+        { id: 'pages', label: 'Page Content', icon: <PencilIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'ads', label: 'Manage Ads', icon: <MegaphoneIcon className="w-5 h-5" />, roles: ['admin'] },
+        { id: 'messages', label: 'Contact Messages', icon: <EnvelopeIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'users', label: 'Manage Users', icon: <UserGroupIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'subscriptions', label: 'Subscriptions', icon: <BillingIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'analytics', label: 'Analytics', icon: <ChartBarIcon className="w-5 h-5" />, roles: ['admin'] },
@@ -557,8 +564,12 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
                 return <ArticleManager onAddArticle={props.onAddArticle} onUpdateArticle={props.onUpdateArticle} allArticles={props.allArticles} onDeleteArticle={props.onDeleteArticle} />;
             case 'navigation':
                 return <NavigationManager navLinks={props.navLinks} onUpdateNavLinks={props.onUpdateNavLinks} />;
+            case 'pages':
+                return <PageManager />;
             case 'ads':
                 return <AdManager onAddAd={props.onAddAd} onUpdateAd={props.onUpdateAd} allAds={props.allAds} onDeleteAd={props.onDeleteAd} />;
+            case 'messages':
+                return <MessageViewer />;
             case 'users':
                 return <UserManager currentUser={props.user} getAllUsers={props.getAllUsers} addUser={props.addUser} updateUser={props.updateUser} deleteUser={props.deleteUser} />;
             case 'subscriptions':

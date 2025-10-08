@@ -156,8 +156,50 @@ export interface ApiKey {
 
 export interface Notification {
     id: number;
-    type: 'alert' | 'feature' | 'update';
+    user_id: string;
+    type: 'alert' | 'feature' | 'update' | 'message';
     message: string;
     is_read: boolean;
     created_at: string;
+    link?: string;
+}
+
+export interface Page {
+    slug: string;
+    title: string;
+    content: string;
+    updated_at: string;
+}
+
+export interface ContactMessage {
+    id: number;
+    name: string;
+    email: string;
+    subject?: string;
+    message: string;
+    is_read: boolean;
+    created_at: string;
+}
+
+export interface JobPosting {
+    id: number;
+    title: string;
+    location: string;
+    type: 'Full-time' | 'Part-time' | 'Contract';
+    description: string;
+    is_active: boolean;
+    created_at: string;
+}
+
+export interface JobApplication {
+    id: number;
+    job_id: number;
+    user_id?: string;
+    name: string;
+    email: string;
+    resume_path: string;
+    cover_letter?: string;
+    applied_at: string;
+    // Joined from job_postings table
+    job_title?: string;
 }

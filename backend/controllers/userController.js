@@ -146,6 +146,24 @@ const changePassword = async (req, res, next) => {
     }
 };
 
+const deleteUserAccount = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        
+        // Log the action before deleting
+        await pool.query('INSERT INTO activity_log (user_id, action_type, ip_address, details) VALUES (?, ?, ?, ?)', [
+            userId, 'account_deleted', req.ipAddress, JSON.stringify({ reason: 'User initiated' })
+        ]);
+        
+        // Delete the user. Cascading deletes should handle related data.
+        await pool.query('DELETE FROM users WHERE id = ?', [userId]);
+        
+        res.json({ message: 'Your account has been successfully deleted.' });
+    } catch (error) {
+        next(error);
+    }
+};
+
 const addUserAd = async (req, res, next) => {
     const { headline, url } = req.body;
     const image = req.file ? `/uploads/${req.file.filename}` : null;
@@ -190,6 +208,59 @@ const upgradeSubscription = async (req, res, next) => {
         next(err);
     }
 }
+
+// --- NOTIFICATION CONTROLLERS ---
+const getNotifications = async (req, res, next) => {
+    try {
+        const [notifications] = await pool.query('SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
+        res.json(notifications);
+    } catch (error) {
+        next(error);
+    }
+};
+
+const markNotificationRead = async (req, res, next) => {
+    try {
+        await pool.query('UPDATE notifications SET is_read = TRUE WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+        res.status(200).json({ message: 'Notification marked as read.' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const markAllNotificationsRead = async (req, res, next) => {
+    try {
+        await pool.query('UPDATE notifications SET is_read = TRUE WHERE user_id = ?', [req.user.id]);
+        res.status(200).json({ message: 'All notifications marked as read.' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const deleteNotification = async (req, res, next) => {
+    try {
+        await pool.query('DELETE FROM notifications WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+        res.status(200).json({ message: 'Notification deleted.' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// --- Job Application Controller ---
+const getUserApplications = async (req, res, next) => {
+    try {
+        const [applications] = await pool.query(`
+            SELECT ja.*, jp.title as job_title
+            FROM job_applications ja
+            JOIN job_postings jp ON ja.job_id = jp.id
+            WHERE ja.user_id = ?
+            ORDER BY ja.applied_at DESC
+        `, [req.user.id]);
+        res.json(applications);
+    } catch (error) {
+        next(error);
+    }
+};
 
 
 // --- ADMIN CONTROLLERS ---
@@ -263,5 +334,7 @@ module.exports = {
     getAllUsers, createUser, updateUser, deleteUser,
     getUserProfile, updateUserProfile, updateUserSettings,
     getSavedArticles, toggleSavedArticle, clearSearchHistory,
-    changePassword, addUserAd, upgradeSubscription,
+    changePassword, deleteUserAccount, addUserAd, upgradeSubscription,
+    getNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification,
+    getUserApplications,
 };

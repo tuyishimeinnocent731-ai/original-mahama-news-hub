@@ -14,6 +14,12 @@ const {
     changePassword,
     addUserAd,
     upgradeSubscription,
+    getNotifications,
+    markNotificationRead,
+    markAllNotificationsRead,
+    deleteNotification,
+    getUserApplications,
+    deleteUserAccount,
 } = require('../controllers/userController');
 const { protect, admin, proUser } = require('../middleware/authMiddleware');
 const { upload } = require('../controllers/articleController'); // Re-use image upload logic
@@ -29,6 +35,8 @@ router.route('/profile')
     
 router.put('/settings', protect, updateUserSettings);
 router.put('/password', protect, changePassword);
+router.delete('/me/account', protect, deleteUserAccount);
+
 
 router.route('/saved')
     .get(protect, getSavedArticles);
@@ -40,5 +48,17 @@ router.delete('/search-history', protect, clearSearchHistory);
 
 router.post('/ads', protect, proUser, upload.single('image'), addUserAd);
 router.post('/subscription', protect, upgradeSubscription);
+
+// Notification routes
+router.route('/notifications')
+    .get(protect, getNotifications);
+
+router.put('/notifications/:id/read', protect, markNotificationRead);
+router.post('/notifications/read-all', protect, markAllNotificationsRead);
+router.delete('/notifications/:id', protect, deleteNotification);
+
+// Application routes
+router.get('/me/applications', protect, getUserApplications);
+
 
 module.exports = router;

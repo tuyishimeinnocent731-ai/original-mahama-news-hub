@@ -26,6 +26,8 @@ app.use((req, res, next) => {
 
 // Static folder for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads/resumes', express.static(path.join(__dirname, 'uploads/resumes')));
+
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -44,7 +46,7 @@ app.get('/', (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
-    const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+    const statusCode = err.statusCode || 500;
     res.status(statusCode).json({
         message: err.message,
         stack: process.env.NODE_ENV === 'production' ? null : err.stack,

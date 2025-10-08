@@ -4,9 +4,11 @@ import { FacebookIcon, InstagramIcon, TwitterIcon } from './icons/SocialIcons';
 
 interface FooterProps {
     navLinks: NavLink[];
+    onAboutClick: () => void;
+    onContactClick: () => void;
 }
 
-const Footer: React.FC<FooterProps> = ({ navLinks }) => {
+const Footer: React.FC<FooterProps> = ({ navLinks, onAboutClick, onContactClick }) => {
   return (
     <footer className="bg-blue-900 dark:bg-gray-900 text-blue-200 mt-12">
       <div className="container mx-auto px-4 py-12">
@@ -21,7 +23,7 @@ const Footer: React.FC<FooterProps> = ({ navLinks }) => {
                  </div>
             </div>
             <div className="lg:col-span-5 grid grid-cols-2 md:grid-cols-3 gap-8">
-                 {navLinks.filter(l => l.sublinks && l.sublinks.length > 0).map((link) => (
+                 {navLinks.filter(l => l.sublinks && l.sublinks.length > 0).slice(0, 2).map((link) => (
                     <div key={link.id}>
                         <h3 className="font-semibold text-white mb-4">{link.name}</h3>
                         <ul className="space-y-2">
@@ -31,6 +33,15 @@ const Footer: React.FC<FooterProps> = ({ navLinks }) => {
                         </ul>
                     </div>
                 ))}
+                 <div>
+                    <h3 className="font-semibold text-white mb-4">Company</h3>
+                    <ul className="space-y-2">
+                        <li><button onClick={onAboutClick} className="text-sm hover:text-yellow-300 transition-colors">About Us</button></li>
+                        <li><button onClick={onContactClick} className="text-sm hover:text-yellow-300 transition-colors">Contact Us</button></li>
+                        <li><a href="#" className="text-sm hover:text-yellow-300 transition-colors">Careers</a></li>
+                        <li><a href="#" className="text-sm hover:text-yellow-300 transition-colors">Privacy Policy</a></li>
+                    </ul>
+                </div>
             </div>
             <div className="lg:col-span-3">
                 <h3 className="font-semibold text-white mb-4">Subscribe to our Newsletter</h3>

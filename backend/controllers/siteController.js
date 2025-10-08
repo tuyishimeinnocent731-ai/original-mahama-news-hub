@@ -118,5 +118,164 @@ const updateSiteSettings = async (req, res) => {
     }
 };
 
+// --- Page Content Controllers ---
+const getPage = async (req, res, next) => {
+    try {
+        const [pages] = await pool.query('SELECT slug, title, content, updated_at FROM pages WHERE slug = ?', [req.params.slug]);
+        if (pages.length > 0) {
+            res.json(pages[0]);
+        } else {
+            res.status(404).json({ message: 'Page not found' });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
 
-module.exports = { getNavLinks, updateNavLinks, getSiteSettings, updateSiteSettings };
+const updatePage = async (req, res, next) => {
+    try {
+        const { title, content } = req.body;
+        await pool.query('UPDATE pages SET title = ?, content = ?, last_updated_by = ? WHERE slug = ?', [title, content, req.user.id, req.params.slug]);
+        res.json({ message: 'Page updated successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// --- Contact Message Controllers ---
+const submitContactMessage = async (req, res, next) => {
+    try {
+        const { name, email, subject, message } = req.body;
+        if (!name || !email || !message) {
+            return res.status(400).json({ message: 'Name, email, and message are required.' });
+        }
+        await pool.query('INSERT INTO contact_messages (name, email, subject, message) VALUES (?, ?, ?, ?)', [name, email, subject, message]);
+        res.status(201).json({ message: 'Thank you for your message. We will get back to you shortly.' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const getContactMessages = async (req, res, next) => {
+    try {
+        const [messages] = await pool.query('SELECT * FROM contact_messages ORDER BY created_at DESC');
+        res.json(messages);
+    } catch (error) {
+        next(error);
+    }
+};
+
+const updateContactMessage = async (req, res, next) => {
+    try {
+        const { is_read } = req.body;
+        await pool.query('UPDATE contact_messages SET is_read = ? WHERE id = ?', [is_read, req.params.id]);
+        res.json({ message: 'Message updated' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const deleteContactMessage = async (req, res, next) => {
+    try {
+        await pool.query('DELETE FROM contact_messages WHERE id = ?', [req.params.id]);
+        res.json({ message: 'Message deleted' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// --- Job Posting Controllers ---
+const getJobPostings = async (req, res, next) => {
+    try {
+        const [jobs] = await pool.query('SELECT * FROM job_postings WHERE is_active = TRUE ORDER BY created_at DESC');
+        res.json(jobs);
+    } catch (error) {
+        next(error);
+    }
+};
+
+const submitJobApplication = async (req, res, next) => {
+    const { id: jobId } = req.params;
+    const { name, email, cover_letter } = req.body;
+    const resume_path = req.file ? `/uploads/resumes/${req.file.filename}` : null;
+    const user_id = req.user ? req.user.id : null;
+
+    if (!name || !email || !resume_path) {
+        return res.status(400).json({ message: 'Name, email, and resume are required.' });
+    }
+
+    try {
+        const newApplication = { job_id: jobId, user_id, name, email, resume_path, cover_letter };
+        await pool.query('INSERT INTO job_applications SET ?', newApplication);
+        res.status(201).json({ message: 'Application submitted successfully!' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// --- Admin Job Controllers ---
+const createJobPosting = async (req, res, next) => {
+    try {
+        const { title, location, type, description } = req.body;
+        const [result] = await pool.query(
+            'INSERT INTO job_postings (title, location, type, description) VALUES (?, ?, ?, ?)',
+            [title, location, type, description]
+        );
+        res.status(201).json({ id: result.insertId, ...req.body });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const updateJobPosting = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { title, location, type, description, is_active } = req.body;
+        await pool.query(
+            'UPDATE job_postings SET title = ?, location = ?, type = ?, description = ?, is_active = ? WHERE id = ?',
+            [title, location, type, description, is_active, id]
+        );
+        res.json({ message: 'Job posting updated.' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const deleteJobPosting = async (req, res, next) => {
+    try {
+        await pool.query('DELETE FROM job_postings WHERE id = ?', [req.params.id]);
+        res.json({ message: 'Job posting deleted.' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const getJobApplications = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const [applications] = await pool.query('SELECT * FROM job_applications WHERE job_id = ? ORDER BY applied_at DESC', [id]);
+        res.json(applications);
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+module.exports = { 
+    getNavLinks, 
+    updateNavLinks, 
+    getSiteSettings, 
+    updateSiteSettings,
+    getPage,
+    updatePage,
+    submitContactMessage,
+    getContactMessages,
+    updateContactMessage,
+    deleteContactMessage,
+    getJobPostings,
+    submitJobApplication,
+    createJobPosting,
+    updateJobPosting,
+    deleteJobPosting,
+    getJobApplications,
+};

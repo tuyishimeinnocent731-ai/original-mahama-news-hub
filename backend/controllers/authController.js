@@ -86,6 +86,11 @@ const loginUser = async (req, res, next) => {
                 user.id, 'login', req.ipAddress, JSON.stringify({ device: req.headers['user-agent'] })
             ]);
             
+            // Add a welcome back notification
+            await pool.query('INSERT INTO notifications (user_id, type, message) VALUES (?, ?, ?)', [
+                user.id, 'update', `Welcome back, ${user.name.split(' ')[0]}! Here's what you missed.`
+            ]);
+            
             // Fetch comprehensive user data
             const [fullUserRows] = await pool.query(formatUserFromDb.userQuery, [user.id]);
             const fullUser = formatUserFromDb(fullUserRows[0]);

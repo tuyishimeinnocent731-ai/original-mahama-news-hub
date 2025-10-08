@@ -9,11 +9,13 @@ import { getArticlesForMegaMenu } from '../services/newsService';
 import { CommandIcon } from './icons/CommandIcon';
 import { TrendingUpIcon } from './icons/TrendingUpIcon';
 import { MicrophoneIcon } from './icons/MicrophoneIcon';
+import { BellIcon } from './icons/BellIcon';
 
 interface HeaderProps {
     user: User | null;
     isLoggedIn: boolean;
     navLinks: NavLink[];
+    unreadNotifications: number;
     onLoginClick: () => void;
     onLogout: () => void;
     onSearchClick: () => void;
@@ -23,6 +25,7 @@ interface HeaderProps {
     onLiveAssistantClick: () => void;
     onSettingsClick: () => void;
     onSavedClick: () => void;
+    onNotificationsClick: () => void;
     onPremiumClick: () => void;
     onAdminClick: () => void;
     onSubAdminClick: () => void;
@@ -73,7 +76,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                     <button onClick={() => onCategorySelect('World')} className="text-xl font-bold text-accent">
                         {props.siteName}
                     </button>
-                    <div className="flex items-center space-x-2 sm:space-x-3">
+                    <div className="flex items-center space-x-1 sm:space-x-2">
                          {props.isLoggedIn && isPremium && (
                              <button onClick={props.onLiveAssistantClick} className="hidden lg:flex items-center space-x-2 px-3 py-2 rounded-md bg-accent/20 text-accent font-semibold hover:bg-accent/30 transition-colors text-sm" aria-label="Talk to AI">
                                 <MicrophoneIcon />
@@ -87,6 +90,14 @@ const Header: React.FC<HeaderProps> = (props) => {
                             <CommandIcon />
                             <span className="hidden lg:inline">Cmd+K</span>
                         </button>
+                        {props.isLoggedIn && (
+                            <button onClick={props.onNotificationsClick} className="relative p-2 rounded-full hover:bg-primary-foreground/10" aria-label="Notifications">
+                                <BellIcon />
+                                {props.unreadNotifications > 0 && (
+                                    <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-primary"></span>
+                                )}
+                            </button>
+                        )}
                         <button onClick={toggleTheme} className="hidden lg:block p-2 rounded-full hover:bg-primary-foreground/10" aria-label="Toggle theme">
                             {isDark ? <SunIcon /> : <MoonIcon />}
                         </button>
