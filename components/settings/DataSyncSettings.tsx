@@ -1,3 +1,4 @@
+
 import React, { useRef } from 'react';
 import { User } from '../../types';
 import { useSettings } from '../../hooks/useSettings';
@@ -8,7 +9,8 @@ interface DataSyncSettingsProps {
 }
 
 const DataSyncSettings: React.FC<DataSyncSettingsProps> = ({ user }) => {
-    const { settings, setSettings } = useSettings();
+    // FIX: Changed setSettings to updateSettings to match the hook's return value.
+    const { settings, updateSettings } = useSettings();
     const { addToast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -49,7 +51,8 @@ const DataSyncSettings: React.FC<DataSyncSettingsProps> = ({ user }) => {
 
                 // Here you would typically validate the importedData structure
                 if (importedData.settings) {
-                    setSettings(prev => ({...prev, ...importedData.settings}));
+                    // FIX: Changed setSettings to updateSettings.
+                    updateSettings(prev => ({...prev, ...importedData.settings}));
                 }
                 // In a real app with a backend, you would update profile and saved articles
                 // For this frontend-only demo, we'll just show a success message.

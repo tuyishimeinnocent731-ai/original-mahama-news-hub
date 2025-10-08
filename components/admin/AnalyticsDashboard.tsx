@@ -1,12 +1,15 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { User, Article, SubscriptionPlan } from '../../types';
 import { UserGroupIcon } from '../icons/UserGroupIcon';
 import { NewspaperIcon } from '../icons/NewspaperIcon';
 import { EyeIcon } from '../icons/EyeIcon';
 import { StarIcon } from '../icons/StarIcon';
+import LoadingSpinner from '../LoadingSpinner';
 
 interface AnalyticsDashboardProps {
-    users: User[];
+    // FIX: Changed users prop to an async function to fetch users.
+    getAllUsers: () => Promise<User[]>;
     articles: Article[];
 }
 
@@ -44,7 +47,22 @@ const SimpleBarChart: React.FC<{ data: { label: string; value: number }[]; title
     );
 };
 
-const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ users, articles }) => {
+const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ getAllUsers, articles }) => {
+    // FIX: Added state and effect for fetching users asynchronously.
+    const [users, setUsers] = useState<User[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        getAllUsers().then(fetchedUsers => {
+            setUsers(fetchedUsers);
+            setIsLoading(false);
+        });
+    }, [getAllUsers]);
+
+    if (isLoading) {
+        return <div className="flex justify-center p-12"><LoadingSpinner /></div>;
+    }
+
     // Mock data generation
     const totalViews = articles.length * 1234; // Mock calculation
     const subscriptions = users.reduce((acc, user) => {

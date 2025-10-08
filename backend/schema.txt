@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS articles (
     category VARCHAR(255),
     gallery_images JSON,
     scheduled_for TIMESTAMP NULL,
+    view_count INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -78,6 +79,24 @@ CREATE TABLE IF NOT EXISTS payment_history (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS comments (
+    id VARCHAR(255) PRIMARY KEY,
+    article_id VARCHAR(255) NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+    parent_id VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS site_settings (
+    setting_key VARCHAR(255) PRIMARY KEY,
+    setting_value TEXT
+);
+
+
 -- Insert Default Admin User
 -- Password is '2025'
 INSERT INTO users (id, name, email, password_hash, avatar, bio, socials, subscription, two_factor_enabled, role, settings) 
@@ -94,3 +113,9 @@ VALUES (
     'admin',
     '{"theme": {"name": "default", "accent": "yellow"}, "font": {"family": "Inter", "weight": "400"}, "layout": {"homepage": "grid", "density": "comfortable", "infiniteScroll": false}, "ui": {"cardStyle": "standard", "borderRadius": "rounded"}, "reading": {"autoPlayAudio": false, "defaultSummaryView": false, "lineHeight": 1.6, "letterSpacing": 0, "justifyText": false}, "fontSize": "small", "highContrast": false, "reduceMotion": false, "dyslexiaFont": false, "notifications": {"breakingNews": true, "weeklyDigest": true, "specialOffers": false}, "preferredCategories": [], "dataSharing": true, "adPersonalization": true}'
 ) ON DUPLICATE KEY UPDATE name = name; -- Do nothing if admin already exists
+
+-- Populate default site settings
+INSERT INTO site_settings (setting_key, setting_value) VALUES 
+('siteName', 'Mahama News Hub'),
+('maintenanceMode', 'false')
+ON DUPLICATE KEY UPDATE setting_key=setting_key;

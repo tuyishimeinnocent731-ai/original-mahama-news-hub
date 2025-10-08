@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, Article, Ad, SubscriptionPlan, NavLink } from '../types';
 import { NewspaperIcon } from '../components/icons/NewspaperIcon';
@@ -16,28 +17,26 @@ import SiteSettingsManager from '../components/admin/SiteSettingsManager';
 import ArticleManager, { ArticleFormData } from '../components/admin/ArticleManager';
 import AnalyticsDashboard from '../components/admin/AnalyticsDashboard';
 import { ChartBarIcon } from '../components/icons/ChartBarIcon';
+import * as newsService from '../services/newsService';
+import LoadingSpinner from '../components/LoadingSpinner';
+
 
 type AdFormData = Omit<Ad, 'id'>;
 type UserFormData = Pick<User, 'name' | 'email' | 'role' | 'subscription'> & { password?: string };
 
-const ContentPieChart: React.FC<{ articles: Article[] }> = ({ articles }) => {
-    const categoryCounts = articles.reduce((acc: Record<string, number>, article) => {
-        acc[article.category] = (acc[article.category] || 0) + 1;
-        return acc;
-    }, {});
-
-    const total = articles.length;
+const ContentPieChart: React.FC<{ distribution: { category: string, count: number }[] }> = ({ distribution }) => {
+    const total = distribution.reduce((sum, item) => sum + item.count, 0);
     if (total === 0) return <div className="text-center text-sm text-muted-foreground">No articles to display.</div>;
 
     const colors = ['#FBBF24', '#60A5FA', '#34D399', '#F87171', '#A78BFA', '#F472B6'];
-    const segments: [string, number][] = Object.entries(categoryCounts);
+    const segments = distribution.slice(0, 5);
     let accumulatedOffset = 0;
 
     return (
         <div className="flex items-center justify-center space-x-6">
             <svg width="150" height="150" viewBox="0 0 100 100" className="chart-pie">
                 <circle r="25" cx="50" cy="50" fill="transparent" stroke="#E5E7EB" strokeWidth="50"></circle>
-                {segments.map(([category, count], index) => {
+                {segments.map(({ category, count }, index) => {
                     const percentage = (count / total) * 100;
                     const offset = accumulatedOffset;
                     accumulatedOffset += percentage;
@@ -58,7 +57,7 @@ const ContentPieChart: React.FC<{ articles: Article[] }> = ({ articles }) => {
                 })}
             </svg>
             <div className="text-sm space-y-2">
-                {segments.map(([category, count], index) => (
+                {segments.map(({ category, count }, index) => (
                     <div key={category} className="flex items-center">
                         <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: colors[index % colors.length] }}></span>
                         <span>{category} ({count})</span>
@@ -69,20 +68,28 @@ const ContentPieChart: React.FC<{ articles: Article[] }> = ({ articles }) => {
     );
 };
 
-interface DashboardProps {
-    users: User[];
-    articles: Article[];
-    ads: Ad[];
-}
+const Dashboard: React.FC = () => {
+    const [stats, setStats] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
-const Dashboard: React.FC<DashboardProps> = ({ users, articles, ads }) => {
-    const totalUsers = users.length;
-    const totalArticles = articles.length;
-    const totalAds = ads.length;
-    const subscriptions = users.reduce((acc: Record<string, number>, user) => {
-        acc[user.subscription] = (acc[user.subscription] || 0) + 1;
-        return acc;
-    }, {});
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const data = await newsService.getDashboardStats();
+                setStats(data);
+            } catch (error) {
+                console.error("Failed to fetch dashboard stats", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchStats();
+    }, []);
+
+    if (loading) return <div className="flex justify-center p-12"><LoadingSpinner /></div>;
+    if (!stats) return <div className="text-center p-12">Could not load dashboard statistics.</div>;
+    
+    const { users, articles, ads, content } = stats;
 
     return (
         <div>
@@ -90,23 +97,23 @@ const Dashboard: React.FC<DashboardProps> = ({ users, articles, ads }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div className="bg-secondary p-6 rounded-lg shadow-md">
                     <h4 className="text-sm font-medium text-muted-foreground">Total Articles</h4>
-                    <p className="text-3xl font-bold mt-2">{totalArticles}</p>
+                    <p className="text-3xl font-bold mt-2">{articles.total.toLocaleString()}</p>
                 </div>
                 <div className="bg-secondary p-6 rounded-lg shadow-md">
                     <h4 className="text-sm font-medium text-muted-foreground">Total Ads</h4>
-                    <p className="text-3xl font-bold mt-2">{totalAds}</p>
+                    <p className="text-3xl font-bold mt-2">{ads.total.toLocaleString()}</p>
                 </div>
                 <div className="bg-secondary p-6 rounded-lg shadow-md">
                     <h4 className="text-sm font-medium text-muted-foreground">Total Users</h4>
-                    <p className="text-3xl font-bold mt-2">{totalUsers}</p>
+                    <p className="text-3xl font-bold mt-2">{users.total.toLocaleString()}</p>
                 </div>
                  <div className="bg-secondary p-6 rounded-lg shadow-md">
                     <h4 className="text-sm font-medium text-muted-foreground">Subscriptions</h4>
                     <div className="mt-2 space-y-1">
-                        {Object.entries(subscriptions).map(([plan, count]) => (
+                        {Object.entries(users.subscriptions).map(([plan, count]) => (
                              <div key={plan} className="flex justify-between text-sm">
                                 <span className="capitalize font-medium">{plan}</span>
-                                <span className="font-semibold">{count}</span>
+                                <span className="font-semibold">{count as number}</span>
                              </div>
                         ))}
                     </div>
@@ -115,11 +122,11 @@ const Dashboard: React.FC<DashboardProps> = ({ users, articles, ads }) => {
              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-secondary p-6 rounded-lg shadow-md">
                     <h4 className="text-lg font-semibold mb-4">Content Distribution</h4>
-                    <ContentPieChart articles={articles} />
+                    <ContentPieChart distribution={content.categoryDistribution} />
                 </div>
                 <div className="bg-secondary p-6 rounded-lg shadow-md">
-                    <h4 className="text-lg font-semibold mb-4">User Roles</h4>
-                     <p>Coming Soon</p>
+                    <h4 className="text-lg font-semibold mb-4">Total Views</h4>
+                    <p className="text-5xl font-bold text-accent">{articles.totalViews.toLocaleString()}</p>
                 </div>
             </div>
         </div>
@@ -239,7 +246,8 @@ const AdManager: React.FC<AdManagerProps> = ({ onAddAd, onUpdateAd, allAds, onDe
 interface UserFormModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (userData: UserFormData, userId?: string) => boolean;
+    // FIX: Updated onSubmit to return a Promise<boolean> to handle async operations.
+    onSubmit: (userData: UserFormData, userId?: string) => Promise<boolean>;
     userToEdit?: User | null;
 }
 
@@ -266,9 +274,11 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSubmit
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value as any }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // FIX: Made handleSubmit async to await the result of the async onSubmit prop.
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (onSubmit(formData, userToEdit?.id)) {
+        const success = await onSubmit(formData, userToEdit?.id);
+        if (success) {
             onClose();
         }
     };
@@ -305,20 +315,27 @@ const UserFormModal: React.FC<UserFormModalProps> = ({ isOpen, onClose, onSubmit
 
 interface UserManagerProps {
     currentUser: User;
-    getAllUsers: () => User[];
-    addUser: (userData: UserFormData) => boolean;
-    updateUser: (userId: string, userData: Partial<User>) => boolean;
-    deleteUser: (email: string) => boolean;
+    // FIX: Updated function signatures to be async.
+    getAllUsers: () => Promise<User[]>;
+    addUser: (userData: UserFormData) => Promise<boolean>;
+    updateUser: (userId: string, userData: Partial<User>) => Promise<boolean>;
+    deleteUser: (userId: string) => Promise<boolean>;
 }
 
 const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, addUser, updateUser, deleteUser }) => {
     const [isModalOpen, setModalOpen] = useState(false);
     const [userToEdit, setUserToEdit] = useState<User | null>(null);
     const [refreshKey, setRefreshKey] = useState(0);
-    const users = useMemo(() => getAllUsers(), [getAllUsers, refreshKey]);
+    // FIX: Replaced synchronous useMemo with useState and useEffect for async data fetching.
+    const [users, setUsers] = useState<User[]>([]);
 
-    const handleAction = (action: (...args: any[]) => boolean, ...args: any[]) => {
-        if (action(...args)) {
+    useEffect(() => {
+        getAllUsers().then(setUsers);
+    }, [getAllUsers, refreshKey]);
+
+    const handleAction = async (action: (...args: any[]) => Promise<boolean>, ...args: any[]) => {
+        const success = await action(...args);
+        if (success) {
             setRefreshKey(k => k + 1);
         }
     };
@@ -333,19 +350,26 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, add
         setModalOpen(true);
     }
     
-    const handleDeleteUser = (email: string, name: string) => {
+    // FIX: Changed parameter from email to userId to match the deleteUser function signature.
+    const handleDeleteUser = (userId: string, name: string) => {
         if (window.confirm(`Are you sure you want to delete user ${name}? This action cannot be undone.`)) {
-            handleAction(deleteUser, email);
+            handleAction(deleteUser, userId);
         }
     };
 
-    const handleFormSubmit = (userData: UserFormData, userId?: string) => {
+    // FIX: Made function async and to return a Promise<boolean> for the modal.
+    const handleFormSubmit = async (userData: UserFormData, userId?: string): Promise<boolean> => {
+        let success: boolean;
         if (userId) { // Editing
             const { password, ...restOfData } = userData; // Don't pass password on edit
-            return updateUser(userId, restOfData);
+            success = await updateUser(userId, restOfData);
         } else { // Adding
-            return addUser(userData);
+            success = await addUser(userData);
         }
+        if (success) {
+            setRefreshKey(k => k + 1);
+        }
+        return success;
     };
 
     return (
@@ -392,7 +416,8 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, add
                                     {user.email !== 'reponsekdz0@gmail.com' && (
                                         <>
                                             <button onClick={() => handleEditUser(user)} className="text-primary hover:text-primary/80"><PencilIcon className="w-5 h-5"/></button>
-                                            <button onClick={() => handleDeleteUser(user.email, user.name)} className="text-destructive hover:text-destructive/80"><TrashIcon className="w-5 h-5"/></button>
+                                            {/* FIX: Passed user.id instead of user.email to handleDeleteUser. */}
+                                            <button onClick={() => handleDeleteUser(user.id, user.name)} className="text-destructive hover:text-destructive/80"><TrashIcon className="w-5 h-5"/></button>
                                         </>
                                     )}
                                 </td>
@@ -407,11 +432,16 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, add
 
 
 interface SubscriptionManagerProps {
-    getAllUsers: () => User[];
+    // FIX: Updated to expect an async function.
+    getAllUsers: () => Promise<User[]>;
 }
 
 const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ getAllUsers }) => {
-    const users = getAllUsers();
+    // FIX: Replaced synchronous call with async fetching via useEffect.
+    const [users, setUsers] = useState<User[]>([]);
+    useEffect(() => {
+        getAllUsers().then(setUsers);
+    }, [getAllUsers]);
     
     const planColors: Record<SubscriptionPlan, string> = {
         free: 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200',
@@ -481,10 +511,11 @@ interface AdminPageProps {
     onAddAd: (data: AdFormData) => void;
     onUpdateAd: (id: string, data: AdFormData) => void;
     onDeleteAd: (id: string) => void;
-    getAllUsers: () => User[];
-    addUser: (userData: UserFormData) => boolean;
-    updateUser: (userId: string, userData: Partial<User>) => boolean;
-    deleteUser: (email: string) => boolean;
+    // FIX: Updated all function prop types to be async and return Promises. Changed deleteUser to accept userId.
+    getAllUsers: () => Promise<User[]>;
+    addUser: (userData: UserFormData) => Promise<boolean>;
+    updateUser: (userId: string, userData: Partial<User>) => Promise<boolean>;
+    deleteUser: (userId: string) => Promise<boolean>;
     siteSettings: { siteName: string; maintenanceMode: boolean; };
     onUpdateSiteSettings: (newSettings: Partial<{ siteName: string; maintenanceMode: boolean; }>) => void;
     onUpdateNavLinks: (links: NavLink[]) => void;
@@ -515,7 +546,7 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
     const renderContent = () => {
         switch (activeTab) {
             case 'dashboard':
-                return <Dashboard users={props.getAllUsers()} articles={props.allArticles} ads={props.allAds} />;
+                return <Dashboard />;
             case 'articles':
                 return <ArticleManager onAddArticle={props.onAddArticle} onUpdateArticle={props.onUpdateArticle} allArticles={props.allArticles} onDeleteArticle={props.onDeleteArticle} />;
             case 'navigation':
@@ -527,7 +558,8 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
             case 'subscriptions':
                 return <SubscriptionManager getAllUsers={props.getAllUsers} />;
             case 'analytics':
-                return <AnalyticsDashboard users={props.getAllUsers()} articles={props.allArticles} />;
+                // FIX: Passed getAllUsers as a prop instead of synchronously calling it.
+                return <AnalyticsDashboard getAllUsers={props.getAllUsers} articles={props.allArticles} />;
             case 'settings':
                 return <SiteSettingsManager settings={props.siteSettings} onUpdateSettings={props.onUpdateSiteSettings} />;
             default:

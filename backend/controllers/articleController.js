@@ -26,14 +26,26 @@ const getArticlesByCategory = (category) => {
 }
 
 const getAllArticles = async (req, res) => {
-    const { category = 'World' } = req.query;
+    const { category = 'World', page = 1, limit = 10 } = req.query;
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const offset = (pageNum - 1) * limitNum;
+
     try {
         const categories = getArticlesByCategory(category);
-        const [articles] = await pool.query(
-            `SELECT * FROM articles WHERE LOWER(category) IN (?) AND (scheduled_for IS NULL OR scheduled_for <= NOW()) ORDER BY published_at DESC`,
+
+        const [countResult] = await pool.query(
+            'SELECT COUNT(*) as total FROM articles WHERE LOWER(category) IN (?) AND (scheduled_for IS NULL OR scheduled_for <= NOW())',
             [categories]
         );
-        res.json(articles);
+        const totalArticles = countResult[0].total;
+        const totalPages = Math.ceil(totalArticles / limitNum);
+
+        const [articles] = await pool.query(
+            `SELECT * FROM articles WHERE LOWER(category) IN (?) AND (scheduled_for IS NULL OR scheduled_for <= NOW()) ORDER BY published_at DESC LIMIT ? OFFSET ?`,
+            [categories, limitNum, offset]
+        );
+        res.json({ articles, totalPages, currentPage: pageNum });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -41,34 +53,54 @@ const getAllArticles = async (req, res) => {
 };
 
 const searchArticles = async (req, res) => {
-    const { query, category, author } = req.query;
+    const { query, category, author, page = 1, limit = 10 } = req.query;
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const offset = (pageNum - 1) * limitNum;
     
     // Add to search history if a user is logged in
     if (req.user && query) {
-        await pool.query('INSERT INTO search_history (user_id, query) VALUES (?, ?)', [req.user.id, query]);
+        pool.query('INSERT INTO search_history (user_id, query) VALUES (?, ?)', [req.user.id, query]);
     }
 
     try {
+        let countSql = `SELECT COUNT(*) as total FROM articles WHERE (scheduled_for IS NULL OR scheduled_for <= NOW())`;
         let sql = `SELECT * FROM articles WHERE (scheduled_for IS NULL OR scheduled_for <= NOW())`;
         const params = [];
+        const countParams = [];
 
         if (query) {
-            sql += ' AND (title LIKE ? OR description LIKE ? OR body LIKE ?)';
+            const clause = ' AND (title LIKE ? OR description LIKE ? OR body LIKE ?)';
+            sql += clause;
+            countSql += clause;
             const searchTerm = `%${query}%`;
             params.push(searchTerm, searchTerm, searchTerm);
+            countParams.push(searchTerm, searchTerm, searchTerm);
         }
         if (category) {
-            sql += ' AND category = ?';
+            const catClause = ' AND category = ?';
+            sql += catClause;
+            countSql += catClause;
             params.push(category);
+            countParams.push(category);
         }
         if (author) {
-            sql += ' AND author = ?';
+            const authClause = ' AND author = ?';
+            sql += authClause;
+            countSql += authClause;
             params.push(author);
+            countParams.push(author);
         }
-        sql += ' ORDER BY published_at DESC';
+        
+        const [countResult] = await pool.query(countSql, countParams);
+        const totalArticles = countResult[0].total;
+        const totalPages = Math.ceil(totalArticles / limitNum);
+        
+        sql += ' ORDER BY published_at DESC LIMIT ? OFFSET ?';
+        params.push(limitNum, offset);
 
         const [articles] = await pool.query(sql, params);
-        res.json(articles);
+        res.json({ articles, totalPages, currentPage: pageNum });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -78,7 +110,7 @@ const searchArticles = async (req, res) => {
 const getTopStories = async (req, res) => {
     try {
         const [articles] = await pool.query(
-            'SELECT * FROM articles WHERE scheduled_for IS NULL OR scheduled_for <= NOW() ORDER BY published_at DESC LIMIT 4'
+            'SELECT * FROM articles WHERE scheduled_for IS NULL OR scheduled_for <= NOW() ORDER BY view_count DESC, published_at DESC LIMIT 4'
         );
         res.json(articles);
     } catch (error) {
@@ -103,6 +135,8 @@ const getSuggestions = async (req, res) => {
 
 const getArticleById = async (req, res) => {
     try {
+        pool.query('UPDATE articles SET view_count = view_count + 1 WHERE id = ?', [req.params.id]);
+
         const [articles] = await pool.query('SELECT * FROM articles WHERE id = ?', [req.params.id]);
         if (articles.length > 0) {
             res.json(articles[0]);
@@ -206,6 +240,71 @@ const deleteArticle = async (req, res) => {
     }
 };
 
+const createComment = async (req, res) => {
+    const { articleId, body, parentId } = req.body;
+    const userId = req.user.id;
+
+    if (!body) {
+        return res.status(400).json({ message: 'Comment body cannot be empty.' });
+    }
+
+    try {
+        const newComment = {
+            id: `comment-${uuidv4()}`,
+            article_id: articleId,
+            user_id: userId,
+            body,
+            parent_id: parentId || null
+        };
+        await pool.query('INSERT INTO comments SET ?', newComment);
+
+        const [commentRows] = await pool.query(`
+            SELECT c.*, u.name as author_name, u.avatar as author_avatar 
+            FROM comments c
+            JOIN users u ON c.user_id = u.id
+            WHERE c.id = ?
+        `, [newComment.id]);
+
+        res.status(201).json(commentRows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error while posting comment.' });
+    }
+};
+
+const getCommentsForArticle = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [comments] = await pool.query(`
+            SELECT c.*, u.name as author_name, u.avatar as author_avatar 
+            FROM comments c
+            JOIN users u ON c.user_id = u.id
+            WHERE c.article_id = ? 
+            ORDER BY c.created_at ASC
+        `, [id]);
+        
+        const commentMap = {};
+        const nestedComments = [];
+        comments.forEach(comment => {
+            commentMap[comment.id] = {...comment, replies: []};
+        });
+        comments.forEach(comment => {
+            if (comment.parent_id) {
+                if (commentMap[comment.parent_id]) {
+                    commentMap[comment.parent_id].replies.push(commentMap[comment.id]);
+                }
+            } else {
+                nestedComments.push(commentMap[comment.id]);
+            }
+        });
+
+        res.json(nestedComments);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error fetching comments.' });
+    }
+};
+
 module.exports = {
-    getAllArticles, getArticleById, createArticle, updateArticle, deleteArticle, searchArticles, getTopStories, getSuggestions, getRelatedArticles, upload
+    getAllArticles, getArticleById, createArticle, updateArticle, deleteArticle, searchArticles, getTopStories, getSuggestions, getRelatedArticles, upload, createComment, getCommentsForArticle
 };

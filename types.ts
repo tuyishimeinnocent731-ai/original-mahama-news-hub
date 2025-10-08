@@ -66,6 +66,18 @@ export interface NavLink {
     sublinks?: NavLink[];
 }
 
+export interface Comment {
+    id: string;
+    article_id: string;
+    user_id: string;
+    body: string;
+    parent_id: string | null;
+    created_at: string;
+    author_name: string;
+    author_avatar: string;
+    replies: Comment[];
+}
+
 export type ThemeName = 'default' | 'midnight' | 'latte' | 'forest' | 'oceanic' | 'rose' | 'slate' | 'sandstone' | 'nebula' | 'cyberpunk' | 'solaris' | 'monochrome' | 'cosmic' | 'sunset' | 'image';
 export type AccentColor = 'yellow' | 'blue' | 'green' | 'red' | 'purple' | 'pink' | 'indigo' | 'teal';
 export type FontWeight = '300' | '400' | '500' | '600' | '700';

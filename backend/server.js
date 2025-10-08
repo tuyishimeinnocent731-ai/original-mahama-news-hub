@@ -9,6 +9,7 @@ const articleRoutes = require('./routes/articleRoutes');
 const adRoutes = require('./routes/adRoutes');
 const siteRoutes = require('./routes/siteRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/articles', articleRoutes);
 app.use('/api/ads', adRoutes);
 app.use('/api/site', siteRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

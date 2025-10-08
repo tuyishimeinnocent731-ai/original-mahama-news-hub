@@ -92,32 +92,43 @@ const updateNavLinks = async (req, res) => {
 };
 
 const getSiteSettings = async (req, res) => {
-    // For simplicity, we'll use a single JSON blob in the users table for the admin for now.
-    // A better approach is a dedicated `settings` table.
     try {
-        const [rows] = await pool.query("SELECT settings FROM users WHERE role = 'admin' LIMIT 1");
-        if (rows.length > 0 && rows[0].settings) {
-            // This is user settings, we need site settings. Let's mock it for now
-            // as schema doesn't have a site_settings table.
-             res.json({
-                siteName: 'Mahama News Hub',
-                maintenanceMode: false
-            });
-        } else {
-            res.json({
-                siteName: 'Mahama News Hub',
-                maintenanceMode: false
-            });
-        }
+        const [settingsRows] = await pool.query("SELECT * FROM site_settings");
+        const settings = settingsRows.reduce((acc, row) => {
+            if (row.setting_value === 'true' || row.setting_value === 'false') {
+                acc[row.setting_key] = row.setting_value === 'true';
+            } else {
+                acc[row.setting_key] = row.setting_value;
+            }
+            return acc;
+        }, {});
+        res.json(settings);
     } catch (error) {
+        console.error(error);
         res.status(500).json({message: "Error fetching site settings"})
     }
 };
 
 const updateSiteSettings = async (req, res) => {
-    // This is a mock as we don't have a table for it. In a real app, you'd update the DB.
-    console.log("Updated site settings:", req.body);
-    res.json({ message: 'Site settings updated (mocked)' });
+    const newSettings = req.body;
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        for (const [key, value] of Object.entries(newSettings)) {
+            await connection.query(
+                'INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',
+                [key, value.toString(), value.toString()]
+            );
+        }
+        await connection.commit();
+        res.json({ message: 'Site settings updated successfully' });
+    } catch (error) {
+        await connection.rollback();
+        console.error(error);
+        res.status(500).json({ message: 'Failed to update site settings' });
+    } finally {
+        connection.release();
+    }
 };
 
 

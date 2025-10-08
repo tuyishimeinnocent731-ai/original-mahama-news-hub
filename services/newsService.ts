@@ -1,9 +1,12 @@
-import { Ad, Article } from '../types';
+import { Ad, Article, Comment } from '../types';
 import { api } from './apiService';
 
 // --- Article Service Functions ---
 export const getAllArticles = async (): Promise<Article[]> => {
-    return api.get<Article[]>('/api/articles/all'); // Assuming an admin-only endpoint
+    // This now returns a paginated response, but for admin we get all.
+    // A better implementation would be a dedicated '/api/articles/all' endpoint without pagination for admin.
+    const response = await api.get<{ articles: Article[] }>('/api/articles?limit=1000');
+    return response.articles; 
 };
 
 export const deleteArticle = async (articleId: string): Promise<void> => {
@@ -26,8 +29,9 @@ export const updateArticle = async (articleId: string, articleData: Partial<Omit
     return api.putFormData<Article>(`/api/articles/${articleId}`, formData);
 };
 
-export const getArticles = async (category: string = 'World'): Promise<Article[]> => {
-    return api.get<Article[]>(`/api/articles?category=${encodeURIComponent(category)}`);
+export const getArticles = async (category: string = 'World', page: number = 1): Promise<{ articles: Article[], totalPages: number }> => {
+    const response = await api.get<{ articles: Article[], totalPages: number, currentPage: number }>(`/api/articles?category=${encodeURIComponent(category)}&page=${page}&limit=10`);
+    return { articles: response.articles, totalPages: response.totalPages };
 };
 
 export const getTopStories = async (): Promise<Article[]> => {
@@ -50,12 +54,15 @@ export const addArticle = async (articleData: Omit<Article, 'id' | 'publishedAt'
     return api.postFormData<Article>('/api/articles', formData);
 };
 
-export const searchArticles = async (query: string, filters: { category?: string; author?: string } = {}): Promise<Article[]> => {
+export const searchArticles = async (query: string, filters: { category?: string; author?: string } = {}, page: number = 1): Promise<{ articles: Article[], totalPages: number }> => {
     const params = new URLSearchParams();
     if (query) params.append('query', query);
     if (filters.category) params.append('category', filters.category);
     if (filters.author) params.append('author', filters.author);
-    return api.get<Article[]>(`/api/articles/search?${params.toString()}`);
+    params.append('page', page.toString());
+    params.append('limit', '10');
+    const response = await api.get<{ articles: Article[], totalPages: number }>(`/api/articles/search?${params.toString()}`);
+    return response;
 };
 
 export const getSearchSuggestions = async (query: string): Promise<Article[]> => {
@@ -102,6 +109,21 @@ export const updateAd = async (adId: string, adData: Partial<Omit<Ad, 'id'>>): P
     }
     return api.putFormData<Ad>(`/api/ads/${adId}`, formData);
 };
+
+// --- Comment Service Functions ---
+export const getComments = async (articleId: string): Promise<Comment[]> => {
+    return api.get<Comment[]>(`/api/articles/${articleId}/comments`);
+};
+
+export const postComment = async (articleId: string, body: string, parentId?: string): Promise<Comment> => {
+    return api.post<Comment>(`/api/articles/${articleId}/comments`, { articleId, body, parentId });
+};
+
+// --- Dashboard Service Functions ---
+export const getDashboardStats = async (): Promise<any> => {
+    return api.get<any>('/api/dashboard/stats');
+};
+
 
 // --- Gemini API Functions (via backend) ---
 export const summarizeArticle = async (body: string, title: string): Promise<string> => {

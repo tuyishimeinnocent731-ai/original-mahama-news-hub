@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -24,6 +25,7 @@ import PaymentModal from './components/PaymentModal';
 import VideoPage from './pages/VideoPage';
 import LiveAssistantModal from './components/LiveAssistantModal';
 import MyAdsPage from './pages/MyAdsPage';
+import Pagination from './components/Pagination';
 
 import * as newsService from './services/newsService';
 import * as navigationService from './services/navigationService';
@@ -58,6 +60,9 @@ const App: React.FC = () => {
   const [currentArticle, setCurrentArticle] = useState<Article | null>(null);
   const [view, setView] = useState<View>('home');
   
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   const [isSearchOpen, setSearchOpen] = useState(false);
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -84,14 +89,16 @@ const App: React.FC = () => {
       addToast('Site settings updated!', 'success');
   };
 
-  const fetchArticles = useCallback(async (category: string) => {
+  const fetchArticles = useCallback(async (category: string, page: number = 1) => {
     setIsLoading(true);
     setView('home');
     setCurrentArticle(null);
     try {
-      const fetchedArticles = await newsService.getArticles(category);
+      const { articles: fetchedArticles, totalPages: fetchedTotalPages } = await newsService.getArticles(category, page);
       setArticles(fetchedArticles);
       setCurrentCategory(category);
+      setTotalPages(fetchedTotalPages);
+      setCurrentPage(page);
     } catch (error) {
       addToast("Error fetching articles.", 'error');
     } finally {
@@ -105,17 +112,19 @@ const App: React.FC = () => {
     setIsTopStoriesLoading(true);
 
     try {
-        const [stories, ads, links, categoryArticles] = await Promise.all([
+        const [stories, ads, links, categoryArticlesData] = await Promise.all([
             newsService.getTopStories(),
             newsService.getAds(),
             navigationService.getNavLinks(),
-            newsService.getArticles(currentCategory),
+            newsService.getArticles(currentCategory, 1),
         ]);
         
         setTopStories(stories);
         setAllAds(ads);
         setNavLinks(links);
-        setArticles(categoryArticles);
+        setArticles(categoryArticlesData.articles);
+        setTotalPages(categoryArticlesData.totalPages);
+        setCurrentPage(1);
 
     } catch(err) {
         addToast("Failed to load initial content.", "error");
@@ -145,14 +154,16 @@ const App: React.FC = () => {
     setCurrentArticle(null);
   }
 
-    const handleSearch = async (query: string, filters: { category?: string; author?: string } = {}) => {
+    const handleSearch = async (query: string, filters: { category?: string; author?: string } = {}, page: number = 1) => {
         setSearchOpen(false);
         setIsLoading(true);
         setView('home');
         setCurrentArticle(null);
         try {
-            const fetchedArticles = await newsService.searchArticles(query, filters);
+            const { articles: fetchedArticles, totalPages: fetchedTotalPages } = await newsService.searchArticles(query, filters, page);
             setArticles(fetchedArticles);
+            setTotalPages(fetchedTotalPages);
+            setCurrentPage(page);
 
             let categoryTitle = `Search Results`;
             if(query) categoryTitle += ` for "${query}"`;
@@ -185,9 +196,18 @@ const App: React.FC = () => {
           setCurrentArticle(null);
           setCurrentCategory('Video');
       } else {
-          fetchArticles(category);
+          fetchArticles(category, 1);
       }
   }
+
+  const handlePageChange = (newPage: number) => {
+    if (currentCategory.startsWith('Search Results')) {
+        // Simple search pagination not implemented, just refetching category
+        fetchArticles('World', newPage);
+    } else {
+        fetchArticles(currentCategory, newPage);
+    }
+  };
 
   const handleOpenPaymentModal = (plan: SubscriptionPlan, price: string) => {
     if (!auth.user) {
@@ -248,10 +268,10 @@ const App: React.FC = () => {
       await auth.addUserAd(adData);
       addToast('Your advertisement has been created!', 'success');
   }
-
-  const handleDeleteUser = async (email: string): Promise<boolean> => {
+// FIX: Changed parameter from email to userId to match the implementation in useAuth hook.
+  const handleDeleteUser = async (userId: string): Promise<boolean> => {
       // This is now based on ID in useAuth hook for safety
-      return auth.deleteUser(email);
+      return auth.deleteUser(userId);
   };
 
   const handleUpdateNavLinks = async (links: NavLink[]) => {
@@ -352,14 +372,23 @@ const App: React.FC = () => {
                             {[...Array(6)].map((_, i) => <ArticleCardSkeleton key={i} />)}
                         </div>
                     ) : articlesWithFullUrls.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {articlesWithFullUrls.map((article, index) => (
-                            <React.Fragment key={article.id}>
-                                <ArticleCard article={article} onArticleClick={handleArticleClick} />
-                                {index === 1 && inFeedAdWithFullUrl && <InFeedAd ad={inFeedAdWithFullUrl} />}
-                            </React.Fragment>
-                        ))}
-                        </div>
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {articlesWithFullUrls.map((article, index) => (
+                                <React.Fragment key={article.id}>
+                                    <ArticleCard article={article} onArticleClick={handleArticleClick} />
+                                    {index === 1 && inFeedAdWithFullUrl && <InFeedAd ad={inFeedAdWithFullUrl} />}
+                                </React.Fragment>
+                            ))}
+                            </div>
+                            {totalPages > 1 && (
+                                <Pagination 
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={handlePageChange}
+                                />
+                            )}
+                        </>
                     ) : (
                         <div className="text-center py-20 bg-secondary rounded-lg col-span-full">
                             <NewspaperIcon className="mx-auto h-16 w-16 text-muted-foreground mb-4" />

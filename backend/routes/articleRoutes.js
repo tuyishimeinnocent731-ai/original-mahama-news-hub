@@ -9,7 +9,9 @@ const {
     searchArticles,
     getTopStories,
     getSuggestions,
-    getRelatedArticles
+    getRelatedArticles,
+    getCommentsForArticle,
+    createComment
 } = require('../controllers/articleController');
 const { protect, subAdmin } = require('../middleware/authMiddleware');
 const { upload } = require('../controllers/articleController');
@@ -28,5 +30,9 @@ router.route('/:id')
     .delete(protect, subAdmin, deleteArticle);
 
 router.get('/:id/related', getRelatedArticles);
+
+router.route('/:id/comments')
+    .get(getCommentsForArticle)
+    .post(protect, createComment);
 
 module.exports = router;

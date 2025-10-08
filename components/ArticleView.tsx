@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Article, User, Ad } from '../types';
+import { Article, User, Ad, Comment as CommentType } from '../types';
 import * as newsService from '../services/newsService';
 import { useTTS } from '../hooks/useTTS';
 import { useSettings } from '../hooks/useSettings';
@@ -16,6 +16,8 @@ import { PauseIcon } from './icons/PauseIcon';
 import LoginPrompt from './LoginPrompt';
 import ReadingProgressBar from './ReadingProgressBar';
 import ImageGallery from './ImageGallery';
+import Comment from './Comment';
+import { NewspaperIcon } from './icons/NewspaperIcon';
 
 interface ArticleViewProps {
   article: Article;
@@ -44,6 +46,10 @@ const ArticleView: React.FC<ArticleViewProps> = (props) => {
 
   const [translatedContent, setTranslatedContent] = useState<{ title: string; body: string; language: string } | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
+
+  const [comments, setComments] = useState<CommentType[]>([]);
+  const [isCommentsLoading, setIsCommentsLoading] = useState(true);
+  const [newComment, setNewComment] = useState('');
 
   const { isPlaying, isSupported, speak, stop, pause } = useTTS();
   const { settings } = useSettings();
@@ -74,7 +80,21 @@ const ArticleView: React.FC<ArticleViewProps> = (props) => {
         setIsRelatedLoading(false);
       }
     };
+    
+    const fetchComments = async () => {
+        setIsCommentsLoading(true);
+        try {
+            const fetchedComments = await newsService.getComments(article.id);
+            setComments(fetchedComments);
+        } catch (error) {
+            console.error("Failed to fetch comments", error);
+        } finally {
+            setIsCommentsLoading(false);
+        }
+    };
+
     fetchRelated();
+    fetchComments();
 
     if (user && isPremium && settings.reading.defaultSummaryView) {
         handleGenerateSummary();
@@ -144,6 +164,18 @@ const ArticleView: React.FC<ArticleViewProps> = (props) => {
     const result = await newsService.translateArticle(article.body, article.title, language);
     setTranslatedContent({ ...result, language });
     setIsTranslating(false);
+  };
+
+  const handlePostComment = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!user || !newComment.trim()) return;
+      try {
+          const postedComment = await newsService.postComment(article.id, newComment.trim());
+          setComments(prev => [...prev, postedComment]);
+          setNewComment('');
+      } catch (error) {
+          console.error("Failed to post comment", error);
+      }
   };
 
   const currentTitle = translatedContent?.title || article.title;
@@ -220,6 +252,41 @@ const ArticleView: React.FC<ArticleViewProps> = (props) => {
                     <p key={index}>{paragraph}</p>
                 ))}
             </div>
+
+            <section className="mt-12 pt-8 border-t border-border">
+                <h2 className="text-2xl font-bold mb-6">Comments ({comments.length})</h2>
+                <div className="space-y-6">
+                    {isCommentsLoading ? <p>Loading comments...</p> : 
+                        comments.length > 0 ? comments.map(comment => <Comment key={comment.id} comment={comment}/>)
+                        : <div className="text-center py-10 bg-secondary rounded-lg">
+                            <NewspaperIcon className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
+                            <h3 className="text-lg font-semibold">No Comments Yet</h3>
+                            <p className="text-sm text-muted-foreground">Be the first to share your thoughts.</p>
+                          </div>
+                    }
+                </div>
+                <div className="mt-8">
+                    {user ? (
+                        <form onSubmit={handlePostComment} className="flex items-start space-x-3">
+                            <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
+                            <div className="flex-1">
+                                <textarea 
+                                    value={newComment}
+                                    onChange={e => setNewComment(e.target.value)}
+                                    placeholder="Add to the discussion..."
+                                    rows={3}
+                                    className="w-full p-2 border rounded-md bg-card border-border focus:ring-accent focus:border-accent"
+                                ></textarea>
+                                <button type="submit" className="mt-2 px-4 py-2 bg-accent text-accent-foreground rounded-md font-semibold text-sm hover:bg-accent/90 disabled:bg-muted" disabled={!newComment.trim()}>
+                                    Post Comment
+                                </button>
+                            </div>
+                        </form>
+                    ) : (
+                        <LoginPrompt onLoginClick={onLoginClick} message="Join the conversation" subMessage="Log in or create an account to post a comment." />
+                    )}
+                </div>
+            </section>
           </article>
         </main>
 

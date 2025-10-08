@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 import { User } from '../../types';
 import { ShieldCheckIcon } from '../icons/ShieldCheckIcon';
@@ -16,8 +17,8 @@ interface SecuritySettingsProps {
     user: User;
     toggleTwoFactor: (enabled: boolean) => void;
     addToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
-    validatePassword: (password: string) => Promise<boolean>;
-    changePassword: (newPassword: string) => Promise<boolean>;
+    // FIX: Corrected changePassword signature and removed validatePassword.
+    changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
 }
 
 const TwoFactorModal: React.FC<{onClose: () => void}> = ({ onClose }) => (
@@ -87,7 +88,7 @@ const loginHistory = [
 ];
 
 
-const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, toggleTwoFactor, addToast, validatePassword, changePassword }) => {
+const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, toggleTwoFactor, addToast, changePassword }) => {
     const [is2FAModalOpen, set2FAModalOpen] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
@@ -113,23 +114,17 @@ const SecuritySettings: React.FC<SecuritySettingsProps> = ({ user, toggleTwoFact
         }
 
         setIsChangingPassword(true);
-        const isCurrentPasswordValid = await validatePassword(currentPassword);
-        if (!isCurrentPasswordValid) {
-            setPasswordError('Your current password is not correct.');
-            setIsChangingPassword(false);
-            return;
-        }
-
-        const success = await changePassword(newPassword);
+        
+        // FIX: Removed call to validatePassword and now call changePassword with both arguments.
+        // The useAuth hook's changePassword function handles backend validation and shows a toast on error.
+        const success = await changePassword(currentPassword, newPassword);
         if (success) {
             addToast('Password changed successfully!', 'success');
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
-        } else {
-            addToast('Failed to change password. Please try again.', 'error');
-            setPasswordError('An unexpected error occurred.');
         }
+        // If not successful, the useAuth hook will have already displayed an error toast.
         setIsChangingPassword(false);
     };
 
