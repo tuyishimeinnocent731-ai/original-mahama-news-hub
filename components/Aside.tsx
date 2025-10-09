@@ -44,7 +44,7 @@ const Aside: React.FC<AsideProps> = ({ title, articles, onArticleClick, isLoadin
                 ))}
                 </div>
             ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400">No stories available in this section.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">No {title.toLowerCase()} available.</p>
             )
         )}
       </div>

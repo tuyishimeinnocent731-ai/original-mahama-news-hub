@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 // Polyfill for different browser vendors
@@ -43,7 +44,9 @@ export const useVoiceSearch = () => {
         recognitionRef.current = recognition;
 
         return () => {
-            recognition.stop();
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
         };
     }, [isSupported]);
 

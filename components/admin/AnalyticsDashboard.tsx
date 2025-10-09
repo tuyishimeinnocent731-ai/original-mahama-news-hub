@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { User, Article, SubscriptionPlan } from '../../types';
 import { UserGroupIcon } from '../icons/UserGroupIcon';
@@ -67,7 +68,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ getAllUsers, ar
     const subscriptions = users.reduce((acc, user) => {
         acc[user.subscription] = (acc[user.subscription] || 0) + 1;
         return acc;
-    }, { free: 0, standard: 0, premium: 0, pro: 0 });
+    }, { free: 0, standard: 0, premium: 0, pro: 0 } as Record<SubscriptionPlan, number>);
     
     const viewsByCategory = articles.reduce((acc, article) => {
         acc[article.category] = (acc[article.category] || 0) + Math.floor(Math.random() * 2000 + 500);
@@ -88,7 +89,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ getAllUsers, ar
                 <StatCard title="Total Article Views" value={totalViews.toLocaleString()} icon={<EyeIcon />} />
                 <StatCard title="Total Articles" value={articles.length.toString()} icon={<NewspaperIcon />} />
                 <StatCard title="Total Users" value={users.length.toString()} icon={<UserGroupIcon />} />
-                {/* FIX: Removed redundant `|| 0` checks as `subscriptions` properties are now guaranteed to be numbers. */}
+                {/* FIX: Removed redundant || 0 checks as subscriptions properties are now guaranteed to be numbers. */}
                 <StatCard title="Premium Users" value={(subscriptions.premium + subscriptions.pro).toString()} icon={<StarIcon />} />
             </div>
             

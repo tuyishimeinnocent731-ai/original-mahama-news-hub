@@ -1,90 +1,102 @@
+
 import { api } from './apiService';
-import { User, UserSession, ApiKey, Notification, JobApplication, ActivityLog } from '../types';
+import { User, ApiKey, ActivityLog, Notification } from '../types';
 
-// Profile & Settings
-export const updateProfile = async (profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar' | 'socials'>>) => {
-    const formData = new FormData();
-
-    if (profileData.name) formData.append('name', profileData.name);
-    if (profileData.bio) formData.append('bio', profileData.bio);
-    if (profileData.socials) formData.append('socials', JSON.stringify(profileData.socials));
-
-    if (profileData.avatar && typeof profileData.avatar === 'string' && profileData.avatar.startsWith('data:')) {
-        const fetchRes = await fetch(profileData.avatar);
-        const blob = await fetchRes.blob();
-        formData.append('avatar', blob, 'avatar.png');
-    }
-
-    return api.putFormData('/api/users/profile', formData);
+// --- Auth ---
+export const login = async (email: string, password: string): Promise<{ token: string, user: User }> => {
+    return api.post('/api/auth/login', { email, password });
 };
 
-export const changePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
-    await api.put('/api/users/password', { currentPassword, newPassword });
+export const register = async (name: string, email: string, password: string): Promise<{ token: string, user: User }> => {
+    return api.post('/api/auth/register', { name, email, password });
 };
 
-export const clearSearchHistory = async (): Promise<void> => {
-    await api.delete('/api/users/search-history');
+export const forgotPassword = async (email: string): Promise<{ message: string }> => {
+    return api.post('/api/auth/forgot-password', { email });
 };
 
-export const deleteAccount = async (): Promise<void> => {
-    await api.delete('/api/users/me/account');
+export const resetPassword = async (token: string, password: string): Promise<{ message: string }> => {
+    return api.post('/api/auth/reset-password', { token, password });
+};
+
+
+// --- User Profile & Settings ---
+export const getProfile = async (): Promise<User> => {
+    return api.get('/api/users/profile');
+};
+
+export const updateProfile = async (profileData: Partial<Pick<User, 'name' | 'bio' | 'avatar' | 'socials'>>): Promise<User> => {
+    return api.put('/api/users/profile', profileData);
+};
+
+export const changePassword = async (currentPassword: string, newPassword: string): Promise<{ message: string }> => {
+    return api.put('/api/users/change-password', { currentPassword, newPassword });
+};
+
+export const toggleSavedArticle = async (articleId: string): Promise<{ savedArticles: string[] }> => {
+    return api.post('/api/users/saved-articles', { articleId });
 }
 
-// Security & Sessions
-export const getSessions = async (): Promise<UserSession[]> => {
-    return api.get<UserSession[]>('/api/users/sessions');
+export const clearSearchHistory = async (): Promise<{ message: string }> => {
+    return api.delete('/api/users/search-history');
 };
 
-export const terminateSession = async (sessionId: number): Promise<void> => {
-    await api.delete(`/api/users/sessions/${sessionId}`);
+// --- Admin User Management ---
+export const getAllUsers = async (): Promise<User[]> => {
+    return api.get('/api/users');
 };
 
-// API Keys (Pro feature)
-export const getApiKeys = async (): Promise<ApiKey[]> => {
-    return api.get<ApiKey[]>('/api/users/api-keys');
+export const addUser = async (userData: any): Promise<User> => {
+    return api.post('/api/users', userData);
 };
 
-export const createApiKey = async (description: string): Promise<{ key: string }> => {
-    return api.post<{ key: string }>('/api/users/api-keys', { description });
+export const updateUser = async (userId: string, userData: Partial<User>): Promise<User> => {
+    return api.put(`/api/users/${userId}`, userData);
 };
 
-export const deleteApiKey = async (keyId: string): Promise<void> => {
-    await api.delete(`/api/users/api-keys/${keyId}`);
-};
-
-// Notifications
-export const getNotifications = async (): Promise<Notification[]> => {
-    return api.get<Notification[]>('/api/users/notifications');
-};
-
-export const markNotificationRead = async (notificationId: number): Promise<void> => {
-    return api.put(`/api/users/notifications/${notificationId}/read`, {});
-}
-
-export const markAllNotificationsRead = async (): Promise<void> => {
-    return api.post('/api/users/notifications/read-all', {});
-};
-
-export const deleteNotification = async (notificationId: number): Promise<void> => {
-    return api.delete(`/api/users/notifications/${notificationId}`);
-};
-
-
-// Data Management
-export const exportUserData = async (): Promise<any> => {
-    return api.get('/api/users/data-export');
-};
-
-// Job Applications
-export const getMyApplications = async (): Promise<JobApplication[]> => {
-    return api.get<JobApplication[]>('/api/users/me/applications');
-};
-
-// Admin
-export const getUserActivity = async (userId: string): Promise<ActivityLog[]> => {
-    return api.get<ActivityLog[]>(`/api/users/${userId}/activity`);
+export const deleteUser = async (userId: string): Promise<{ message: string }> => {
+    return api.delete(`/api/users/${userId}`);
 };
 
 export const adminResetPassword = async (userId: string): Promise<{ temporaryPassword: string }> => {
     return api.post(`/api/users/${userId}/reset-password`, {});
+};
+
+// --- API Keys ---
+export const getApiKeys = async (): Promise<ApiKey[]> => {
+    return api.get('/api/users/api-keys');
+};
+
+export const createApiKey = async (description: string): Promise<{ key: string }> => {
+    return api.post('/api/users/api-keys', { description });
+};
+
+export const deleteApiKey = async (keyId: string): Promise<{ message: string }> => {
+    return api.delete(`/api/users/api-keys/${keyId}`);
+};
+
+// --- Data & Activity ---
+export const exportUserData = async (): Promise<any> => {
+    return api.get('/api/users/export');
+};
+
+export const getUserActivity = async (userId: string): Promise<ActivityLog[]> => {
+    return api.get(`/api/users/${userId}/activity`);
+};
+
+// --- Notifications ---
+export const getNotifications = async (): Promise<Notification[]> => {
+    return api.get('/api/users/notifications');
+};
+
+export const markNotificationRead = async (notificationId: number): Promise<{ message: string }> => {
+    return api.put(`/api/users/notifications/${notificationId}/read`, {});
+};
+
+export const markAllNotificationsRead = async (): Promise<{ message: string }> => {
+    return api.post('/api/users/notifications/read-all', {});
+};
+
+export const deleteNotification = async (notificationId: number): Promise<{ message: string }> => {
+    return api.delete(`/api/users/notifications/${notificationId}`);
 };

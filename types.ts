@@ -1,124 +1,116 @@
-export interface Article {
-    id: string;
-    title: string;
-    description: string;
-    body: string;
-    author: string;
-    publishedAt: string;
-    source: {
-        name: string;
-    };
-    url: string;
-    urlToImage: string;
-    category: string;
-    tags?: string[];
-    galleryImages?: { src: string; alt: string }[];
-    isOffline?: boolean;
-    scheduledFor?: string; // ISO date string for future publishing
-}
 
 export type SubscriptionPlan = 'free' | 'standard' | 'premium' | 'pro';
-export type IntegrationId = 'slack' | 'google-calendar' | 'notion';
+
+export interface Source {
+  name: string;
+}
+
+export interface Article {
+  id: string;
+  title: string;
+  description: string;
+  body: string;
+  author: string;
+  publishedAt: string;
+  source: Source;
+  url: string;
+  urlToImage: string;
+  category: string;
+  isOffline?: boolean;
+  tags?: string[];
+  galleryImages?: { src: string; alt: string }[];
+  scheduledFor?: string;
+}
 
 export interface Ad {
-    id: string;
-    headline: string;
-    image: string;
-    url: string;
-}
-
-export interface PaymentRecord {
-    id: string;
-    date: string;
-    plan: SubscriptionPlan;
-    amount: string;
-    method: 'Credit Card' | 'PayPal' | 'MTN Mobile Money' | 'Stripe';
-    status: 'succeeded' | 'pending' | 'failed';
-}
-
-export interface User {
-    id: string;
-    name: string;
-    email: string;
-    password?: string; // Added for admin user creation
-    avatar: string;
-    bio?: string;
-    socials?: {
-        twitter?: string;
-        linkedin?: string;
-        github?: string;
-    };
-    subscription: SubscriptionPlan;
-    savedArticles: string[]; // array of article IDs
-    searchHistory: string[];
-    userAds: Ad[];
-    twoFactorEnabled: boolean;
-    integrations: {
-        [key in IntegrationId]?: boolean;
-    };
-    role?: 'admin' | 'sub-admin' | 'user';
-    paymentHistory: PaymentRecord[];
-    settings?: Settings; // Added for full settings sync
-    stripe_customer_id?: string;
-    stripe_subscription_id?: string;
-    stripe_subscription_status?: string;
-}
-
-export interface NavLink {
-    id: string;
-    name: string;
-    href: string;
-    sublinks?: NavLink[];
+  id: string;
+  headline: string;
+  url: string;
+  image: string;
+  user_id?: string;
 }
 
 export interface Comment {
-    id: string;
-    article_id: string;
-    user_id: string;
-    body: string;
-    parent_id: string | null;
-    created_at: string;
-    author_name: string;
-    author_avatar: string;
-    replies: Comment[];
-    article_title?: string; // Joined for admin panel
-    status: 'pending' | 'approved' | 'rejected';
+  id: string;
+  article_id: string;
+  user_id: string;
+  body: string;
+  parent_id?: string | null;
+  created_at: string;
+  author_name: string;
+  author_avatar: string;
+  status: 'pending' | 'approved' | 'rejected';
+  article_title?: string; // For admin view
+  replies?: Comment[];
 }
 
-export type ThemeName = 'default' | 'midnight' | 'latte' | 'forest' | 'oceanic' | 'rose' | 'slate' | 'sandstone' | 'nebula' | 'cyberpunk' | 'solaris' | 'monochrome' | 'cosmic' | 'sunset' | 'image';
-export type AccentColor = 'yellow' | 'blue' | 'green' | 'red' | 'purple' | 'pink' | 'indigo' | 'teal';
-export type FontWeight = '300' | '400' | '500' | '600' | '700';
-export type CardStyle = 'standard' | 'elevated' | 'outline';
-export type BorderRadius = 'sharp' | 'rounded' | 'pill';
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  subscription: SubscriptionPlan;
+  role?: 'user' | 'sub-admin' | 'admin';
+  bio?: string;
+  socials?: {
+      twitter?: string;
+      linkedin?: string;
+      github?: string;
+  };
+  two_factor_enabled?: boolean;
+  savedArticles: string[];
+  searchHistory: string[];
+  userAds: Ad[];
+  paymentHistory: PaymentRecord[];
+  integrations: { [key in IntegrationId]?: boolean };
+  settings: Settings;
+  stripe_customer_id?: string;
+  stripe_subscription_id?: string;
+  stripe_subscription_status?: string;
+}
 
+export interface NavLink {
+  id: string;
+  name: string;
+  href: string;
+  sublinks?: NavLink[];
+}
+
+// Settings Types
 export interface ThemeSettings {
-    name: ThemeName;
-    accent: AccentColor;
-    customImage?: string; // Base64 encoded image
+  name: 'default' | 'midnight' | 'forest' | 'rose' | 'cyberpunk' | 'solaris' | 'monochrome' | 'cosmic' | 'sunset' | 'image';
+  accent: 'yellow' | 'blue' | 'green' | 'red' | 'purple' | 'pink' | 'indigo' | 'teal';
+  customImage?: string;
 }
 
 export interface FontSettings {
-    family: string;
-    weight: FontWeight;
+  family: string;
+  weight: '300' | '400' | '500' | '700';
 }
 
 export interface LayoutSettings {
-    homepage: 'grid' | 'list' | 'magazine';
-    density: 'compact' | 'comfortable' | 'spacious';
-    infiniteScroll: boolean;
+  homepage: 'grid' | 'list' | 'magazine';
+  density: 'compact' | 'comfortable' | 'spacious';
+  infiniteScroll: boolean;
 }
 
 export interface UiSettings {
-    cardStyle: CardStyle;
-    borderRadius: BorderRadius;
+  cardStyle: 'standard' | 'elevated' | 'outline';
+  borderRadius: 'sharp' | 'rounded' | 'pill';
 }
 
 export interface ReadingSettings {
-    autoPlayAudio: boolean;
-    defaultSummaryView: boolean;
-    lineHeight: number;
-    letterSpacing: number;
-    justifyText: boolean;
+  autoPlayAudio: boolean;
+  defaultSummaryView: boolean;
+  lineHeight: number;
+  letterSpacing: number;
+  justifyText: boolean;
+}
+
+export interface NotificationSettings {
+    breakingNews: boolean;
+    weeklyDigest: boolean;
+    specialOffers: boolean;
 }
 
 export interface Settings {
@@ -127,46 +119,33 @@ export interface Settings {
     layout: LayoutSettings;
     ui: UiSettings;
     reading: ReadingSettings;
+    notifications: NotificationSettings;
     fontSize: 'small' | 'medium' | 'large';
     highContrast: boolean;
     reduceMotion: boolean;
     dyslexiaFont: boolean;
-    notifications: {
-        breakingNews: boolean;
-        weeklyDigest: boolean;
-        specialOffers: boolean;
-    };
     preferredCategories: string[];
     dataSharing: boolean;
     adPersonalization: boolean;
 }
 
-// --- New Types for Advanced Features ---
-
-export interface UserSession {
-    id: number;
-    device: string;
-    ip_address: string;
-    last_active: string;
-    is_current: boolean;
-}
+export type IntegrationId = 'slack' | 'google-calendar' | 'notion';
 
 export interface ApiKey {
     id: string;
-    prefix: string;
     description: string;
-    created_at: string;
+    prefix: string;
     last_used: string | null;
+    created_at: string;
 }
 
 export interface Notification {
     id: number;
     user_id: string;
-    type: 'alert' | 'feature' | 'update' | 'message';
     message: string;
+    type: 'alert' | 'feature' | 'update' | 'message';
     is_read: boolean;
     created_at: string;
-    link?: string;
 }
 
 export interface Page {
@@ -174,13 +153,14 @@ export interface Page {
     title: string;
     content: string;
     updated_at: string;
+    last_updated_by?: string;
 }
 
 export interface ContactMessage {
     id: number;
     name: string;
     email: string;
-    subject?: string;
+    subject: string;
     message: string;
     is_read: boolean;
     created_at: string;
@@ -199,14 +179,11 @@ export interface JobPosting {
 export interface JobApplication {
     id: number;
     job_id: number;
-    user_id?: string;
     name: string;
     email: string;
     resume_path: string;
     cover_letter?: string;
     applied_at: string;
-    // Joined from job_postings table
-    job_title?: string;
 }
 
 export interface ActivityLog {
@@ -216,4 +193,13 @@ export interface ActivityLog {
     details: any;
     ip_address: string;
     created_at: string;
+}
+
+export interface PaymentRecord {
+    id: string;
+    date: string;
+    plan: SubscriptionPlan;
+    amount: string;
+    method: 'Credit Card' | 'PayPal' | 'MTN Mobile Money' | 'Stripe';
+    status: 'succeeded' | 'pending' | 'failed';
 }

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useSettings } from '../../hooks/useSettings';
 import { ReadingSettings as ReadingSettingsType, User } from '../../types';
@@ -14,6 +15,7 @@ const ReadingSettings: React.FC<ReadingSettingsProps> = ({ user, onUpgradeClick 
     const isPremium = user?.subscription === 'premium' || user?.subscription === 'pro';
 
     const handleReadingChange = (setting: Partial<ReadingSettingsType>) => {
+        // FIX: Use functional update for nested settings object
         updateSettings(s => ({ ...s, reading: { ...s.reading, ...setting } }));
     };
     

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useSettings } from '../../hooks/useSettings';
 import { THEMES, ACCENT_COLORS, FONTS, FONT_WEIGHTS } from '../../constants';
@@ -27,9 +28,11 @@ const AppearanceSettings: React.FC = () => {
             const reader = new FileReader();
             reader.onloadend = () => {
                 const base64String = reader.result as string;
-                updateSettings({
-                    theme: { ...settings.theme, name: 'image', customImage: base64String }
-                });
+                // FIX: Use functional update for nested settings object
+                updateSettings(s => ({
+                    ...s,
+                    theme: { ...s.theme, name: 'image', customImage: base64String }
+                }));
             };
             reader.readAsDataURL(file);
         }

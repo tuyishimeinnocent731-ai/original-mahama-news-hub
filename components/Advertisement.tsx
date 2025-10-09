@@ -35,9 +35,8 @@ const Advertisement: React.FC<AdvertisementProps> = ({ customAds = [] }) => {
 
     if (allAds.length === 0) {
         return (
-             <div className="bg-gray-200 dark:bg-gray-800 rounded-lg p-4 relative shadow-md text-center">
-                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Your Ad Could Be Here!</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Contact an admin to display advertisements.</p>
+             <div className="bg-gray-200 dark:bg-gray-800 rounded-lg p-4 text-center">
+                <p className="text-sm text-muted-foreground">No advertisements available.</p>
             </div>
         );
     }
