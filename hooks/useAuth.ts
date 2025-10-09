@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect, useCallback } from 'react';
 // FIX: Add missing 'Article' type import.
 import { User, Ad, IntegrationId, SubscriptionPlan, PaymentRecord, Article } from '../types';
@@ -79,6 +77,18 @@ export const useAuth = () => {
             return true;
         } catch (error: any) {
             addToast(error.message || 'Login failed. Please try again.', 'error');
+            return false;
+        }
+    }, [addToast]);
+
+    const loginWithGoogle = useCallback(async (googleToken: string) => {
+        try {
+            const data = await api.post<User & { token: string }>('/api/auth/google', { token: googleToken });
+            handleAuthSuccess(data);
+            addToast(`Welcome, ${data.name.split(' ')[0]}!`, 'success');
+            return true;
+        } catch (error: any) {
+            addToast(error.message || 'Google login failed. Please try again.', 'error');
             return false;
         }
     }, [addToast]);
@@ -184,6 +194,7 @@ export const useAuth = () => {
         isLoggedIn: !!user,
         loading,
         login, 
+        loginWithGoogle,
         logout,
         register,
         // FIX: Expose refetchUser function to be used after events like successful payment.

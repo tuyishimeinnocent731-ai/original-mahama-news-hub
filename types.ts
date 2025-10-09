@@ -82,6 +82,7 @@ export interface Comment {
     author_avatar: string;
     replies: Comment[];
     article_title?: string; // Joined for admin panel
+    status: 'pending' | 'approved' | 'rejected';
 }
 
 export type ThemeName = 'default' | 'midnight' | 'latte' | 'forest' | 'oceanic' | 'rose' | 'slate' | 'sandstone' | 'nebula' | 'cyberpunk' | 'solaris' | 'monochrome' | 'cosmic' | 'sunset' | 'image';

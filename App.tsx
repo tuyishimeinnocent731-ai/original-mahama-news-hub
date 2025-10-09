@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -224,6 +220,13 @@ const App: React.FC = () => {
   
   const handleRegisterSuccess = async (email: string, password?: string) => {
     if (await auth.register(email, password)) {
+      setAuthModalOpen(false);
+      handleCategorySelect('World');
+    }
+  };
+
+  const handleGoogleLoginSuccess = async (token: string) => {
+    if (await auth.loginWithGoogle(token)) {
       setAuthModalOpen(false);
       handleCategorySelect('World');
     }
@@ -554,6 +557,7 @@ const App: React.FC = () => {
           onClose={() => setAuthModalOpen(false)} 
           onLogin={handleLoginSuccess}
           onRegister={handleRegisterSuccess}
+          onGoogleLogin={handleGoogleLoginSuccess}
         />
         <PremiumModal 
             isOpen={isPremiumModalOpen} 

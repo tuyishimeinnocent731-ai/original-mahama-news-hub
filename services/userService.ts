@@ -84,3 +84,7 @@ export const getMyApplications = async (): Promise<JobApplication[]> => {
 export const getUserActivity = async (userId: string): Promise<ActivityLog[]> => {
     return api.get<ActivityLog[]>(`/api/users/${userId}/activity`);
 };
+
+export const adminResetPassword = async (userId: string): Promise<{ temporaryPassword: string }> => {
+    return api.post(`/api/users/${userId}/reset-password`, {});
+};

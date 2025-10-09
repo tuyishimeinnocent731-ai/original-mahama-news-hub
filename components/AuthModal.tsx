@@ -1,20 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Modal from './Modal';
+
+declare const google: any;
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLogin: (email: string, password?: string) => void;
   onRegister: (email: string, password?: string) => void;
+  onGoogleLogin: (token: string) => void;
 }
 
 type AuthMode = 'login' | 'register';
 
-const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onRegister }) => {
+const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onRegister, onGoogleLogin }) => {
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen && google) {
+      google.accounts.id.initialize({
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        callback: (response: any) => {
+          onGoogleLogin(response.credential);
+        },
+      });
+      if (googleButtonRef.current) {
+        google.accounts.id.renderButton(
+          googleButtonRef.current,
+          { theme: 'outline', size: 'large', width: '300' }
+        );
+      }
+    }
+  }, [isOpen, onGoogleLogin]);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,12 +46,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onRegis
       onRegister(email, password);
     }
   };
-  
-  const socialLogins = [
-      { name: 'Google', icon: 'M4.75 6.5h14.5c.41 0 .75.34.75.75v9.5c0 .41-.34.75-.75.75H4.75a.75.75 0 01-.75-.75v-9.5c0-.41.34-.75.75-.75zm.5 1.5v8h13v-8h-13z M12 12a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z' },
-      { name: 'Facebook', icon: 'M13.5 8.5H11V7c0-.55.45-1 1-1h1V4h-2.5C9.12 4 8 5.12 8 6.5v2H6.5v2.5h1.5V16h3v-5h1.5l.5-2.5z' },
-      { name: 'Twitter', icon: 'M20 7.29c-.5.22-1.04.37-1.61.44.57-.34 1-.89 1.21-1.55-.54.32-1.13.55-1.77.67-.5-.54-1.22-.87-2-.87-1.52 0-2.75 1.23-2.75 2.75 0 .22.02.43.07.64-2.28-.11-4.31-1.21-5.67-2.87-.24.41-.37.88-.37 1.39 0 .95.49 1.8 1.22 2.29-.45-.01-.88-.14-1.25-.34v.03c0 1.33.95 2.44 2.2 2.69-.23.06-.47.1-.72.1-.18 0-.35-.02-.52-.05.35 1.1 1.37 1.9 2.58 1.91-1 .78-2.23 1.25-3.58 1.25-.23 0-.46-.01-.69-.04 1.28.82 2.8 1.3 4.42 1.3 5.3 0 8.2-4.39 8.2-8.2v-.37c.56-.4.98-.9 1.35-1.5z' },
-  ]
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -82,12 +98,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin, onRegis
                         <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">OR</span>
                     </div>
                 </div>
-                <div className="flex items-center justify-center space-x-3">
-                    {socialLogins.map(s => (
-                        <button key={s.name} aria-label={`Login with ${s.name}`} className="p-3 border border-gray-200 dark:border-gray-600 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" viewBox="0 0 24 24" fill="currentColor"><path d={s.icon}></path></svg>
-                        </button>
-                    ))}
+                <div className="flex items-center justify-center">
+                   <div ref={googleButtonRef}></div>
                 </div>
             </div>
         </div>

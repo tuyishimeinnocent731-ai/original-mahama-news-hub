@@ -2,6 +2,7 @@ const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const { formatUserFromDb } = require('../utils/userFormatter');
+const crypto = require('crypto');
 
 
 const getUserProfile = async (req, res, next) => {
@@ -150,12 +151,10 @@ const deleteUserAccount = async (req, res, next) => {
     try {
         const userId = req.user.id;
         
-        // Log the action before deleting
         await pool.query('INSERT INTO activity_log (user_id, action_type, ip_address, details) VALUES (?, ?, ?, ?)', [
             userId, 'account_deleted', req.ipAddress, JSON.stringify({ reason: 'User initiated' })
         ]);
         
-        // Delete the user. Cascading deletes should handle related data.
         await pool.query('DELETE FROM users WHERE id = ?', [userId]);
         
         res.json({ message: 'Your account has been successfully deleted.' });
@@ -209,7 +208,6 @@ const upgradeSubscription = async (req, res, next) => {
     }
 }
 
-// --- NOTIFICATION CONTROLLERS ---
 const getNotifications = async (req, res, next) => {
     try {
         const [notifications] = await pool.query('SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
@@ -246,7 +244,6 @@ const deleteNotification = async (req, res, next) => {
     }
 };
 
-// --- Job Application Controller ---
 const getUserApplications = async (req, res, next) => {
     try {
         const [applications] = await pool.query(`
@@ -262,8 +259,40 @@ const getUserApplications = async (req, res, next) => {
     }
 };
 
+const exportUserData = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const [userRows] = await pool.query(formatUserFromDb.userQuery, [userId]);
+        
+        if (userRows.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
-// --- ADMIN CONTROLLERS ---
+        const fullUser = formatUserFromDb(userRows[0]);
+        
+        const exportData = {
+            profile: {
+                name: fullUser.name,
+                email: fullUser.email,
+                bio: fullUser.bio,
+                socials: fullUser.socials,
+                subscription: fullUser.subscription,
+                role: fullUser.role,
+            },
+            settings: fullUser.settings,
+            savedArticles: fullUser.savedArticles,
+            searchHistory: fullUser.searchHistory,
+        };
+        
+        res.setHeader('Content-Disposition', `attachment; filename="mahamanews_backup_${new Date().toISOString().split('T')[0]}.json"`);
+        res.setHeader('Content-Type', 'application/json');
+        res.json(exportData);
+
+    } catch (error) {
+        next(error);
+    }
+};
+
 const getAllUsers = async (req, res, next) => {
     try {
         const [users] = await pool.query('SELECT id, name, email, avatar, role, subscription FROM users');
@@ -330,6 +359,27 @@ const deleteUser = async (req, res, next) => {
     }
 };
 
+const adminResetPassword = async (req, res, next) => {
+    const { id } = req.params;
+    try {
+        // Generate a secure temporary password
+        const temporaryPassword = crypto.randomBytes(8).toString('hex');
+        const salt = await bcrypt.genSalt(10);
+        const password_hash = await bcrypt.hash(temporaryPassword, salt);
+
+        await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash, id]);
+        
+        // Log this important administrative action
+        await pool.query('INSERT INTO activity_log (user_id, action_type, ip_address, details) VALUES (?, ?, ?, ?)', [
+            id, 'admin_password_reset', req.ipAddress, JSON.stringify({ admin_id: req.user.id })
+        ]);
+
+        res.json({ temporaryPassword });
+    } catch (error) {
+        next(error);
+    }
+};
+
 const getUserActivityLog = async (req, res, next) => {
     try {
         const [logs] = await pool.query(
@@ -342,6 +392,106 @@ const getUserActivityLog = async (req, res, next) => {
     }
 };
 
+const getSessions = async (req, res, next) => {
+    try {
+        const [logs] = await pool.query(
+            `SELECT id, details, ip_address, created_at 
+             FROM activity_log 
+             WHERE user_id = ? AND action_type = 'login' 
+             ORDER BY created_at DESC 
+             LIMIT 10`,
+            [req.user.id]
+        );
+
+        const sessions = logs.map((log, index) => ({
+            id: log.id,
+            device: log.details?.device || 'Unknown Device',
+            ip_address: log.ip_address,
+            last_active: log.created_at,
+            is_current: index === 0,
+        }));
+
+        res.json(sessions);
+    } catch (error) {
+        next(error);
+    }
+};
+
+const terminateSession = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const [result] = await pool.query(
+            'DELETE FROM activity_log WHERE id = ? AND user_id = ?',
+            [id, req.user.id]
+        );
+
+        if (result.affectedRows > 0) {
+            res.json({ message: 'Session removed from history.' });
+        } else {
+            res.status(404).json({ message: 'Session not found or not authorized to terminate.' });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+const getApiKeys = async (req, res, next) => {
+    try {
+        const [keys] = await pool.query(
+            'SELECT id, prefix, description, created_at, last_used FROM api_keys WHERE user_id = ?',
+            [req.user.id]
+        );
+        res.json(keys);
+    } catch (error) {
+        next(error);
+    }
+};
+
+const createApiKey = async (req, res, next) => {
+    const { description } = req.body;
+    const userId = req.user.id;
+
+    try {
+        const apiKey = `mnh_${crypto.randomBytes(24).toString('hex')}`;
+        const prefix = apiKey.substring(0, 8);
+        
+        const salt = await bcrypt.genSalt(10);
+        const key_hash = await bcrypt.hash(apiKey, salt);
+
+        const newKey = {
+            id: `key-${uuidv4()}`,
+            user_id: userId,
+            prefix,
+            key_hash,
+            description
+        };
+
+        await pool.query('INSERT INTO api_keys SET ?', newKey);
+
+        res.status(201).json({ key: apiKey });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const deleteApiKey = async (req, res, next) => {
+    try {
+        const { keyId } = req.params;
+        const [result] = await pool.query(
+            'DELETE FROM api_keys WHERE id = ? AND user_id = ?',
+            [keyId, req.user.id]
+        );
+        if (result.affectedRows > 0) {
+            res.json({ message: 'API Key deleted' });
+        } else {
+            res.status(404).json({ message: 'API Key not found or not authorized' });
+        }
+    } catch (error) {
+        next(error);
+    }
+};
+
+
 module.exports = { 
     getAllUsers, createUser, updateUser, deleteUser,
     getUserProfile, updateUserProfile, updateUserSettings,
@@ -350,4 +500,11 @@ module.exports = {
     getNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification,
     getUserApplications,
     getUserActivityLog,
+    getSessions,
+    terminateSession,
+    getApiKeys,
+    createApiKey,
+    deleteApiKey,
+    exportUserData,
+    adminResetPassword,
 };

@@ -3,6 +3,10 @@ const bcrypt = require('bcryptjs');
 const pool = require('../config/db');
 const { v4: uuidv4 } = require('uuid');
 const { formatUserFromDb } = require('../utils/userFormatter');
+const { OAuth2Client } = require('google-auth-library');
+const crypto = require('crypto');
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -134,4 +138,68 @@ const loginUser = async (req, res, next) => {
     }
 };
 
-module.exports = { registerUser, loginUser };
+const loginWithGoogle = async (req, res, next) => {
+    const { token } = req.body;
+    const connection = await pool.getConnection();
+    try {
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        const { email, name, picture: avatar } = payload;
+
+        const [existingUsers] = await connection.query('SELECT * FROM users WHERE email = ?', [email]);
+        
+        let userId;
+
+        if (existingUsers.length > 0) {
+            userId = existingUsers[0].id;
+        } else {
+            // Create a new user
+            await connection.beginTransaction();
+
+            const randomPassword = crypto.randomBytes(20).toString('hex');
+            const salt = await bcrypt.genSalt(10);
+            const password_hash = await bcrypt.hash(randomPassword, salt);
+
+            const newUser = {
+                id: `user-${uuidv4()}`,
+                name,
+                email,
+                password_hash,
+                avatar,
+                subscription: 'free',
+                role: 'user',
+            };
+            
+            await connection.query('INSERT INTO users SET ?', newUser);
+            await connection.query('INSERT INTO user_settings (user_id) VALUES (?)', [newUser.id]);
+            
+            await connection.commit();
+            userId = newUser.id;
+        }
+
+        // Log activity
+        await connection.query('INSERT INTO activity_log (user_id, action_type, ip_address, details) VALUES (?, ?, ?, ?)', [
+            userId, 'login', req.ipAddress, JSON.stringify({ device: req.headers['user-agent'], method: 'google' })
+        ]);
+
+        // Fetch comprehensive user data
+        const [fullUserRows] = await connection.query(formatUserFromDb.userQuery, [userId]);
+        const fullUser = formatUserFromDb(fullUserRows[0]);
+        
+        res.json({
+            ...fullUser,
+            token: generateToken(userId),
+        });
+
+    } catch (error) {
+        if(connection) await connection.rollback();
+        next(error);
+    } finally {
+        if(connection) connection.release();
+    }
+};
+
+module.exports = { registerUser, loginUser, loginWithGoogle };

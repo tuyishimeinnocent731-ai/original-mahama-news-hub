@@ -1,7 +1,5 @@
-
-
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, Article, Ad, SubscriptionPlan, NavLink } from '../types';
+import { User, Article, Ad, SubscriptionPlan, NavLink, Comment } from '../types';
 import { NewspaperIcon } from '../components/icons/NewspaperIcon';
 import { UserGroupIcon } from '../components/icons/UserGroupIcon';
 import { TrashIcon } from '../components/icons/TrashIcon';
@@ -19,11 +17,19 @@ import ArticleManager, { ArticleFormData } from '../components/admin/ArticleMana
 import AnalyticsDashboard from '../components/admin/AnalyticsDashboard';
 import { ChartBarIcon } from '../components/icons/ChartBarIcon';
 import * as newsService from '../services/newsService';
+import * as userService from '../services/userService';
 import * as navigationService from '../services/navigationService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { EnvelopeIcon } from '../components/icons/EnvelopeIcon';
 import PageManager from '../components/admin/PageManager';
 import MessageViewer from '../components/admin/MessageViewer';
+import { BriefcaseIcon } from '../components/icons/BriefcaseIcon';
+import JobManager from '../components/admin/JobManager';
+import { ChatBubbleLeftIcon } from '../components/icons/ChatBubbleLeftIcon';
+import CommentManager from '../components/admin/CommentManager';
+import { KeyIcon } from '../components/icons/KeyIcon';
+import PasswordResetModal from '../components/admin/PasswordResetModal';
+import { useToast } from '../contexts/ToastContext';
 
 
 type AdFormData = Omit<Ad, 'id'>;
@@ -330,6 +336,9 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, add
     const [refreshKey, setRefreshKey] = useState(0);
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isResetModalOpen, setResetModalOpen] = useState(false);
+    const [tempPassword, setTempPassword] = useState('');
+    const { addToast } = useToast();
 
     useEffect(() => {
         setIsLoading(true);
@@ -340,7 +349,6 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, add
     }, [getAllUsers, refreshKey]);
 
     const handleAction = async (action: (...args: any[]) => Promise<boolean>, ...args: any[]) => {
-// FIX: Removed incorrect type annotation from function call arguments.
         const success = await action(...args);
         if (success) {
             setRefreshKey(k => k + 1);
@@ -360,6 +368,19 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, add
     const handleDeleteUser = (userId: string, name: string) => {
         if (window.confirm(`Are you sure you want to delete user ${name}? This action cannot be undone.`)) {
             handleAction(deleteUser, userId);
+        }
+    };
+
+    const handleResetPassword = async (userId: string) => {
+        if (window.confirm(`Are you sure you want to reset this user's password? They will be logged out of all sessions.`)) {
+            try {
+                const { temporaryPassword } = await userService.adminResetPassword(userId);
+                setTempPassword(temporaryPassword);
+                setResetModalOpen(true);
+                addToast('Password has been reset.', 'success');
+            } catch (error: any) {
+                addToast(error.message || 'Failed to reset password.', 'error');
+            }
         }
     };
 
@@ -388,6 +409,7 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, add
             </div>
 
             <UserFormModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} onSubmit={handleFormSubmit} userToEdit={userToEdit} />
+            {isResetModalOpen && <PasswordResetModal password={tempPassword} onClose={() => setResetModalOpen(false)} />}
 
             {isLoading ? <div className="flex justify-center p-8"><LoadingSpinner /></div> : (
                 <div className="overflow-x-auto border rounded-lg border-border">
@@ -421,6 +443,7 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser, getAllUsers, add
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                         {user.email !== 'reponsekdz0@gmail.com' && (
                                             <>
+                                                <button onClick={() => handleResetPassword(user.id)} className="text-yellow-600 hover:text-yellow-500" title="Reset Password"><KeyIcon className="w-5 h-5" /></button>
                                                 <button onClick={() => handleEditUser(user)} className="text-primary hover:text-primary/80"><PencilIcon className="w-5 h-5"/></button>
                                                 <button onClick={() => handleDeleteUser(user.id, user.name)} className="text-destructive hover:text-destructive/80"><TrashIcon className="w-5 h-5"/></button>
                                             </>
@@ -510,7 +533,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ getAllUsers }
     );
 };
 
-type AdminTab = 'dashboard' | 'articles' | 'ads' | 'users' | 'navigation' | 'pages' | 'messages' | 'settings' | 'subscriptions' | 'analytics';
+type AdminTab = 'dashboard' | 'articles' | 'comments' | 'ads' | 'users' | 'navigation' | 'pages' | 'messages' | 'jobs' | 'settings' | 'subscriptions' | 'analytics';
 
 interface AdminPageProps {
     user: User;
@@ -538,9 +561,11 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
     const allTabs = [
         { id: 'dashboard', label: 'Dashboard', icon: <ChartPieIcon className="w-5 h-5" />, roles: ['admin', 'sub-admin'] },
         { id: 'articles', label: 'Manage Articles', icon: <NewspaperIcon className="w-5 h-5" />, roles: ['admin', 'sub-admin'] },
+        { id: 'comments', label: 'Comment Moderation', icon: <ChatBubbleLeftIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'navigation', label: 'Navigation', icon: <BookOpenIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'pages', label: 'Page Content', icon: <PencilIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'ads', label: 'Manage Ads', icon: <MegaphoneIcon className="w-5 h-5" />, roles: ['admin'] },
+        { id: 'jobs', label: 'Careers', icon: <BriefcaseIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'messages', label: 'Contact Messages', icon: <EnvelopeIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'users', label: 'Manage Users', icon: <UserGroupIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'subscriptions', label: 'Subscriptions', icon: <BillingIcon className="w-5 h-5" />, roles: ['admin'] },
@@ -562,12 +587,16 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
                 return <Dashboard />;
             case 'articles':
                 return <ArticleManager onAddArticle={props.onAddArticle} onUpdateArticle={props.onUpdateArticle} allArticles={props.allArticles} onDeleteArticle={props.onDeleteArticle} />;
+            case 'comments':
+                return <CommentManager />;
             case 'navigation':
                 return <NavigationManager navLinks={props.navLinks} onUpdateNavLinks={props.onUpdateNavLinks} />;
             case 'pages':
                 return <PageManager />;
             case 'ads':
                 return <AdManager onAddAd={props.onAddAd} onUpdateAd={props.onUpdateAd} allAds={props.allAds} onDeleteAd={props.onDeleteAd} />;
+            case 'jobs':
+                return <JobManager />;
             case 'messages':
                 return <MessageViewer />;
             case 'users':

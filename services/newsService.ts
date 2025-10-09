@@ -129,12 +129,16 @@ export const postComment = async (articleId: string, body: string, parentId?: st
 };
 
 export const getAllComments = async (): Promise<Comment[]> => {
-    return api.get<Comment[]>('/api/comments');
+    return api.get<Comment[]>('/api/articles/comments/all');
 }
 
 export const deleteComment = async (commentId: string): Promise<void> => {
-    await api.delete(`/api/comments/${commentId}`);
+    await api.delete(`/api/articles/comments/${commentId}`);
 }
+
+export const updateCommentStatus = async (commentId: string, status: 'approved' | 'rejected'): Promise<void> => {
+    return api.put(`/api/articles/comments/${commentId}/status`, { status });
+};
 
 
 // --- Dashboard Service Functions ---
@@ -183,6 +187,7 @@ export const removeArticleFromOffline = (articleId: string) => {
 export const getArticlesForMegaMenu = (category: string, count: number): Article[] => {
     // This is a mock implementation because the original component calls it synchronously.
     // In a real application, this data should be fetched asynchronously and managed in component state.
+    // FIX: Removed `status` property from mock articles as it does not exist on the Article type.
     const mockArticles: Article[] = [
         { id: 'mega-world-1', title: 'Global Summit Addresses Climate Change Urgently', urlToImage: '/uploads/placeholder.jpg', category: 'World', author: 'Jane Doe', publishedAt: new Date().toISOString(), body: '', description: '', source: { name: 'World News' }, url: '#' },
         { id: 'mega-world-2', title: 'New Alliances Form in European Politics', urlToImage: '/uploads/placeholder.jpg', category: 'Europe', author: 'John Smith', publishedAt: new Date().toISOString(), body: '', description: '', source: { name: 'World News' }, url: '#' },

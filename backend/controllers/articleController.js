@@ -52,12 +52,11 @@ const getAllArticles = async (req, res, next) => {
 };
 
 const searchArticles = async (req, res, next) => {
-    const { query, category, author, page = 1, limit = 10 } = req.query;
+    const { query, category, author, page = 1, limit = 10, tag } = req.query;
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
     const offset = (pageNum - 1) * limitNum;
     
-    // Add to search history if a user is logged in
     if (req.user && query) {
         pool.query('INSERT INTO search_history (user_id, query) VALUES (?, ?)', [req.user.id, query]);
     }
@@ -89,6 +88,13 @@ const searchArticles = async (req, res, next) => {
             countSql += authClause;
             params.push(author);
             countParams.push(author);
+        }
+        if (tag) {
+            const tagClause = ' AND JSON_CONTAINS(tags, JSON_QUOTE(?))';
+            sql += tagClause;
+            countSql += tagClause;
+            params.push(tag);
+            countParams.push(tag);
         }
         
         const [countResult] = await pool.query(countSql, countParams);
@@ -139,12 +145,13 @@ const getSuggestions = async (req, res, next) => {
 
 const getArticleById = async (req, res, next) => {
     try {
-        // Log the view in the new analytics table
-        const user_id = req.user ? req.user.id : null;
-        pool.query('INSERT INTO article_views (article_id, user_id, ip_address, user_agent) VALUES (?, ?, ?, ?)', [
-            req.params.id, user_id, req.ipAddress, req.headers['user-agent']
-        ]);
-
+        if (!req.headers['x-api-key']) { // Don't log views from API key requests
+            const user_id = req.user ? req.user.id : null;
+            pool.query('INSERT INTO article_views (article_id, user_id, ip_address, user_agent) VALUES (?, ?, ?, ?)', [
+                req.params.id, user_id, req.ipAddress, req.headers['user-agent']
+            ]);
+        }
+        
         const [articles] = await pool.query('SELECT * FROM articles WHERE id = ?', [req.params.id]);
         if (articles.length > 0) {
             res.json(articles[0]);
@@ -175,23 +182,20 @@ const getRelatedArticles = async (req, res, next) => {
 
 
 const createArticle = async (req, res, next) => {
-    const { title, description, body, author, category, scheduledFor } = req.body;
+    const { title, description, body, author, category, scheduledFor, tags } = req.body;
     
     let urlToImage;
-    if (req.body.urlToImage) { // If base64 string is passed
+    if (req.body.urlToImage) {
         urlToImage = req.body.urlToImage;
-    } else if (req.file) { // If file is uploaded
+    } else if (req.file) {
         urlToImage = `/uploads/${req.file.filename}`;
-    }
-
-    if (!title || !description || !body || !author || !category) {
-        return res.status(400).json({ message: 'Please provide all required fields.' });
     }
 
     try {
         const newArticle = {
             id: `article-${uuidv4()}`,
             title, description, body, author, category, url_to_image: urlToImage,
+            tags: tags ? JSON.parse(tags) : [],
             source_name: 'Mahama News Hub',
             published_at: scheduledFor ? null : new Date(),
             scheduled_for: scheduledFor ? new Date(scheduledFor) : null,
@@ -205,7 +209,7 @@ const createArticle = async (req, res, next) => {
 
 const updateArticle = async (req, res, next) => {
     const { id } = req.params;
-    const { title, description, body, author, category, scheduledFor, urlToImage: bodyUrlToImage } = req.body;
+    const { title, description, body, author, category, scheduledFor, urlToImage: bodyUrlToImage, tags } = req.body;
 
     try {
         const [articles] = await pool.query('SELECT * FROM articles WHERE id = ?', [id]);
@@ -222,7 +226,8 @@ const updateArticle = async (req, res, next) => {
 
         const updatedArticle = {
             title, description, body, author, category, url_to_image,
-            scheduled_for: scheduledFor ? new Date(scheduledFor) : null,
+            tags: tags ? JSON.parse(tags) : articles[0].tags,
+            scheduled_for: scheduledFor ? new Date(scheduledFor) : articles[0].scheduled_for,
         };
 
         await pool.query('UPDATE articles SET ? WHERE id = ?', [updatedArticle, id]);
@@ -249,17 +254,14 @@ const createComment = async (req, res, next) => {
     const { articleId, body, parentId } = req.body;
     const userId = req.user.id;
 
-    if (!body) {
-        return res.status(400).json({ message: 'Comment body cannot be empty.' });
-    }
-
     try {
         const newComment = {
             id: `comment-${uuidv4()}`,
             article_id: articleId,
             user_id: userId,
             body,
-            parent_id: parentId || null
+            parent_id: parentId || null,
+            status: 'pending' // Default to pending for moderation
         };
         await pool.query('INSERT INTO comments SET ?', newComment);
 
@@ -283,7 +285,7 @@ const getCommentsForArticle = async (req, res, next) => {
             SELECT c.*, u.name as author_name, u.avatar as author_avatar 
             FROM comments c
             JOIN users u ON c.user_id = u.id
-            WHERE c.article_id = ? 
+            WHERE c.article_id = ? AND c.status = 'approved'
             ORDER BY c.created_at ASC
         `, [id]);
         
@@ -324,9 +326,29 @@ const getAllComments = async (req, res, next) => {
     }
 };
 
-const deleteComment = async (req, res, next) => {
+const updateCommentStatus = async (req, res, next) => {
+    const { commentId } = req.params;
+    const { status } = req.body;
+
+    if (!['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ message: 'Invalid status provided.' });
+    }
+
     try {
-        await pool.query('DELETE FROM comments WHERE id = ?', [req.params.id]);
+        const [result] = await pool.query('UPDATE comments SET status = ? WHERE id = ?', [status, commentId]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Comment not found.' });
+        }
+        res.json({ message: `Comment status updated to ${status}` });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const deleteComment = async (req, res, next) => {
+    const { commentId } = req.params;
+    try {
+        await pool.query('DELETE FROM comments WHERE id = ?', [commentId]);
         res.json({ message: 'Comment deleted successfully' });
     } catch (error) {
         next(error);
@@ -334,5 +356,5 @@ const deleteComment = async (req, res, next) => {
 };
 
 module.exports = {
-    getAllArticles, getArticleById, createArticle, updateArticle, deleteArticle, searchArticles, getTopStories, getSuggestions, getRelatedArticles, upload, createComment, getCommentsForArticle, getAllComments, deleteComment
+    getAllArticles, getArticleById, createArticle, updateArticle, deleteArticle, searchArticles, getTopStories, getSuggestions, getRelatedArticles, upload, createComment, getCommentsForArticle, getAllComments, deleteComment, updateCommentStatus
 };

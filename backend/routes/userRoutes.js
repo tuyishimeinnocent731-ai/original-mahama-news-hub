@@ -21,6 +21,13 @@ const {
     getUserApplications,
     deleteUserAccount,
     getUserActivityLog,
+    getSessions,
+    terminateSession,
+    getApiKeys,
+    createApiKey,
+    deleteApiKey,
+    exportUserData,
+    adminResetPassword,
 } = require('../controllers/userController');
 const { protect, admin, proUser } = require('../middleware/authMiddleware');
 const { upload } = require('../controllers/articleController'); // Re-use image upload logic
@@ -29,6 +36,8 @@ const { upload } = require('../controllers/articleController'); // Re-use image 
 router.route('/').get(protect, admin, getAllUsers).post(protect, admin, createUser);
 router.route('/:id').put(protect, admin, updateUser).delete(protect, admin, deleteUser);
 router.get('/:id/activity', protect, admin, getUserActivityLog);
+router.post('/:id/reset-password', protect, admin, adminResetPassword);
+
 
 // Profile routes for logged-in user
 router.route('/profile')
@@ -39,6 +48,18 @@ router.put('/settings', protect, updateUserSettings);
 router.put('/password', protect, changePassword);
 router.delete('/me/account', protect, deleteUserAccount);
 
+// Session Management
+router.get('/sessions', protect, getSessions);
+router.delete('/sessions/:id', protect, terminateSession);
+
+// API Key Management (Pro users)
+router.route('/api-keys')
+    .get(protect, proUser, getApiKeys)
+    .post(protect, proUser, createApiKey);
+router.delete('/api-keys/:keyId', protect, proUser, deleteApiKey);
+
+// Data Export
+router.get('/data-export', protect, exportUserData);
 
 router.route('/saved')
     .get(protect, getSavedArticles);
