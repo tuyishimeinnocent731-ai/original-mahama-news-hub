@@ -65,7 +65,7 @@ const MobileMenuItem: React.FC<{
         <div className="py-2 border-b border-primary-foreground/10 mobile-menu-item" style={{ animationDelay: `${delay}ms` }}>
             <button
                 onClick={handleToggle}
-                className="w-full flex justify-between items-center text-lg text-primary-foreground hover:text-accent focus:outline-none"
+                className="w-full flex justify-between items-center text-lg text-primary-foreground hover:text-accent focus:outline-none transition-colors"
             >
                 <span className="flex items-center space-x-3">
                     {categoryIcons[link.name] || <WorldIcon/>}
@@ -82,7 +82,7 @@ const MobileMenuItem: React.FC<{
                             <button
                                 key={sublink.id}
                                 onClick={() => handleSelect(sublink.name)}
-                                className="text-left text-base text-primary-foreground/80 hover:text-accent"
+                                className="text-left text-base text-primary-foreground hover:text-accent transition-colors"
                             >
                                 {sublink.name}
                             </button>
