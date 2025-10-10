@@ -172,6 +172,14 @@ export const translateArticle = async (body: string, title: string, targetLangua
     return await api.post<{ title: string, body: string }>('/api/ai/translate', { body, title, targetLanguage });
 };
 
+export const generateVideo = async (formData: FormData): Promise<any> => {
+    return api.postFormData<any>('/api/ai/generate-video', formData);
+};
+
+export const getVideoOperation = async (operation: any): Promise<any> => {
+    return api.post<any>('/api/ai/get-video-operation', { operation });
+};
+
 
 // --- Offline functions are deprecated as we move to a client-server model ---
 export const saveArticleForOffline = (articleId: string) => {

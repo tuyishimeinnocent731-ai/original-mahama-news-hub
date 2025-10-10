@@ -30,6 +30,8 @@ import CommentManager from '../components/admin/CommentManager';
 import { KeyIcon } from '../components/icons/KeyIcon';
 import PasswordResetModal from '../components/admin/PasswordResetModal';
 import { useToast } from '../contexts/ToastContext';
+import { FilmIcon } from '../components/icons/FilmIcon';
+import VideoGenerator from '../components/admin/VideoGenerator';
 
 
 type AdFormData = Omit<Ad, 'id'>;
@@ -533,7 +535,7 @@ const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ getAllUsers }
     );
 };
 
-type AdminTab = 'dashboard' | 'articles' | 'comments' | 'ads' | 'users' | 'navigation' | 'pages' | 'messages' | 'jobs' | 'settings' | 'subscriptions' | 'analytics';
+type AdminTab = 'dashboard' | 'articles' | 'comments' | 'ads' | 'users' | 'navigation' | 'pages' | 'messages' | 'jobs' | 'settings' | 'subscriptions' | 'analytics' | 'video';
 
 interface AdminPageProps {
     user: User;
@@ -561,6 +563,7 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
     const allTabs = [
         { id: 'dashboard', label: 'Dashboard', icon: <ChartPieIcon className="w-5 h-5" />, roles: ['admin', 'sub-admin'] },
         { id: 'articles', label: 'Manage Articles', icon: <NewspaperIcon className="w-5 h-5" />, roles: ['admin', 'sub-admin'] },
+        { id: 'video', label: 'Video Studio', icon: <FilmIcon className="w-5 h-5" />, roles: ['admin', 'sub-admin'] },
         { id: 'comments', label: 'Comment Moderation', icon: <ChatBubbleLeftIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'navigation', label: 'Navigation', icon: <BookOpenIcon className="w-5 h-5" />, roles: ['admin'] },
         { id: 'pages', label: 'Page Content', icon: <PencilIcon className="w-5 h-5" />, roles: ['admin'] },
@@ -587,6 +590,8 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
                 return <Dashboard />;
             case 'articles':
                 return <ArticleManager onAddArticle={props.onAddArticle} onUpdateArticle={props.onUpdateArticle} allArticles={props.allArticles} onDeleteArticle={props.onDeleteArticle} />;
+            case 'video':
+                return <VideoGenerator />;
             case 'comments':
                 return <CommentManager />;
             case 'navigation':
@@ -606,7 +611,7 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
             case 'analytics':
                 return <AnalyticsDashboard getAllUsers={props.getAllUsers} articles={props.allArticles} />;
             case 'settings':
-                return <SiteSettingsManager settings={props.siteSettings} onUpdateSettings={props.onUpdateSiteSettings} />;
+                return <SiteSettingsManager settings={props.siteSettings} onUpdateSettings={props.onUpdateSettings} />;
             default:
                 return null;
         }

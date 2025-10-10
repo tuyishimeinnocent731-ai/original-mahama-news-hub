@@ -64,11 +64,14 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ getAllUsers, ar
 
     // Mock data generation
     const totalViews = articles.length * 1234; // Mock calculation
-    // FIX: Initialize the accumulator with all possible keys to ensure type safety.
-    const subscriptions = users.reduce((acc, user) => {
-        acc[user.subscription] = (acc[user.subscription] || 0) + 1;
+    // FIX: Explicitly type the accumulator and initialize with all possible subscription plans
+    // to ensure type safety and avoid potential undefined values.
+    const subscriptions = users.reduce((acc: Record<SubscriptionPlan, number>, user) => {
+        if (user.subscription in acc) {
+            acc[user.subscription]++;
+        }
         return acc;
-    }, { free: 0, standard: 0, premium: 0, pro: 0 } as Record<SubscriptionPlan, number>);
+    }, { free: 0, standard: 0, premium: 0, pro: 0 });
     
     const viewsByCategory = articles.reduce((acc, article) => {
         acc[article.category] = (acc[article.category] || 0) + Math.floor(Math.random() * 2000 + 500);
@@ -89,7 +92,6 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ getAllUsers, ar
                 <StatCard title="Total Article Views" value={totalViews.toLocaleString()} icon={<EyeIcon />} />
                 <StatCard title="Total Articles" value={articles.length.toString()} icon={<NewspaperIcon />} />
                 <StatCard title="Total Users" value={users.length.toString()} icon={<UserGroupIcon />} />
-                {/* FIX: Removed redundant || 0 checks as subscriptions properties are now guaranteed to be numbers. */}
                 <StatCard title="Premium Users" value={(subscriptions.premium + subscriptions.pro).toString()} icon={<StarIcon />} />
             </div>
             
