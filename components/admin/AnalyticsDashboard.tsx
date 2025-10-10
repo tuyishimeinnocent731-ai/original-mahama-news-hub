@@ -64,14 +64,13 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ getAllUsers, ar
 
     // Mock data generation
     const totalViews = articles.length * 1234; // Mock calculation
-    // FIX: Explicitly type the accumulator and initialize with all possible subscription plans
-    // to ensure type safety and avoid potential undefined values.
-    const subscriptions = users.reduce((acc: Record<SubscriptionPlan, number>, user) => {
-        if (user.subscription in acc) {
-            acc[user.subscription]++;
+    // FIX: Replaced reduce with a for...of loop for more explicit type inference, resolving arithmetic operation errors.
+    const subscriptions: Record<SubscriptionPlan, number> = { free: 0, standard: 0, premium: 0, pro: 0 };
+    for (const user of users) {
+        if (user.subscription in subscriptions) {
+            subscriptions[user.subscription]++;
         }
-        return acc;
-    }, { free: 0, standard: 0, premium: 0, pro: 0 });
+    }
     
     const viewsByCategory = articles.reduce((acc, article) => {
         acc[article.category] = (acc[article.category] || 0) + Math.floor(Math.random() * 2000 + 500);
