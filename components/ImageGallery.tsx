@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { CloseIcon } from './icons/CloseIcon';
 import { ChevronLeftIcon } from './icons/ChevronLeftIcon';
 import { ChevronRightIcon } from './icons/ChevronRightIcon';
@@ -10,27 +10,27 @@ interface ImageGalleryProps {
 const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
     const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
-    const openLightbox = (index: number) => {
+    const openLightbox = useCallback((index: number) => {
         setSelectedImageIndex(index);
         document.body.style.overflow = 'hidden'; // Prevent background scrolling
-    };
+    }, []);
 
-    const closeLightbox = () => {
+    const closeLightbox = useCallback(() => {
         setSelectedImageIndex(null);
         document.body.style.overflow = ''; // Restore background scrolling
-    };
+    }, []);
 
-    const goToNext = (e?: React.MouseEvent) => {
+    const goToNext = useCallback((e?: React.MouseEvent) => {
         e?.stopPropagation();
-        if (selectedImageIndex === null || !images) return;
-        setSelectedImageIndex((selectedImageIndex + 1) % images.length);
-    };
+        if (selectedImageIndex === null || !images || images.length === 0) return;
+        setSelectedImageIndex((prevIndex) => (prevIndex! + 1) % images.length);
+    }, [selectedImageIndex, images]);
 
-    const goToPrevious = (e?: React.MouseEvent) => {
+    const goToPrevious = useCallback((e?: React.MouseEvent) => {
         e?.stopPropagation();
-        if (selectedImageIndex === null || !images) return;
-        setSelectedImageIndex((selectedImageIndex - 1 + images.length) % images.length);
-    };
+        if (selectedImageIndex === null || !images || images.length === 0) return;
+        setSelectedImageIndex((prevIndex) => (prevIndex! - 1 + images.length) % images.length);
+    }, [selectedImageIndex, images]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -43,15 +43,19 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
         window.addEventListener('keydown', handleKeyDown);
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
-            document.body.style.overflow = ''; // Ensure scroll is restored on component unmount
+            // Ensure scroll is restored on component unmount
+            if (selectedImageIndex !== null) {
+                document.body.style.overflow = ''; 
+            }
         };
-    }, [selectedImageIndex]);
+    }, [selectedImageIndex, closeLightbox, goToNext, goToPrevious]);
 
     if (!images || images.length === 0) {
         return null;
     }
 
     const isLightboxOpen = selectedImageIndex !== null;
+    const currentImage = isLightboxOpen ? images[selectedImageIndex] : null;
 
     return (
         <>
@@ -67,7 +71,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
                 ))}
             </div>
 
-            {isLightboxOpen && (
+            {isLightboxOpen && currentImage && (
                 <div 
                     className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-fade-in-item"
                     onClick={closeLightbox}
@@ -93,12 +97,15 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
                         
                         <div className="flex flex-col items-center max-w-4xl max-h-full">
                             <img 
-                                src={images[selectedImageIndex].src} 
-                                alt={images[selectedImageIndex].alt}
-                                className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+                                key={selectedImageIndex}
+                                src={currentImage.src} 
+                                alt={currentImage.alt}
+                                className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl animate-fade-in-item"
                             />
-                            {images[selectedImageIndex].alt && (
-                                <p className="text-white/80 mt-4 text-center text-sm">{images[selectedImageIndex].alt}</p>
+                            {currentImage.alt && (
+                                <p key={`${selectedImageIndex}-caption`} className="text-white/80 mt-4 text-center text-sm animate-fade-in-item" style={{ animationDelay: '100ms' }}>
+                                    {currentImage.alt}
+                                </p>
                             )}
                         </div>
                         

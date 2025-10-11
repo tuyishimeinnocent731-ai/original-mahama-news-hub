@@ -1,7 +1,16 @@
 const { GoogleGenAI, Type } = require('@google/genai');
 require('dotenv').config();
+const multer = require('multer');
+const fetch = require('node-fetch');
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+// Multer storage config for video generation image
+const storage = multer.memoryStorage();
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 16 * 1024 * 1024 } // 16MB limit for VEO
+});
 
 const summarize = async (req, res) => {
     const { body, title } = req.body;
@@ -123,4 +132,76 @@ const translate = async (req, res) => {
     }
 };
 
-module.exports = { summarize, getKeyPoints, askAboutArticle, generateImage, translate };
+const generateVideo = async (req, res, next) => {
+    try {
+        const { prompt } = req.body;
+        if (!prompt) {
+            return res.status(400).json({ message: 'Prompt is required.' });
+        }
+
+        const videoParams = {
+            model: 'veo-2.0-generate-001',
+            prompt,
+            config: { numberOfVideos: 1 }
+        };
+
+        if (req.file) {
+            videoParams.image = {
+                imageBytes: req.file.buffer.toString('base64'),
+                mimeType: req.file.mimetype,
+            };
+        }
+        
+        const operation = await ai.models.generateVideos(videoParams);
+        res.json(operation);
+
+    } catch (error) {
+        console.error("Error generating video:", error);
+        next(error);
+    }
+};
+
+const getVideoOperation = async (req, res, next) => {
+    try {
+        const { operation } = req.body;
+        if (!operation) {
+            return res.status(400).json({ message: 'Operation object is required.' });
+        }
+
+        let updatedOp = await ai.operations.getVideosOperation({ operation });
+
+        if (updatedOp.done && !updatedOp.error) {
+            const downloadLink = updatedOp.response?.generatedVideos?.[0]?.video?.uri;
+            if (downloadLink) {
+                const videoResponse = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+                if (!videoResponse.ok) {
+                    throw new Error(`Failed to download video: ${videoResponse.statusText}`);
+                }
+                const videoBuffer = await videoResponse.buffer();
+                const base64Video = videoBuffer.toString('base64');
+                const dataUrl = `data:video/mp4;base64,${base64Video}`;
+                
+                if (updatedOp.response.generatedVideos[0].video) {
+                    updatedOp.response.generatedVideos[0].video.dataUrl = dataUrl;
+                }
+            }
+        }
+        
+        res.json(updatedOp);
+    } catch (error) {
+        console.error("Error getting video operation status:", error);
+        next(error);
+    }
+};
+
+
+module.exports = { 
+    summarize, 
+    getKeyPoints, 
+    askAboutArticle, 
+    generateImage, 
+    translate,
+    generateVideo,
+    getVideoOperation,
+    upload
+};

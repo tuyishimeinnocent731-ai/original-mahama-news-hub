@@ -10,8 +10,8 @@ interface FooterProps {
 
 const Footer: React.FC<FooterProps> = ({ navLinks, onAboutClick, onContactClick }) => {
   return (
-    <footer className="bg-primary text-primary-foreground/80 mt-12">
-      <div className="container mx-auto px-4 py-8">
+    <footer className="bg-primary text-primary-foreground/80 mt-8">
+      <div className="container mx-auto px-4 py-4">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div className="lg:col-span-4">
                  <h2 className="text-xl font-bold text-accent mb-4">Mahama News Hub</h2>
@@ -60,7 +60,7 @@ const Footer: React.FC<FooterProps> = ({ navLinks, onAboutClick, onContactClick 
                 </form>
             </div>
         </div>
-        <div className="mt-8 pt-6 border-t border-primary-foreground/20 text-center text-sm">
+        <div className="mt-6 pt-4 border-t border-primary-foreground/20 text-center text-sm">
             <p>&copy; {new Date().getFullYear()} Mahama News Hub. All Rights Reserved.</p>
         </div>
       </div>

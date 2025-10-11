@@ -5,7 +5,10 @@ const {
     getKeyPoints, 
     askAboutArticle, 
     generateImage, 
-    translate
+    translate,
+    generateVideo,
+    getVideoOperation,
+    upload
 } = require('../controllers/aiController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -17,5 +20,10 @@ router.post('/key-points', getKeyPoints);
 router.post('/ask', askAboutArticle);
 router.post('/generate-image', generateImage);
 router.post('/translate', translate);
+
+// NEW routes for video generation
+router.post('/generate-video', upload.single('image'), generateVideo);
+router.post('/get-video-operation', getVideoOperation);
+
 
 module.exports = router;

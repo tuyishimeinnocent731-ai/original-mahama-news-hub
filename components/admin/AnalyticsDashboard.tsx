@@ -1,5 +1,8 @@
 
 
+
+
+
 import React, { useState, useEffect } from 'react';
 import { User, Article, SubscriptionPlan } from '../../types';
 import { UserGroupIcon } from '../icons/UserGroupIcon';
@@ -64,13 +67,14 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ getAllUsers, ar
 
     // Mock data generation
     const totalViews = articles.length * 1234; // Mock calculation
-    // FIX: Replaced reduce with a for...of loop for more explicit type inference, resolving arithmetic operation errors.
-    const subscriptions: Record<SubscriptionPlan, number> = { free: 0, standard: 0, premium: 0, pro: 0 };
-    for (const user of users) {
-        if (user.subscription in subscriptions) {
-            subscriptions[user.subscription]++;
+    
+    // FIX: Using a correctly typed reduce method ensures proper type inference for subscription counts, resolving the arithmetic error.
+    const subscriptions = users.reduce<Record<SubscriptionPlan, number>>((acc, user) => {
+        if (user.subscription) {
+            acc[user.subscription]++;
         }
-    }
+        return acc;
+    }, { free: 0, standard: 0, premium: 0, pro: 0 });
     
     const viewsByCategory = articles.reduce((acc, article) => {
         acc[article.category] = (acc[article.category] || 0) + Math.floor(Math.random() * 2000 + 500);

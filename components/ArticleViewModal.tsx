@@ -8,6 +8,7 @@ import { ShareIcon } from './icons/ShareIcon';
 import { PlayIcon } from './icons/PlayIcon';
 import { PauseIcon } from './icons/PauseIcon';
 import LoadingSpinner from './LoadingSpinner';
+import { TranslateIcon } from './icons/TranslateIcon';
 
 interface ArticleViewModalProps {
     article: Article | null;
@@ -22,6 +23,8 @@ const ArticleViewModal: React.FC<ArticleViewModalProps> = ({ article, isOpen, on
     const [keyPoints, setKeyPoints] = useState<string[]>([]);
     const [isSummaryLoading, setSummaryLoading] = useState(false);
     const [isKeyPointsLoading, setKeyPointsLoading] = useState(false);
+    const [translatedContent, setTranslatedContent] = useState<{ title: string; body: string; language: string } | null>(null);
+    const [isTranslating, setIsTranslating] = useState(false);
     const { isPlaying, isSupported, speak, stop, pause, resume } = useTTS();
 
     useEffect(() => {
@@ -29,6 +32,8 @@ const ArticleViewModal: React.FC<ArticleViewModalProps> = ({ article, isOpen, on
             // Reset states when a new article is opened
             setSummary('');
             setKeyPoints([]);
+            setTranslatedContent(null);
+            setIsTranslating(false);
             stop(); // Stop any ongoing speech
         }
     }, [article, isOpen, stop]);
@@ -61,15 +66,31 @@ const ArticleViewModal: React.FC<ArticleViewModalProps> = ({ article, isOpen, on
             }
         }
     };
+
+    const handleTranslate = async (language: string) => {
+        if (!article) return;
+        if (!isPremium) {
+            onUpgradeClick();
+            return;
+        }
+        setIsTranslating(true);
+        const result = await newsService.translateArticle(article.body, article.title, language);
+        setTranslatedContent({ ...result, language });
+        setIsTranslating(false);
+    };
     
     if (!isOpen || !article) {
         return null;
     }
 
+    const currentTitle = translatedContent?.title || article.title;
+    const currentBody = translatedContent?.body || article.body;
+
+
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
             <div className="p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
-                <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gray-900 dark:text-white">{article.title}</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gray-900 dark:text-white">{currentTitle}</h1>
                 <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
                     <span>By {article.author} | {article.source.name}</span>
                     <span>{new Date(article.publishedAt).toLocaleDateString()}</span>
@@ -84,9 +105,30 @@ const ArticleViewModal: React.FC<ArticleViewModalProps> = ({ article, isOpen, on
                            <span>{isPlaying ? 'Pause' : 'Listen'}</span>
                         </button>
                     )}
+                    <div className="relative group">
+                        <button disabled={isTranslating} onClick={() => !isPremium && onUpgradeClick()} className={`flex items-center space-x-2 ${isPremium ? 'text-gray-600 dark:text-gray-300 hover:text-yellow-500' : 'text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}>
+                           <TranslateIcon />
+                           <span>{isTranslating ? 'Translating...' : 'Translate'}</span>
+                        </button>
+                        {isPremium && (
+                             <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-popover text-popover-foreground rounded-md shadow-lg border border-border py-1 z-10">
+                                <button onClick={() => handleTranslate('Spanish')} className="block w-full text-left px-4 py-2 text-sm hover:bg-secondary">Spanish</button>
+                                <button onClick={() => handleTranslate('French')} className="block w-full text-left px-4 py-2 text-sm hover:bg-secondary">French</button>
+                                <button onClick={() => handleTranslate('German')} className="block w-full text-left px-4 py-2 text-sm hover:bg-secondary">German</button>
+                             </div>
+                        )}
+                    </div>
                 </div>
 
                 <img src={article.urlToImage} alt={article.title} className="w-full h-auto max-h-80 object-cover rounded-lg mb-6" />
+                
+                {translatedContent && (
+                    <div className="mb-6 p-3 bg-gray-100 dark:bg-gray-800 rounded-md text-sm">
+                        Translated to {translatedContent.language} by Gemini. 
+                        <button onClick={() => setTranslatedContent(null)} className="ml-2 font-semibold text-yellow-500 hover:underline">Show Original</button>
+                    </div>
+                )}
+
 
                 {/* AI Features */}
                 <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg mb-6 space-y-4">
@@ -119,7 +161,7 @@ const ArticleViewModal: React.FC<ArticleViewModalProps> = ({ article, isOpen, on
 
                 <article className="prose dark:prose-invert max-w-none">
                     <p className="lead">{article.description}</p>
-                    <p>{article.body}</p>
+                    <p>{currentBody}</p>
                 </article>
                  <div className="mt-6 text-center">
                     <a href={article.url} target="_blank" rel="noopener noreferrer" className="text-yellow-500 hover:underline">

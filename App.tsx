@@ -204,6 +204,22 @@ const App: React.FC = () => {
     };
 
     const onCloseAllModals = () => setActiveModal(null);
+
+    const handleLoginAndRedirect = async (email: string, password: string) => {
+        const success = await login(email, password);
+        if (success) {
+            handleCategorySelect('World');
+        }
+        return success;
+    };
+
+    const handleRegisterAndRedirect = async (name: string, email: string, password: string) => {
+        const success = await register(name, email, password);
+        if (success) {
+            handleCategorySelect('World');
+        }
+        return success;
+    };
     
     // Admin Actions
     const handleAddArticle = async (data: ArticleFormData) => {
@@ -305,7 +321,7 @@ const App: React.FC = () => {
             <BackToTopButton />
 
             {/* Modals & Overlays */}
-            {activeModal === 'auth' && <AuthModal isOpen={true} onClose={onCloseAllModals} onLogin={login} onRegister={register} />}
+            {activeModal === 'auth' && <AuthModal isOpen={true} onClose={onCloseAllModals} onLogin={handleLoginAndRedirect} onRegister={handleRegisterAndRedirect} />}
             {activeModal === 'premium' && <PremiumModal isOpen={true} onClose={onCloseAllModals} onSubscribeClick={async (plan) => { if(user) { try { await paymentService.createCheckoutSession(plan); } catch(e) { addToast((e as Error).message, 'error'); } } else { setActiveModal('auth'); } }} />}
             {activeModal === 'payment' && <PaymentModal isOpen={true} onClose={onCloseAllModals} planName="Premium" price="$9.99/mo" onPaymentSuccess={(method) => { console.log(method); onCloseAllModals(); addToast('Subscribed successfully!', 'success'); refreshUser(); }} />}
             {activeModal === 'search' && <InteractiveSearchBar isOpen={true} onClose={onCloseAllModals} onSearch={handleSearch} onArticleSelect={handleArticleClick} user={user} clearSearchHistory={() => { userService.clearSearchHistory(); refreshUser(); }} topStories={topStories} allArticles={allArticles} />}
