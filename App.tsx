@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -16,8 +17,10 @@ import ContactUsPage from './pages/ContactUsPage';
 import VideoPage from './pages/VideoPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 import AuthModal from './components/AuthModal';
+import ForgotPasswordModal from './components/ForgotPasswordModal';
 import PremiumModal from './components/PremiumModal';
 import PaymentModal from './components/PaymentModal';
 import InteractiveSearchBar from './components/InteractiveSearchBar';
@@ -43,6 +46,8 @@ import { Article, Ad, NavLink, SubscriptionPlan } from './types';
 import ArticleCard from './components/ArticleCard';
 import Pagination from './components/Pagination';
 import { ArticleFormData } from './components/admin/ArticleManager';
+
+declare const google: any;
 
 const HomePage: React.FC<{
     articles: Article[],
@@ -97,7 +102,7 @@ const App: React.FC = () => {
     const [unreadNotifications, setUnreadNotifications] = useState(0);
     
     // Hooks
-    const { user, login, logout, register, refreshUser } = useAuth();
+    const { user, login, logout, register, refreshUser, loginWithGoogle } = useAuth();
     const { isInitialized: isSettingsInitialized } = useSettings();
     const { addToast } = useToast();
 
@@ -114,8 +119,39 @@ const App: React.FC = () => {
             setIsLoading(false);
         }
     }, [addToast]);
+    
+    const handleCategorySelect = useCallback((category: string) => {
+        setSearchQuery('');
+        setSearchFilters({});
+        setCurrentCategory(category);
+        setCurrentPage(1);
+        setView('home');
+        onCloseAllModals();
+    }, []);
+    
+    const handleGoogleCredentialResponse = useCallback(async (response: any) => {
+        const success = await loginWithGoogle(response.credential);
+        if (success) {
+            onCloseAllModals();
+            handleCategorySelect('World');
+        }
+    }, [loginWithGoogle, handleCategorySelect]);
+
 
     useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('token') && urlParams.get('token')) {
+            setView('reset-password');
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        
+        if (typeof google !== 'undefined' && process.env.GOOGLE_CLIENT_ID) {
+            google.accounts.id.initialize({
+                client_id: process.env.GOOGLE_CLIENT_ID,
+                callback: handleGoogleCredentialResponse
+            });
+        }
+
         const initialLoad = async () => {
             setIsLoading(true);
             try {
@@ -149,7 +185,7 @@ const App: React.FC = () => {
             }
         };
         initialLoad();
-    }, [user?.role]);
+    }, [user?.role, handleGoogleCredentialResponse]);
 
     useEffect(() => {
         if (view === 'home' && !searchQuery) {
@@ -186,15 +222,6 @@ const App: React.FC = () => {
     const handleArticleClick = (article: Article) => {
         setCurrentArticle(article);
         setView('article');
-        onCloseAllModals();
-    };
-
-    const handleCategorySelect = (category: string) => {
-        setSearchQuery('');
-        setSearchFilters({});
-        setCurrentCategory(category);
-        setCurrentPage(1);
-        setView('home');
         onCloseAllModals();
     };
 
@@ -261,6 +288,7 @@ const App: React.FC = () => {
             case 'video': return <VideoPage allArticles={allArticles} onArticleClick={handleArticleClick} />;
             case 'payment-success': return <PaymentSuccessPage onContinue={() => { refreshUser(); setView('home'); }} />;
             case 'payment-cancel': return <PaymentCancelPage onBack={() => setView('home')} onTryAgain={() => setActiveModal('premium')} />;
+            case 'reset-password': return <ResetPasswordPage onSuccess={() => { setView('home'); setActiveModal('auth'); }} />;
             case 'home':
             default:
                 return (
@@ -321,7 +349,14 @@ const App: React.FC = () => {
             <BackToTopButton />
 
             {/* Modals & Overlays */}
-            {activeModal === 'auth' && <AuthModal isOpen={true} onClose={onCloseAllModals} onLogin={handleLoginAndRedirect} onRegister={handleRegisterAndRedirect} />}
+            {activeModal === 'auth' && <AuthModal isOpen={true} onClose={onCloseAllModals} onLogin={handleLoginAndRedirect} onRegister={handleRegisterAndRedirect} onForgotPasswordClick={() => setActiveModal('forgot-password')} onGoogleLogin={() => {
+                if (process.env.GOOGLE_CLIENT_ID) {
+                    google.accounts.id.prompt();
+                } else {
+                    addToast('Google Sign-In is not configured.', 'error');
+                }
+            }}/>}
+            {activeModal === 'forgot-password' && <ForgotPasswordModal isOpen={true} onClose={onCloseAllModals} onSuccess={onCloseAllModals} />}
             {activeModal === 'premium' && <PremiumModal isOpen={true} onClose={onCloseAllModals} onSubscribeClick={async (plan) => { if(user) { try { await paymentService.createCheckoutSession(plan); } catch(e) { addToast((e as Error).message, 'error'); } } else { setActiveModal('auth'); } }} />}
             {activeModal === 'payment' && <PaymentModal isOpen={true} onClose={onCloseAllModals} planName="Premium" price="$9.99/mo" onPaymentSuccess={(method) => { console.log(method); onCloseAllModals(); addToast('Subscribed successfully!', 'success'); refreshUser(); }} />}
             {activeModal === 'search' && <InteractiveSearchBar isOpen={true} onClose={onCloseAllModals} onSearch={handleSearch} onArticleSelect={handleArticleClick} user={user} clearSearchHistory={() => { userService.clearSearchHistory(); refreshUser(); }} topStories={topStories} allArticles={allArticles} />}

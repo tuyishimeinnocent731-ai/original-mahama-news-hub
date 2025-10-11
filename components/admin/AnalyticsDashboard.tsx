@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { User, Article, SubscriptionPlan } from '../../types';
 import { UserGroupIcon } from '../icons/UserGroupIcon';
@@ -65,15 +64,18 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ getAllUsers, ar
     // Mock data generation
     const totalViews = articles.length * 1234; // Mock calculation
     
-    // FIX: Using a correctly typed reduce method ensures proper type inference for subscription counts, resolving the arithmetic error.
-    const subscriptions = users.reduce<Record<SubscriptionPlan, number>>((acc, user) => {
+    // FIX: The increment operator (++) on an indexed property can cause type errors with strict compiler options.
+    // Replaced with a safer addition assignment that correctly handles the type.
+    const subscriptions = users.reduce((acc, user) => {
         if (user.subscription) {
-            acc[user.subscription]++;
+            acc[user.subscription] = (acc[user.subscription] || 0) + 1;
         }
         return acc;
-    }, { free: 0, standard: 0, premium: 0, pro: 0 });
+    }, { free: 0, standard: 0, premium: 0, pro: 0 } as Record<SubscriptionPlan, number>);
     
     const viewsByCategory = articles.reduce((acc, article) => {
+        // FIX: The `+=` operator can cause an error if `acc[article.category]` is undefined.
+        // Initialize with 0 if it's the first time seeing this category.
         acc[article.category] = (acc[article.category] || 0) + Math.floor(Math.random() * 2000 + 500);
         return acc;
     }, {} as Record<string, number>);

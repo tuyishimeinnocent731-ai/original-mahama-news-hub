@@ -5,6 +5,9 @@ const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const { formatUserFromDb } = require('../utils/userFormatter');
 const { sendPasswordResetEmail } = require('../utils/mailService');
+const { OAuth2Client } = require('google-auth-library');
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 
 const generateToken = (id) => {
@@ -83,6 +86,66 @@ const loginUser = async (req, res, next) => {
     }
 };
 
+const loginWithGoogle = async (req, res, next) => {
+    const { credential } = req.body;
+    const connection = await pool.getConnection();
+    let transactionStarted = false;
+
+    try {
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        const { email, name, picture: avatar } = payload;
+
+        const [userExists] = await connection.query('SELECT id FROM users WHERE email = ?', [email]);
+        
+        let userId;
+
+        if (userExists.length > 0) {
+            userId = userExists[0].id;
+            // Update name and avatar from Google profile
+            await connection.query('UPDATE users SET name = ?, avatar = ? WHERE id = ?', [name, avatar, userId]);
+        } else {
+            // User doesn't exist, register them
+            userId = `user-${uuidv4()}`;
+            const randomPassword = crypto.randomBytes(32).toString('hex');
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(randomPassword, salt);
+            
+            await connection.beginTransaction();
+            transactionStarted = true;
+            
+            await connection.query('INSERT INTO users (id, name, email, password, avatar) VALUES (?, ?, ?, ?, ?)', [userId, name, email, hashedPassword, avatar]);
+            await connection.query('INSERT INTO user_settings (user_id) VALUES (?)', [userId]);
+
+            await connection.commit();
+            transactionStarted = false;
+        }
+
+        const [userRows] = await connection.query(formatUserFromDb.userQuery, [userId]);
+        
+        if (userRows.length > 0) {
+            const user = formatUserFromDb(userRows[0]);
+            res.status(200).json({
+                token: generateToken(user.id),
+                user: user,
+            });
+        } else {
+            throw new Error('Google Sign-In failed to retrieve user data.');
+        }
+
+    } catch (error) {
+        if (transactionStarted) {
+            await connection.rollback();
+        }
+        next(error);
+    } finally {
+        if (connection) connection.release();
+    }
+};
+
 const forgotPassword = async (req, res, next) => {
     const { email } = req.body;
     try {
@@ -102,7 +165,7 @@ const forgotPassword = async (req, res, next) => {
             [passwordResetToken, passwordResetExpires, user.id]
         );
             
-        const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
+        const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}?token=${resetToken}`;
         
         await sendPasswordResetEmail({
             to: email,
@@ -147,4 +210,4 @@ const resetPassword = async (req, res, next) => {
     }
 };
 
-module.exports = { registerUser, loginUser, forgotPassword, resetPassword };
+module.exports = { registerUser, loginUser, forgotPassword, resetPassword, loginWithGoogle };

@@ -1,4 +1,5 @@
 
+
 import { api } from './apiService';
 import { User, ApiKey, ActivityLog, Notification } from '../types';
 
@@ -17,6 +18,10 @@ export const forgotPassword = async (email: string): Promise<{ message: string }
 
 export const resetPassword = async (token: string, password: string): Promise<{ message: string }> => {
     return api.post('/api/auth/reset-password', { token, password });
+};
+
+export const loginWithGoogle = async (credential: string): Promise<{ token: string, user: User }> => {
+    return api.post('/api/auth/google', { credential });
 };
 
 

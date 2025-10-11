@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import Modal from './Modal';
 import * as userService from '../services/userService';
@@ -31,7 +32,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Reset Your Password">
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="p-6 space-y-6">
         <p className="text-sm text-muted-foreground">
             Enter the email address associated with your account and we'll send you a link to reset your password.
         </p>
@@ -42,7 +43,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
           <input
             type="email"
             id="reset-email"
-            className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg dark:bg-gray-600 dark:border-gray-500"
+            className="w-full p-2.5 bg-secondary border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent"
             placeholder="name@company.com"
             required
             value={email}

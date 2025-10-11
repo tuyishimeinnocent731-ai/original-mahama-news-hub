@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect, useCallback } from 'react';
 import { User } from '../types';
 import * as userService from '../services/userService';
@@ -66,6 +67,18 @@ export const useAuth = () => {
         }
     }, [addToast, setAuthData]);
     
+    const loginWithGoogle = useCallback(async (credential: string): Promise<boolean> => {
+        try {
+            const authData = await userService.loginWithGoogle(credential);
+            setAuthData(authData);
+            addToast(`Welcome, ${authData.user.name}!`, 'success');
+            return true;
+        } catch (error: any) {
+            addToast(error.message || 'Google Sign-In failed', 'error');
+            return false;
+        }
+    }, [addToast, setAuthData]);
+    
     const logout = useCallback(() => {
         setAuthData(null);
         addToast('You have been logged out.', 'info');
@@ -88,5 +101,5 @@ export const useAuth = () => {
         }
     }, [isLoggedIn, setAuthData, logout]);
 
-    return { user, token, isLoggedIn, login, logout, register, refreshUser };
+    return { user, token, isLoggedIn, login, logout, register, refreshUser, loginWithGoogle };
 };
