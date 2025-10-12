@@ -611,7 +611,8 @@ const AdminPage: React.FC<AdminPageProps> = (props) => {
             case 'analytics':
                 return <AnalyticsDashboard getAllUsers={props.getAllUsers} articles={props.allArticles} />;
             case 'settings':
-                return <SiteSettingsManager settings={props.siteSettings} onUpdateSettings={props.onUpdateSettings} />;
+                // FIX: Corrected prop name from `onUpdateSettings` to `onUpdateSiteSettings` to match `AdminPageProps`.
+                return <SiteSettingsManager settings={props.siteSettings} onUpdateSettings={props.onUpdateSiteSettings} />;
             default:
                 return null;
         }

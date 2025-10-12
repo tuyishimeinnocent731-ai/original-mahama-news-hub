@@ -64,21 +64,22 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ getAllUsers, ar
     // Mock data generation
     const totalViews = articles.length * 1234; // Mock calculation
     
-    // FIX: The increment operator (++) on an indexed property can cause type errors with strict compiler options.
-    // Replaced with a safer addition assignment that correctly handles the type.
-    const subscriptions = users.reduce((acc, user) => {
+    // Using a reduce function to count subscriptions by plan.
+    const subscriptions = users.reduce<Record<SubscriptionPlan, number>>((acc, user) => {
         if (user.subscription) {
+            // Since all keys are initialized in the accumulator, we can safely increment.
             acc[user.subscription] = (acc[user.subscription] || 0) + 1;
         }
         return acc;
-    }, { free: 0, standard: 0, premium: 0, pro: 0 } as Record<SubscriptionPlan, number>);
+    }, { free: 0, standard: 0, premium: 0, pro: 0 });
     
-    const viewsByCategory = articles.reduce((acc, article) => {
-        // FIX: The `+=` operator can cause an error if `acc[article.category]` is undefined.
-        // Initialize with 0 if it's the first time seeing this category.
-        acc[article.category] = (acc[article.category] || 0) + Math.floor(Math.random() * 2000 + 500);
+    const viewsByCategory = articles.reduce<Record<string, number>>((acc, article) => {
+        // The `+=` operator can cause an error if `acc[article.category]` is undefined.
+        // This pattern initializes with 0 if it's the first time seeing this category.
+        const currentCount = acc[article.category] || 0;
+        acc[article.category] = currentCount + Math.floor(Math.random() * 2000 + 500);
         return acc;
-    }, {} as Record<string, number>);
+    }, {});
     
     const categoryData = Object.entries(viewsByCategory).map(([label, value]) => ({ label, value })).sort((a,b) => b.value - a.value).slice(0, 5);
     

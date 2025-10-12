@@ -34,6 +34,26 @@ interface HeaderProps {
     siteName: string;
 }
 
+const Logo: React.FC<{ siteName: string; onClick: () => void }> = ({ siteName, onClick }) => {
+    const letters = siteName.split('');
+    return (
+        <button onClick={onClick} className="flex items-center group text-2xl font-bold tracking-wider text-accent" aria-label={siteName}>
+            {letters.map((letter, index) => (
+                <span
+                    key={index}
+                    className="transition-all duration-300 ease-out group-hover:text-primary-foreground group-hover:-translate-y-1"
+                    style={{
+                        transitionDelay: `${index * 30}ms`,
+                        whiteSpace: letter === ' ' ? 'pre' : 'normal'
+                    }}
+                >
+                    {letter}
+                </span>
+            ))}
+        </button>
+    );
+};
+
 const Header: React.FC<HeaderProps> = (props) => {
     const { navLinks, onCategorySelect, onArticleClick } = props;
     const [isScrolled, setIsScrolled] = useState(false);
@@ -73,9 +93,7 @@ const Header: React.FC<HeaderProps> = (props) => {
         <header className={`bg-primary text-primary-foreground shadow-md sticky top-0 z-30 transition-colors duration-300 ${isScrolled ? 'header-scrolled' : ''}`}>
             <div className="container mx-auto px-4">
                 <div className={`flex justify-between items-center py-3 border-b border-primary-foreground/20 transition-colors duration-300 ${isScrolled ? 'border-transparent' : ''}`}>
-                    <button onClick={() => onCategorySelect('World')} className="text-xl font-bold text-accent">
-                        {props.siteName}
-                    </button>
+                    <Logo siteName={props.siteName} onClick={() => onCategorySelect('World')} />
                     <div className="flex items-center space-x-1 sm:space-x-2">
                          {props.isLoggedIn && isPremium && (
                              <button onClick={props.onLiveAssistantClick} className="hidden lg:flex items-center space-x-2 px-3 py-2 rounded-md bg-accent/20 text-accent font-semibold hover:bg-accent/30 transition-colors text-sm" aria-label="Talk to AI">

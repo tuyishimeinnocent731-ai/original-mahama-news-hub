@@ -27,10 +27,6 @@ const validate = (schema) => (req, res, next) => {
         if (rules.maxLength && String(value).length > rules.maxLength) {
             errors.push(`${key} must not exceed ${rules.maxLength} characters.`);
         }
-        
-        if (rules.password && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(value)) {
-            errors.push(`${key} must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.`);
-        }
     }
 
     if (errors.length > 0) {
@@ -44,7 +40,7 @@ const schemas = {
     register: {
         email: { required: true, isEmail: true },
         name: { required: true, minLength: 2 },
-        password: { required: true, password: true },
+        password: { required: true, minLength: 8 },
     },
     createArticle: {
         title: { required: true, minLength: 5 },
