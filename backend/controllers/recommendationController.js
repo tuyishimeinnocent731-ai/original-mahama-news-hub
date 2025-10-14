@@ -1,20 +1,12 @@
 const pool = require('../config/db');
 
-/**
- * GET /api/recommendations?userId=...&count=...
- * If userId not provided, return trending by views.
- * If user has preferred_categories/preferred_tags, prefer those.
- */
 const getRecommendations = async (req, res, next) => {
   try {
     const userId = req.query.userId;
     const count = parseInt(req.query.count || '10', 10);
 
     if (!userId) {
-      const [rows] = await pool.query(
-        'SELECT * FROM articles WHERE (scheduled_for IS NULL OR scheduled_for <= NOW()) ORDER BY views DESC LIMIT ?',
-        [count]
-      );
+      const [rows] = await pool.query('SELECT * FROM articles WHERE (scheduled_for IS NULL OR scheduled_for <= NOW()) ORDER BY views DESC LIMIT ?', [count]);
       return res.json(rows);
     }
 
@@ -23,29 +15,40 @@ const getRecommendations = async (req, res, next) => {
     const categories = settings && settings.preferred_categories ? JSON.parse(settings.preferred_categories) : [];
     const tags = settings && settings.preferred_tags ? JSON.parse(settings.preferred_tags) : [];
 
-    // Simple hybrid scoring
-    let base = 'SELECT *, (CASE WHEN LOWER(category) IN (?) THEN 2 ELSE 0 END)';
-    const params = [categories.map(c => c.toLowerCase())];
+    let params = [];
+    let q = 'SELECT *, (CASE WHEN LOWER(category) IN (?) THEN 2 ELSE 0 END)';
+    params.push(categories.map(c => c.toLowerCase()));
 
     if (tags.length > 0) {
-      base += ' + (CASE ';
-      base += tags.map(() => ' WHEN tags LIKE ? THEN 1').join('');
-      base += ' ELSE 0 END)';
+      q += ' + (CASE ';
+      q += tags.map(() => ' WHEN tags LIKE ? THEN 1').join('');
+      q += ' ELSE 0 END)';
       params.push(...tags.map(t => `%${t}%`));
     } else {
-      base += ' AS score';
+      q += ' AS score';
     }
-
-    base += ' FROM articles WHERE (scheduled_for IS NULL OR scheduled_for <= NOW()) ORDER BY score DESC, published_at DESC LIMIT ?';
+    q += ' FROM articles WHERE (scheduled_for IS NULL OR scheduled_for <= NOW()) ORDER BY score DESC, published_at DESC LIMIT ?';
     params.push(count);
 
-    const [articles] = await pool.query(base, params);
+    const [articles] = await pool.query(q, params);
+    if (articles && articles.length > 0) return res.json(articles);
 
-    if (!articles || articles.length === 0) {
-      const [fallback] = await pool.query('SELECT * FROM articles WHERE (scheduled_for IS NULL OR scheduled_for <= NOW()) ORDER BY views DESC LIMIT ?', [count]);
-      return res.json(fallback);
+    // Collaborative-ish fallback
+    const [userViews] = await pool.query('SELECT article_id FROM user_views WHERE user_id = ? ORDER BY viewed_at DESC LIMIT 50', [userId]);
+    if (!userViews || userViews.length === 0) {
+      const [trending] = await pool.query('SELECT * FROM articles WHERE (scheduled_for IS NULL OR scheduled_for <= NOW()) ORDER BY views DESC LIMIT ?', [count]);
+      return res.json(trending);
     }
-    res.json(articles);
+    const viewedIds = userViews.map(v => v.article_id);
+    const [others] = await pool.query(
+      `SELECT DISTINCT uv2.article_id as id, a.* FROM user_views uv1
+       JOIN user_views uv2 ON uv1.user_id = uv2.user_id
+       JOIN articles a ON a.id = uv2.article_id
+       WHERE uv1.article_id IN (?) AND uv2.article_id NOT IN (?) AND (a.scheduled_for IS NULL OR a.scheduled_for <= NOW())
+       ORDER BY uv2.viewed_at DESC LIMIT ?`,
+      [viewedIds, viewedIds, count]
+    );
+    return res.json(others);
   } catch (err) {
     next(err);
   }

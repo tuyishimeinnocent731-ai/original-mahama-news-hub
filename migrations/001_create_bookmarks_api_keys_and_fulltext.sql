@@ -1,6 +1,3 @@
--- Run this against your MySQL database
--- Creates bookmarks and api_keys tables and suggests adding FULLTEXT index for articles
-
 CREATE TABLE IF NOT EXISTS bookmarks (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   user_id VARCHAR(100) NOT NULL,
@@ -18,7 +15,6 @@ CREATE TABLE IF NOT EXISTS api_keys (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Optional: add FULLTEXT index on articles for better search (requires ENGINE=InnoDB or MyISAM)
--- Adjust `articles` table name/columns if different in your schema.
+-- Optional FULLTEXT index (adjust to your schema)
 ALTER TABLE articles
-  ADD FULLTEXT IF NOT EXISTS idx_fulltext_title_description_body (title, description, body);
+  ADD FULLTEXT idx_fulltext_title_description_body (title, description, body);

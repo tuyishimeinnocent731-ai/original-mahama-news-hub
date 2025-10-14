@@ -1,39 +1,31 @@
-# Deployment checklist (build + deploy)
+# Advanced Full-Stack Deployment Guide
 
-This repository contains a Vite React frontend and a Node/Express backend. Follow these steps to deploy locally or to a server.
+1) Copy .env.example -> .env and fill DB_*, JWT_SECRET, VITE_API_URL, NEWSAPI_KEY/GNEWS_KEY, PUBLIC_API_KEY, REDIS_URL as needed.
 
-1) Environment
-- Copy .env.example -> .env and set values (DB_*, JWT_SECRET, VITE_API_URL, etc.)
-- Ensure the DB is accessible and run migrations.
+2) Run DB migrations:
+   mysql -u <user> -p <DB_NAME> < migrations/001_create_bookmarks_api_keys_and_fulltext.sql
+   mysql -u <user> -p <DB_NAME> < migrations/002_create_user_views_and_activity.sql
 
-2) Database
-- Start MySQL
-- Run migrations:
-    mysql -u root -p ${DB_NAME} < migrations/001_create_bookmarks_api_keys_and_fulltext.sql
+   If ALTER TABLE FULLTEXT fails, remove that line and set USE_FULLTEXT=false in .env.
 
-3) Build frontend
-- From repo root:
-    npm install
-    npm run build
-  This generates /dist.
+3) Install and build:
+   cd backend && npm install
+   cd .. && npm install
+   npm run build
 
-4) Backend
-- Install backend dependencies:
-    cd backend && npm install
-- Ensure .env variables set
-- Start backend:
-    node backend/server.js
-  (Use pm2 or systemd in production.)
+4) Start:
+   cd backend && npm start
+   (Or with docker-compose: docker-compose up --build -d)
 
-5) Docker (optional)
-- docker-compose up --build -d
-- The stack will start MySQL, backend, frontend (nginx serving dist), and Adminer.
+5) Verify login/register redirect:
+   - The LoginModal now calls onLogin(email,password). App.tsx handlers call handleCategorySelect('World') after auth. Register/login should redirect to the World category.
 
-6) Post-deploy
-- Create API keys via insert into api_keys table or set PUBLIC_API_KEY in .env
-- Run external sync (admin only): POST /api/external/sync with an admin token
+6) Test endpoints:
+   - GET /api/search?q=term
+   - GET /api/recommendations?userId=<id>
+   - POST /api/external/sync (admin)
+   - POST /api/analytics/view { articleId }
 
-7) Notes
-- For full-text search: ensure the FULLTEXT index exists and set USE_FULLTEXT=true in your .env.
-- The LoginModal is fixed to call App.tsx login signature; App.tsx will redirect to the World category on successful login/register.
-- Security: Use HTTPS + reverse proxy (nginx) in production. Keep JWT_SECRET secret.
+Notes:
+- Review all new files and integrate carefully if you have existing customizations.
+- Test in staging before production.

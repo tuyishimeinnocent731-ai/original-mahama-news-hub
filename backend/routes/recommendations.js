@@ -1,8 +1,5 @@
 const express = require('express');
-const router = express.Router();
 const { getRecommendations } = require('../controllers/recommendationController');
-
-// public: can accept userId query param for personalized results
+const router = express.Router();
 router.get('/', getRecommendations);
-
 module.exports = router;
