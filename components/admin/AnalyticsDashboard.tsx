@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, Article, SubscriptionPlan } from '../../types';
 import { UserGroupIcon } from '../icons/UserGroupIcon';
@@ -64,8 +63,10 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ getAllUsers, ar
     // Mock data generation
     const totalViews = articles.length * 1234; // Mock calculation
     
+    // FIX: Removed explicit generic from reduce call to fix "Untyped function calls may not accept type arguments" error.
+    // The accumulator type is correctly inferred from the initial value.
     // Using a reduce function to count subscriptions by plan.
-    const subscriptions = users.reduce<Record<SubscriptionPlan, number>>((acc, user) => {
+    const subscriptions = users.reduce((acc, user) => {
         if (user.subscription) {
             // Since all keys are initialized in the accumulator, we can safely increment.
             acc[user.subscription] = (acc[user.subscription] || 0) + 1;
@@ -73,13 +74,16 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ getAllUsers, ar
         return acc;
     }, { free: 0, standard: 0, premium: 0, pro: 0 });
     
-    const viewsByCategory = articles.reduce<Record<string, number>>((acc, article) => {
+    // FIX: Removed explicit generic and typed the initial empty object to fix type errors.
+    // This resolves issues where `acc` was inferred as `{}`, preventing indexing and causing arithmetic operation errors.
+    // FIX: Explicitly type the `acc` accumulator to resolve type inference issue with `reduce`.
+    const viewsByCategory = articles.reduce((acc: Record<string, number>, article) => {
         // The `+=` operator can cause an error if `acc[article.category]` is undefined.
         // This pattern initializes with 0 if it's the first time seeing this category.
-        const currentCount = acc[article.category] || 0;
-        acc[article.category] = currentCount + Math.floor(Math.random() * 2000 + 500);
+        // FIX: Refactor to a more standard one-line pattern to resolve potential type inference issues.
+        acc[article.category] = (acc[article.category] || 0) + Math.floor(Math.random() * 2000 + 500);
         return acc;
-    }, {});
+    }, {} as Record<string, number>);
     
     const categoryData = Object.entries(viewsByCategory).map(([label, value]) => ({ label, value })).sort((a,b) => b.value - a.value).slice(0, 5);
     

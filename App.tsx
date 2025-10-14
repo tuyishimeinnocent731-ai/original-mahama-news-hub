@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -52,8 +53,9 @@ declare const google: any;
 const HomePage: React.FC<{
     articles: Article[],
     onArticleClick: (article: Article) => void,
-    isLoading: boolean
-}> = ({ articles, onArticleClick, isLoading }) => {
+    isLoading: boolean,
+    layout: 'grid' | 'list' | 'magazine';
+}> = ({ articles, onArticleClick, isLoading, layout }) => {
     if (isLoading) {
         return <div className="flex justify-center items-center py-20"><LoadingSpinner /></div>;
     }
@@ -68,10 +70,38 @@ const HomePage: React.FC<{
             </div>
         );
     }
+
+    if (layout === 'list') {
+        return (
+            <div className="flex flex-col gap-8">
+                {articles.map(article => (
+                    <ArticleCard key={article.id} article={article} onArticleClick={onArticleClick} layout="list" />
+                ))}
+            </div>
+        );
+    }
+    
+    if (layout === 'magazine' && articles.length > 0) {
+        const [firstArticle, ...restArticles] = articles;
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {firstArticle && (
+                    <div className="md:col-span-2">
+                        <ArticleCard key={firstArticle.id} article={firstArticle} onArticleClick={onArticleClick} layout="normal" />
+                    </div>
+                )}
+                {restArticles.map(article => (
+                    <ArticleCard key={article.id} article={article} onArticleClick={onArticleClick} layout="normal" />
+                ))}
+            </div>
+        );
+    }
+
+    // Default to 'grid' layout
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {articles.map(article => (
-                <ArticleCard key={article.id} article={article} onArticleClick={onArticleClick} />
+                <ArticleCard key={article.id} article={article} onArticleClick={onArticleClick} layout="normal" />
             ))}
         </div>
     );
@@ -103,7 +133,7 @@ const App: React.FC = () => {
     
     // Hooks
     const { user, login, logout, register, refreshUser, loginWithGoogle } = useAuth();
-    const { isInitialized: isSettingsInitialized } = useSettings();
+    const { settings, isInitialized: isSettingsInitialized } = useSettings();
     const { addToast } = useToast();
 
     const fetchArticles = useCallback(async (category: string, page: number) => {
@@ -294,7 +324,7 @@ const App: React.FC = () => {
                 return (
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
                         <div className="md:col-span-8">
-                            <HomePage articles={articles} onArticleClick={handleArticleClick} isLoading={isLoading} />
+                            <HomePage articles={articles} onArticleClick={handleArticleClick} isLoading={isLoading} layout={settings.layout.homepage} />
                             {totalPages > 1 && !isLoading && articles.length > 0 && (
                                 <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
                             )}

@@ -20,7 +20,7 @@ const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateA
     const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
     const initialFormState: ArticleFormData = { title: '', description: '', body: '', author: '', category: 'World', urlToImage: '', tags: [], scheduledFor: '' };
     const [formData, setFormData] = useState<ArticleFormData>(initialFormState);
-    const [tagsInput, setTagsInput] = useState('');
+    const [currentTagInput, setCurrentTagInput] = useState('');
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
 
@@ -38,20 +38,14 @@ const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateA
                     tags: articleToEdit.tags || [],
                     scheduledFor: articleToEdit.scheduledFor ? articleToEdit.scheduledFor.slice(0, 16) : ''
                 });
-                setTagsInput((articleToEdit.tags || []).join(', '));
                 setImagePreview(articleToEdit.urlToImage);
             }
         } else {
             setFormData(initialFormState);
-            setTagsInput('');
             setImagePreview(null);
         }
+        setCurrentTagInput('');
     }, [editingArticleId, allArticles]);
-    
-    useEffect(() => {
-        const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
-        setFormData(prev => ({ ...prev, tags }));
-    }, [tagsInput]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -75,6 +69,28 @@ const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateA
         setFormData(prev => ({...prev, urlToImage: base64Image}));
         setImagePreview(base64Image);
     };
+    
+    const handleRemoveTag = (tagToRemove: string) => {
+        setFormData(prev => ({
+            ...prev,
+            tags: prev.tags?.filter(tag => tag !== tagToRemove)
+        }));
+    };
+
+    const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            const newTag = currentTagInput.trim();
+            if (newTag && !formData.tags?.includes(newTag)) {
+                setFormData(prev => ({
+                    ...prev,
+                    tags: [...(prev.tags || []), newTag]
+                }));
+            }
+            setCurrentTagInput('');
+        }
+    };
+
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -112,8 +128,32 @@ const ArticleManager: React.FC<ArticleManagerProps> = ({ onAddArticle, onUpdateA
                         </select>
                     </div>
                     <div>
-                        <label htmlFor="tags" className="block text-sm font-medium">Tags (comma-separated)</label>
-                        <input type="text" name="tags" id="tags" placeholder="e.g., AI, Innovation, Tech" value={tagsInput} onChange={e => setTagsInput(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-card border border-border rounded-md shadow-sm focus:outline-none focus:ring-accent focus:border-accent" />
+                        <label htmlFor="tags-input" className="block text-sm font-medium">Tags</label>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 p-2 bg-card border border-border rounded-md shadow-sm focus-within:ring-1 focus-within:ring-accent focus-within:border-accent">
+                            {formData.tags?.map(tag => (
+                                <span key={tag} className="flex items-center gap-1.5 px-2 py-1 bg-accent/20 text-accent text-sm font-medium rounded-full">
+                                    {tag}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveTag(tag)}
+                                        className="text-accent hover:text-accent/70 font-bold"
+                                        aria-label={`Remove ${tag}`}
+                                    >
+                                        &times;
+                                    </button>
+                                </span>
+                            ))}
+                            <input
+                                type="text"
+                                id="tags-input"
+                                value={currentTagInput}
+                                onChange={e => setCurrentTagInput(e.target.value)}
+                                onKeyDown={handleTagInputKeyDown}
+                                placeholder={formData.tags && formData.tags.length > 0 ? '' : "Add tags..."}
+                                className="flex-grow bg-transparent focus:outline-none text-sm p-1"
+                            />
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">Enter a tag and press Enter or Comma to add it.</p>
                     </div>
                      <div>
                         <label htmlFor="image-upload" className="block text-sm font-medium mb-1">Featured Image</label>
