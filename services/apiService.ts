@@ -1,103 +1,63 @@
-export const API_URL = 'http://localhost:5000';
+// frontend: services/apiService.ts - improved error handling and env-based base URL
+export const API_URL = (import.meta.env?.VITE_API_URL as string) || 'http://localhost:5000';
 
 const getAuthToken = () => {
-    try {
-        const authData = localStorage.getItem('auth');
-        if (authData) {
-            return JSON.parse(authData).token;
-        }
-    } catch (e) {
-        console.error("Could not parse auth token from localStorage", e);
-    }
-    return null;
+  try {
+    const auth = localStorage.getItem('auth');
+    if (auth) return JSON.parse(auth).token;
+  } catch (err) {
+    console.warn('apiService: failed to parse token', err);
+  }
+  return null;
+};
+
+const buildHeaders = (isJson = true) => {
+  const headers: Record<string, string> = {};
+  if (isJson) headers['Content-Type'] = 'application/json';
+  const token = getAuthToken();
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
 };
 
 export const api = {
-    get: async <T>(endpoint: string): Promise<T> => {
-        const response = await fetch(`${API_URL}${endpoint}`, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getAuthToken()}`
-            }
-        });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return response.json();
-    },
+  get: async <T>(endpoint: string): Promise<T> => {
+    const res = await fetch(`${API_URL}${endpoint}`, { headers: buildHeaders(true), credentials: 'include' });
+    if (!res.ok) {
+      const txt = await res.text();
+      let message = txt;
+      try { message = JSON.parse(txt).message || txt; } catch {}
+      throw new Error(`HTTP ${res.status}: ${message}`);
+    }
+    return res.json();
+  },
 
-    post: async <T>(endpoint: string, body: any): Promise<T> => {
-        const response = await fetch(`${API_URL}${endpoint}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getAuthToken()}`
-            },
-            body: JSON.stringify(body)
-        });
-        if (!response.ok) {
-             const errorData = await response.json();
-             throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    },
+  post: async <T>(endpoint: string, body: any, isJson = true): Promise<T> => {
+    const res = await fetch(`${API_URL}${endpoint}`, {
+      method: 'POST',
+      headers: buildHeaders(isJson),
+      credentials: 'include',
+      body: isJson ? JSON.stringify(body) : body
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      let message = txt;
+      try { message = JSON.parse(txt).message || txt; } catch {}
+      throw new Error(`HTTP ${res.status}: ${message}`);
+    }
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) return res.json();
+    return (await res.text()) as unknown as T;
+  },
 
-    postFormData: async <T>(endpoint: string, formData: FormData): Promise<T> => {
-        const response = await fetch(`${API_URL}${endpoint}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${getAuthToken()}`
-            },
-            body: formData
-        });
-        if (!response.ok) {
-             const errorData = await response.json();
-             throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    },
+  put: async <T>(endpoint: string, body: any): Promise<T> => {
+    const res = await fetch(`${API_URL}${endpoint}`, { method: 'PUT', headers: buildHeaders(true), credentials: 'include', body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
 
-    put: async <T>(endpoint: string, body: any): Promise<T> => {
-        const response = await fetch(`${API_URL}${endpoint}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getAuthToken()}`
-            },
-            body: JSON.stringify(body)
-        });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    },
-    
-    putFormData: async <T>(endpoint: string, formData: FormData): Promise<T> => {
-        const response = await fetch(`${API_URL}${endpoint}`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${getAuthToken()}`
-            },
-            body: formData
-        });
-        if (!response.ok) {
-             const errorData = await response.json();
-             throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    },
-
-
-    delete: async <T>(endpoint: string): Promise<T> => {
-        const response = await fetch(`${API_URL}${endpoint}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${getAuthToken()}`
-            }
-        });
-        if (!response.ok) {
-             const errorData = await response.json();
-             throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    },
+  delete: async <T>(endpoint: string): Promise<T> => {
+    const res = await fetch(`${API_URL}${endpoint}`, { method: 'DELETE', headers: buildHeaders(true), credentials: 'include' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
 };

@@ -1,0 +1,53 @@
+version: '3.8'
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_NAME:-mahama_news}
+    volumes:
+      - db-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_USER=${DB_USER:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-rootpassword}
+      - DB_NAME=${DB_NAME:-mahama_news}
+      - JWT_SECRET=${JWT_SECRET:-change_me}
+      - NEWSAPI_KEY=${NEWSAPI_KEY}
+      - GNEWS_KEY=${GNEWS_KEY}
+      - PUBLIC_API_KEY=${PUBLIC_API_KEY}
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:5000}
+      - USE_FULLTEXT=${USE_FULLTEXT:-false}
+    volumes:
+      - ./backend/uploads:/app/uploads
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:5000
+    ports:
+      - "3000:80"
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
+volumes:
+  db-data:

@@ -1,1 +1,78 @@
-require('dotenv').config();\nconst express = require('express');\nconst cors = require('cors');\nconst path = require('path');\nconst rateLimiter = require('./middleware/rateLimiter');\n\nconst app = express();\n\n// Stripe webhook (optional). Keep raw body for webhook if used.\nif (process.env.STRIPE_WEBHOOK_SECRET) {\n  try {\n    const { handleWebhook } = require('./controllers/paymentController');\n    app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), handleWebhook);\n  } catch (err) {\n    console.warn('Payment webhook controller missing or not configured');\n  }\n}\n\n// Middleware\napp.use(cors());\napp.use(express.json({ limit: '16mb' }));\napp.use(express.urlencoded({ extended: true, limit: '16mb' }));\n\n// Attach IP for logging/rate limit\napp.use((req, res, next) => {\n  req.ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;\n  next();\n});\n\n// Optional rate limiter\ntry {\n  app.use('/api/', rateLimiter);\n} catch (err) {\n  console.warn('Rate limiter not applied:', err.message || err);\n}\n\n// Serve uploaded assets\napp.use('/uploads', express.static(path.join(__dirname, 'uploads')));\n\n// Existing app routes (keep your current ones)\napp.use('/api/auth', require('./routes/authRoutes'));\napp.use('/api/users', require('./routes/userRoutes'));\napp.use('/api/articles', require('./routes/articleRoutes'));\napp.use('/api/ads', require('./routes/adRoutes'));\napp.use('/api/ai', require('./routes/aiRoutes'));\napp.use('/api/dashboard', require('./routes/dashboardRoutes'));\napp.use('/api/site', require('./routes/siteRoutes'));\napp.use('/api/payments', require('./routes/paymentRoutes'));\n\n// New powerful APIs (add these files)\napp.use('/api/recommendations', require('./routes/recommendations'));\napp.use('/api/search', require('./routes/search'));\napp.use('/api/external', require('./routes/externalRoutes'));\napp.use('/api/bookmarks', require('./routes/bookmarkRoutes'));\n\n// Public API (api key)\napp.use('/api/v1', require('./routes/publicApiRoutes'));\n\n// Serve frontend build (expects top-level /dist from Vite build)\nconst CLIENT_DIST = path.join(__dirname, '..', 'dist');\napp.use(express.static(CLIENT_DIST));\n\n// Fallback for SPA - send index.html for unknown GET routes not starting with /api\napp.get('*', (req, res) => {\n  const indexHtml = path.join(CLIENT_DIST, 'index.html');\n  res.sendFile(indexHtml, (err) => {\n    if (err) res.status(500).send('Error loading application');\n  });\n});\n\n// Error handler\napp.use((err, req, res, next) => {\n  console.error(err.stack);\n  res.status(err.statusCode || 500).json({ message: err.message || 'Internal Server Error' });\n});\n\nconst PORT = process.env.PORT || 5000;\napp.listen(PORT, () => console.log(`Server started on :${PORT}`));
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+const rateLimiter = require('./middleware/rateLimiter');
+
+const app = express();
+
+// Stripe webhook (optional). Keep raw body for webhook if used.
+if (process.env.STRIPE_WEBHOOK_SECRET) {
+  try {
+    const { handleWebhook } = require('./controllers/paymentController');
+    app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), handleWebhook);
+  } catch (err) {
+    console.warn('Payment webhook controller missing or not configured');
+  }
+}
+
+// Middleware
+app.use(cors());
+app.use(express.json({ limit: '16mb' }));
+app.use(express.urlencoded({ extended: true, limit: '16mb' }));
+
+// Attach IP for logging/rate limit
+app.use((req, res, next) => {
+  req.ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  next();
+});
+
+// Optional rate limiter
+try {
+  app.use('/api/', rateLimiter);
+} catch (err) {
+  console.warn('Rate limiter not applied:', err.message || err);
+}
+
+// Serve uploaded assets
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Existing app routes (keep your current ones)
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/articles', require('./routes/articleRoutes'));
+app.use('/api/ads', require('./routes/adRoutes'));
+app.use('/api/ai', require('./routes/aiRoutes'));
+app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/site', require('./routes/siteRoutes'));
+app.use('/api/payments', require('./routes/paymentRoutes'));
+
+// New powerful APIs (add these files)
+app.use('/api/recommendations', require('./routes/recommendations'));
+app.use('/api/search', require('./routes/search'));
+app.use('/api/external', require('./routes/externalRoutes'));
+app.use('/api/bookmarks', require('./routes/bookmarkRoutes'));
+
+// Public API (api key)
+app.use('/api/v1', require('./routes/publicApiRoutes'));
+
+// Serve frontend build (expects top-level /dist from Vite build)
+const CLIENT_DIST = path.join(__dirname, '..', 'dist');
+app.use(express.static(CLIENT_DIST));
+
+// Fallback for SPA - send index.html for unknown GET routes not starting with /api
+app.get('*', (req, res) => {
+  const indexHtml = path.join(CLIENT_DIST, 'index.html');
+  res.sendFile(indexHtml, (err) => {
+    if (err) res.status(500).send('Error loading application');
+  });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.statusCode || 500).json({ message: err.message || 'Internal Server Error' });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server started on :${PORT}`));
